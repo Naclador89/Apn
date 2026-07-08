@@ -1592,6 +1592,18 @@
   }
   function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 
+  // True while tapping reps inside a Speed/Mixed action phase — there we want
+  // a short press/release blip, not a spoken cue on every single rep.
+  function isActionTap(){
+    return !!S && (S.scenario==="sd_speed" || S.scenario==="sd_mixed") && S.sd_phase==="action";
+  }
+  // Short non-spoken press/release indicator for action-phase reps.
+  function tick(kind){
+    if(!S || !S.sig) return;
+    if(S.sig.beep) beep(kind==="down" ? 900 : 520, 40, 0);
+    if(S.sig.vibrate) vibrate(kind==="down" ? 18 : 12);
+  }
+
   // Distinct cue for the Mixed action->hold transition ("now HOLD").
   function mixedHoldCue(){
     if(!S || !S.sig) return;
@@ -2057,8 +2069,12 @@
     setCue("up", S.words.down, "");
     $("btnLab").textContent = T().holding;
     $("timer").textContent = fmtSW(0);
-    if(S.sig.vibrate) vibrate(25);
-    cmd("down");
+    if(isActionTap()){
+      tick("down");           // short blip, no speech, for rapid action reps
+    } else {
+      if(S.sig.vibrate) vibrate(25);
+      cmd("down");
+    }
     progressStart();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(stopwatchHoldLoop);
@@ -2178,7 +2194,7 @@
       S.prBeaten = true;
       say(T().newRecord(heldSecRounded));
     }
-    cmd("up");
+    if(isActionTap()) tick("up"); else cmd("up");
 
     if (S.scenario === "sd_speed" || S.scenario === "sd_mixed") {
         if (S.scenario === "sd_mixed" && S.sd_phase === "pause") {
