@@ -353,9 +353,23 @@
   .camMarkRel{background:var(--muted)} .camMarkPress{background:var(--good)}
   .camPct{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;color:var(--text);min-width:44px;text-align:right}
   .camControls{margin-top:12px;display:flex;flex-direction:column;gap:12px}
-  .camControls #camCalibrate{align-self:stretch;background:#11131a;border:1px solid var(--line);color:var(--text);
-    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;padding:12px;border-radius:12px;cursor:pointer}
-  .camControls #camCalibrate:hover{border-color:var(--rise)}
+  .camBtnRow{display:flex;gap:8px}
+  .camBtnRow button{flex:1;background:#11131a;border:1px solid var(--line);color:var(--text);
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;padding:12px 6px;border-radius:12px;cursor:pointer}
+  .camBtnRow button:hover{border-color:var(--rise)}
+  .camBtnRow button:active{transform:translateY(1px)}
+  .camAdapt{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .camAdapt input{width:auto;accent-color:var(--rise);cursor:pointer}
+  .camIntro{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:rgba(9,10,14,.72)}
+  .camIntro.hidden{display:none !important}
+  .camIntroCard{width:100%;max-width:400px;background:linear-gradient(180deg,var(--ink-2),#181b24);
+    border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .camIntroCard h2{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:20px;color:var(--rise);margin-bottom:8px}
+  .camIntroCard p{font-size:14px;color:var(--text);margin-bottom:12px}
+  .camIntroCard ol{margin:0 0 6px;padding-left:20px;display:flex;flex-direction:column;gap:9px}
+  .camIntroCard li{font-size:13px;color:var(--muted);line-height:1.45}
+  .camIntroCard .start{margin-top:16px}
   .camSliders{display:flex;gap:14px}
   .camSlider{flex:1}
   .camSlider input[type="range"]{width:100%;accent-color:var(--rise);margin-top:6px}
@@ -809,7 +823,11 @@
       <span class="camPct" id="camPct">0%</span>
     </div>
     <div class="camControls">
-      <button type="button" class="ghost" id="camCalibrate" data-i18n="camCalibrate">Calibrate (resting state)</button>
+      <div class="camBtnRow">
+        <button type="button" class="ghost" id="camCalibrate" data-i18n="camCalibrate">Calibrate</button>
+        <button type="button" class="ghost" id="camAuto" data-i18n="camAuto">Auto</button>
+        <button type="button" class="ghost" id="camFlip" data-i18n="camFlip">Flip camera</button>
+      </div>
       <div class="camSliders">
         <div class="camSlider">
           <span class="sublbl"><span data-i18n="camReleaseThr">Release below</span> <b id="camRelVal">10</b>%</span>
@@ -820,9 +838,23 @@
           <input id="camPressThr" type="range" min="2" max="95" value="25" aria-label="Press threshold">
         </div>
       </div>
+      <label class="camAdapt"><input id="camAdapt" type="checkbox" checked><span data-i18n="camAdapt">Adapt to light changes</span></label>
     </div>
     <button class="start" id="camStart" data-i18n="btnStartSession">Start session</button>
     <div class="err" id="camErr"></div>
+  </div>
+
+  <div id="camIntro" class="camIntro hidden" aria-hidden="true">
+    <div class="camIntroCard">
+      <h2 data-i18n="camIntroTitle">Camera control</h2>
+      <p data-i18n="camIntroBody">Control the hold button with your webcam instead of touch.</p>
+      <ol>
+        <li data-i18n="camIntroStep1">Place the region over something that changes when you “press” — e.g. cover it with your hand.</li>
+        <li data-i18n="camIntroStep2">Calibrate the resting state — or tap Auto to set thresholds for you.</li>
+        <li data-i18n="camIntroStep3">Fine-tune press/release %, then start. Recalibrate anytime if lighting changes.</li>
+      </ol>
+      <button class="start" id="camIntroOk" data-i18n="camIntroOk">Got it</button>
+    </div>
   </div>
 </div>
 
@@ -940,6 +972,14 @@
         camNotSupported:"Kamera wird auf diesem Gerät/Browser nicht unterstützt.",
         camCalibrateFirst:"Zuerst den Ruhezustand kalibrieren.",
         camThrOrder:"Drücken-% muss über Loslassen-% liegen.",
+        camAuto:"Auto", camFlip:"Kamera wechseln", camAdapt:"An Lichtwechsel anpassen",
+        camMeasuring:"Messe… still halten",
+        camIntroTitle:"Kamera-Steuerung",
+        camIntroBody:"Steuere den Halte-Knopf per Webcam statt per Touch.",
+        camIntroStep1:"Platziere den Bereich über etwas, das sich beim „Drücken“ ändert — z. B. mit der Hand verdecken.",
+        camIntroStep2:"Kalibriere den Ruhezustand — oder tippe Auto, das die Schwellen für dich setzt.",
+        camIntroStep3:"Feinjustiere Drücken/Loslassen-%, dann starten. Bei Lichtwechsel jederzeit neu kalibrieren.",
+        camIntroOk:"Verstanden",
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -1042,6 +1082,14 @@
         camNotSupported:"Camera is not supported on this device or browser.",
         camCalibrateFirst:"Calibrate the resting state first.",
         camThrOrder:"Press % must be above release %.",
+        camAuto:"Auto", camFlip:"Flip camera", camAdapt:"Adapt to light changes",
+        camMeasuring:"Measuring… hold still",
+        camIntroTitle:"Camera control",
+        camIntroBody:"Control the hold button with your webcam instead of touch.",
+        camIntroStep1:"Place the region over something that changes when you “press” — e.g. cover it with your hand.",
+        camIntroStep2:"Calibrate the resting state — or tap Auto to set thresholds for you.",
+        camIntroStep3:"Fine-tune press/release %, then start. Recalibrate anytime if lighting changes.",
+        camIntroOk:"Got it",
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -2890,9 +2938,11 @@
     roi:{x:0.35,y:0.35,w:0.30,h:0.30},
     ref:null, aw:48, ah:48, actx:null,
     pressThr:25, releaseThr:10, pixelDelta:25,
-    pressed:false, lastPct:0
+    pressed:false, lastPct:0,
+    facing:"user", adapt:true,
+    measuring:false, measMax:0, measEnd:0
   };
-  const CAMK = "lat.cam";
+  const CAMK = "lat.cam", CAM_ONBOARD_KEY = "lat.camOnboarded", CAM_ADAPT_ALPHA = 0.03;
   function camSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
   function camEnabled(){ const el=$("cameraControl"); return !!(el && el.checked); }
   function loadCamCfg(){
@@ -2900,8 +2950,10 @@
     if(c.roi && typeof c.roi.x==="number") cam.roi = { x:c.roi.x, y:c.roi.y, w:c.roi.w, h:c.roi.h };
     if(typeof c.pressThr==="number") cam.pressThr = c.pressThr;
     if(typeof c.releaseThr==="number") cam.releaseThr = c.releaseThr;
+    if(c.facing==="user"||c.facing==="environment") cam.facing = c.facing;
+    if(typeof c.adapt==="boolean") cam.adapt = c.adapt;
   }
-  function saveCamCfg(){ KV.set(CAMK, { roi:cam.roi, pressThr:cam.pressThr, releaseThr:cam.releaseThr }); }
+  function saveCamCfg(){ KV.set(CAMK, { roi:cam.roi, pressThr:cam.pressThr, releaseThr:cam.releaseThr, facing:cam.facing, adapt:cam.adapt }); }
   function camGetVideo(){
     if(!cam.video){
       const v = document.createElement("video");
@@ -2928,16 +2980,32 @@
     for(let i=0;i<n;i++) g[i]=d[i*4]*0.299+d[i*4+1]*0.587+d[i*4+2]*0.114;
     return g;
   }
-  function camComputeChange(){
-    if(!cam.ref) return 0;
-    const g=camSampleGray(); if(!g) return cam.lastPct||0;
-    const n=g.length; let changed=0;
-    for(let i=0;i<n;i++) if(Math.abs(g[i]-cam.ref[i])>cam.pixelDelta) changed++;
+  function camChangeFrom(g){
+    const r=cam.ref, n=g.length; let changed=0;
+    for(let i=0;i<n;i++) if(Math.abs(g[i]-r[i])>cam.pixelDelta) changed++;
     return changed/n*100;
   }
   function camCalibrate(){
     const g=camSampleGray(); if(!g) return;
-    cam.ref=g; cam.pressed=false; saveCamCfg();
+    cam.ref=g; cam.pressed=false; cam.measuring=false; saveCamCfg();
+  }
+  // Auto: set reference, then measure the idle noise floor for ~1.6s and
+  // derive sensible release/press thresholds from it.
+  function camAutoCalibrate(){
+    const g=camSampleGray(); if(!g) return;
+    cam.ref=g; cam.pressed=false;
+    cam.measuring=true; cam.measMax=0; cam.measEnd=Date.now()+1600;
+  }
+  function camFinishAuto(){
+    cam.measuring=false;
+    let rel = Math.max(3, Math.min(40, Math.round(cam.measMax)+4));
+    let press = Math.max(rel+3, Math.min(90, Math.round(rel*2)+6));
+    cam.releaseThr=rel; cam.pressThr=press;
+    const rt=$("camRelThr"), pt=$("camPressThr");
+    if(rt) rt.value=rel; if(pt) pt.value=press;
+    const rv=$("camRelVal"), pv=$("camPressVal");
+    if(rv) rv.textContent=rel; if(pv) pv.textContent=press;
+    updateCamMarks(); saveCamCfg();
   }
   function camOnPress(){ if(cam.mode==="session"){ try{ pressStart(); }catch(e){} } }
   function camOnRelease(){ if(cam.mode==="session"){ try{ pressEnd(); }catch(e){} } }
@@ -2945,10 +3013,25 @@
     if(cam.running) return; cam.running=true;
     const tick=()=>{
       if(!cam.running) return;
-      const pct=camComputeChange(); cam.lastPct=pct;
-      if(cam.ref){
-        if(!cam.pressed && pct>=cam.pressThr){ cam.pressed=true; camOnPress(); }
-        else if(cam.pressed && pct<=cam.releaseThr){ cam.pressed=false; camOnRelease(); }
+      const g = camSampleGray();
+      let pct = cam.lastPct||0;
+      if(g){
+        pct = cam.ref ? camChangeFrom(g) : 0;
+        cam.lastPct = pct;
+        if(cam.ref){
+          if(!cam.pressed && pct>=cam.pressThr){ cam.pressed=true; camOnPress(); }
+          else if(cam.pressed && pct<=cam.releaseThr){ cam.pressed=false; camOnRelease(); }
+        }
+        // sliding reference: slowly absorb gradual light drift while released
+        // (frozen while pressed so the trigger isn't lost; paused during measuring)
+        if(cam.adapt && cam.ref && !cam.pressed && !cam.measuring){
+          const r=cam.ref, n=r.length;
+          for(let i=0;i<n;i++) r[i]+=(g[i]-r[i])*CAM_ADAPT_ALPHA;
+        }
+        if(cam.measuring){
+          if(pct>cam.measMax) cam.measMax=pct;
+          if(Date.now()>=cam.measEnd) camFinishAuto();
+        }
       }
       camRender(pct);
       cam.raf=requestAnimationFrame(tick);
@@ -2962,7 +3045,8 @@
     const pctEl=$("camPct"); if(pctEl) pctEl.textContent=Math.round(p)+"%";
     const st=$("camState");
     if(st){
-      if(!cam.ref){ st.textContent=T().camStateCalib; st.className="camState"; }
+      if(cam.measuring){ st.textContent=T().camMeasuring; st.className="camState"; }
+      else if(!cam.ref){ st.textContent=T().camStateCalib; st.className="camState"; }
       else if(cam.pressed){ st.textContent=T().camStatePressed; st.className="camState pressed"; }
       else { st.textContent=T().camStateReleased; st.className="camState released"; }
     }
@@ -2982,23 +3066,48 @@
     if(mr) mr.style.left=cam.releaseThr+"%";
     if(mp) mp.style.left=cam.pressThr+"%";
   }
+  function camConstraints(){ return { video:{ facingMode:cam.facing, width:{ideal:640}, height:{ideal:480} }, audio:false }; }
+  async function camAcquire(){
+    let stream;
+    try{ stream=await navigator.mediaDevices.getUserMedia(camConstraints()); }
+    catch(e){ try{ stream=await navigator.mediaDevices.getUserMedia({ video:true, audio:false }); }catch(e2){ return null; } }
+    return stream;
+  }
   async function camOpenSetup(){
     const open=()=>{ const o=$("camOverlay"); o.classList.remove("hidden"); o.setAttribute("aria-hidden","false"); };
     $("camErr").textContent="";
-    if(!camSupported()){ open(); $("camErr").textContent=T().camNotSupported; return; }
-    let stream;
-    try{ stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480} }, audio:false }); }
-    catch(e){ open(); $("camErr").textContent=T().camNoAccess; return; }
-    cam.stream=stream;
     camEnsureCanvas(); loadCamCfg();
-    cam.ref=null; cam.pressed=false; cam.mode="setup";
+    if(!camSupported()){ open(); $("camErr").textContent=T().camNotSupported; return; }
+    const stream = await camAcquire();
+    if(!stream){ open(); $("camErr").textContent=T().camNoAccess; return; }
+    cam.stream=stream;
+    cam.ref=null; cam.pressed=false; cam.measuring=false; cam.mode="setup";
     const v=camGetVideo(); v.srcObject=stream;
     camMoveVideoTo($("camStage"));
     try{ await v.play(); }catch(e){}
     $("camRelThr").value=cam.releaseThr; $("camPressThr").value=cam.pressThr;
     $("camRelVal").textContent=cam.releaseThr; $("camPressVal").textContent=cam.pressThr;
+    const ad=$("camAdapt"); if(ad) ad.checked=cam.adapt;
     positionRoiBox(); updateCamMarks();
     open(); startCamLoop();
+  }
+  async function camRestartStream(){
+    if(cam.stream){ try{ cam.stream.getTracks().forEach(t=>t.stop()); }catch(e){} cam.stream=null; }
+    const stream = await camAcquire();
+    if(!stream){ $("camErr").textContent=T().camNoAccess; return; }
+    cam.stream=stream; const v=camGetVideo(); v.srcObject=stream;
+    try{ await v.play(); }catch(e){}
+    cam.ref=null; cam.pressed=false; cam.measuring=false;   // recalibrate after switching camera
+  }
+  function camFlip(){ cam.facing = (cam.facing==="user")?"environment":"user"; saveCamCfg(); camRestartStream(); }
+  function maybeShowCamIntro(){
+    if(KV.get(CAM_ONBOARD_KEY, false)) return;
+    const el=$("camIntro"); if(!el) return;
+    el.classList.remove("hidden"); el.setAttribute("aria-hidden","false");
+  }
+  function dismissCamIntro(){
+    const el=$("camIntro"); if(el){ el.classList.add("hidden"); el.setAttribute("aria-hidden","true"); }
+    KV.set(CAM_ONBOARD_KEY, true);
   }
   function closeCamOverlay(){ const o=$("camOverlay"); o.classList.add("hidden"); o.setAttribute("aria-hidden","true"); }
   function camStopStream(){
@@ -3023,6 +3132,11 @@
   }
   (function wireCamera(){
     const calib=$("camCalibrate"); if(calib) calib.addEventListener("click", camCalibrate);
+    const auto=$("camAuto"); if(auto) auto.addEventListener("click", camAutoCalibrate);
+    const flip=$("camFlip"); if(flip) flip.addEventListener("click", camFlip);
+    const adapt=$("camAdapt"); if(adapt) adapt.addEventListener("change", ()=>{ cam.adapt=adapt.checked; saveCamCfg(); });
+    const camToggle=$("cameraControl"); if(camToggle) camToggle.addEventListener("change", ()=>{ if(camToggle.checked) maybeShowCamIntro(); });
+    const introOk=$("camIntroOk"); if(introOk) introOk.addEventListener("click", dismissCamIntro);
     const rel=$("camRelThr");
     if(rel) rel.addEventListener("input", ()=>{ cam.releaseThr=+rel.value; if(cam.releaseThr>=cam.pressThr){ cam.pressThr=Math.min(95,cam.releaseThr+1); $("camPressThr").value=cam.pressThr; $("camPressVal").textContent=cam.pressThr; } $("camRelVal").textContent=cam.releaseThr; updateCamMarks(); saveCamCfg(); });
     const pr=$("camPressThr");
