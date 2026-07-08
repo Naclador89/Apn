@@ -332,6 +332,49 @@
   .fgStreak b{color:var(--text)}
   #confettiCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60;display:none}
 
+  /* ---------- camera control ---------- */
+  .camStage{position:relative;width:100%;flex:1;min-height:0;background:#0b0d13;
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:none}
+  .camStage video{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;
+    transform:scaleX(-1);background:#0b0d13}
+  .camRoi{position:absolute;left:35%;top:35%;width:30%;height:30%;
+    border:2px solid var(--rise);border-radius:8px;box-shadow:0 0 0 9999px rgba(11,13,19,.45);
+    cursor:move;touch-action:none}
+  .camRoi.pressed{border-color:var(--good);box-shadow:0 0 0 9999px rgba(11,13,19,.45),0 0 24px -2px var(--good)}
+  .camRoiHandle{position:absolute;right:-9px;bottom:-9px;width:20px;height:20px;border-radius:50%;
+    background:var(--rise);border:2px solid #1a1305;cursor:nwse-resize;touch-action:none}
+  .camReadout{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .camState{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);white-space:nowrap;min-width:96px}
+  .camState.pressed{color:var(--good)} .camState.released{color:var(--rise)}
+  .camBar{position:relative;flex:1;height:10px;border-radius:999px;background:#11131a;border:1px solid var(--line);overflow:visible}
+  .camBarFill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--rise-deep),var(--rise));transition:width .08s linear}
+  .camMark{position:absolute;top:-3px;width:2px;height:16px;border-radius:2px}
+  .camMarkRel{background:var(--muted)} .camMarkPress{background:var(--good)}
+  .camPct{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;color:var(--text);min-width:44px;text-align:right}
+  .camControls{margin-top:12px;display:flex;flex-direction:column;gap:12px}
+  .camControls #camCalibrate{align-self:stretch;background:#11131a;border:1px solid var(--line);color:var(--text);
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;padding:12px;border-radius:12px;cursor:pointer}
+  .camControls #camCalibrate:hover{border-color:var(--rise)}
+  .camSliders{display:flex;gap:14px}
+  .camSlider{flex:1}
+  .camSlider input[type="range"]{width:100%;accent-color:var(--rise);margin-top:6px}
+  #camStart{margin-top:14px}
+  #camErr{color:var(--bad);font-size:13px;margin-top:8px;min-height:1em;text-align:center}
+
+  /* session picture-in-picture preview */
+  .camPip{position:absolute;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:7;
+    width:108px;border-radius:12px;overflow:hidden;border:2px solid var(--line);
+    background:#0b0d13;pointer-events:none}
+  .camPip.pressed{border-color:var(--good);box-shadow:0 0 20px -4px var(--good)}
+  .camPipVid{position:relative;width:100%;aspect-ratio:4/3}
+  .camPipVid video{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;transform:scaleX(-1);z-index:0}
+  .camPipRoi{position:absolute;border:1.5px solid var(--rise);border-radius:4px;pointer-events:none;z-index:2}
+  .camPip.pressed .camPipRoi{border-color:var(--good)}
+  .camPipBar{height:5px;background:#11131a}
+  .camPipFill{height:100%;width:0;background:var(--rise);transition:width .08s linear}
+  .camPip.pressed .camPipFill{background:var(--good)}
+
   kbd{background:#11131a;border:1px solid var(--line);border-radius:6px;padding:1px 6px;
     font-family:"Space Grotesk";font-size:11px;color:var(--text)}
 
@@ -618,6 +661,19 @@
       </div>
     </details>
 
+    <details class="panel" id="secCamera">
+      <summary><span data-i18n="camPanelTitle">Camera control</span> <span class="sumSub" id="sumCamera"></span></summary>
+      <div class="body">
+        <div class="field toggle" style="margin-bottom:0">
+          <div>
+            <label class="lbl" for="cameraControl" data-i18n="labelCamControl">Control by camera</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintCamControl">Instead of the button, a webcam region triggers hold/release. Place &amp; calibrate the region before each session.</div>
+          </div>
+          <label class="switch"><input id="cameraControl" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+      </div>
+    </details>
+
     <details class="panel" id="secPresets">
       <summary><span data-i18n="uiPresetsTitle">Presets &amp; stats</span> <span class="sumSub" id="sumPresets"></span></summary>
       <div class="body">
@@ -673,6 +729,11 @@
     </div>
 
     <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface"><span class="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
+
+    <div id="camPip" class="camPip hidden" aria-hidden="true">
+      <div class="camPipVid" id="camPipHost"><div class="camPipRoi" id="camPipRoi"></div></div>
+      <div class="camPipBar"><div class="camPipFill" id="camPipFill"></div></div>
+    </div>
   </section>
 
   <section id="finish" class="session hidden">
@@ -725,6 +786,43 @@
       <canvas id="curveBig" class="big" aria-label="Draw probability curve"></canvas>
     </div>
     <div class="axis"><span id="curveBigLo">min</span><span id="curveBigHi">max</span></div>
+  </div>
+
+  <div id="camOverlay" class="overlay hidden" aria-hidden="true">
+    <div class="head">
+      <div>
+        <h2 data-i18n="camTitle">Camera control</h2>
+        <div class="sub" data-i18n="camSub">Place the region over what moves, calibrate the resting state, then set thresholds.</div>
+      </div>
+      <button class="ghost" id="camCancel" data-i18n="cancel">Cancel</button>
+    </div>
+    <div class="camStage" id="camStage">
+      <div class="camRoi" id="camRoi"><span class="camRoiHandle" id="camRoiHandle"></span></div>
+    </div>
+    <div class="camReadout">
+      <span class="camState" id="camState" data-i18n="camStateCalib">Calibrate first</span>
+      <div class="camBar" id="camBar">
+        <div class="camBarFill" id="camBarFill"></div>
+        <span class="camMark camMarkRel" id="camMarkRel"></span>
+        <span class="camMark camMarkPress" id="camMarkPress"></span>
+      </div>
+      <span class="camPct" id="camPct">0%</span>
+    </div>
+    <div class="camControls">
+      <button type="button" class="ghost" id="camCalibrate" data-i18n="camCalibrate">Calibrate (resting state)</button>
+      <div class="camSliders">
+        <div class="camSlider">
+          <span class="sublbl"><span data-i18n="camReleaseThr">Release below</span> <b id="camRelVal">10</b>%</span>
+          <input id="camRelThr" type="range" min="1" max="90" value="10" aria-label="Release threshold">
+        </div>
+        <div class="camSlider">
+          <span class="sublbl"><span data-i18n="camPressThr">Press above</span> <b id="camPressVal">25</b>%</span>
+          <input id="camPressThr" type="range" min="2" max="95" value="25" aria-label="Press threshold">
+        </div>
+      </div>
+    </div>
+    <button class="start" id="camStart" data-i18n="btnStartSession">Start session</button>
+    <div class="err" id="camErr"></div>
   </div>
 </div>
 
@@ -830,6 +928,18 @@
         sumEyesClosed:"Augen zu", sumSwipeGuard:"Wischschutz", sumDefault:"Standard",
         sumPenalty:x=>`Strafe +${x}`,
         sumPresetsLine:(p,s)=>`${p} Presets · ${s} Sitzungen`,
+        sumCamOn:"an",
+        cancel:"Abbrechen",
+        camPanelTitle:"Kamera-Steuerung", labelCamControl:"Per Kamera steuern",
+        hintCamControl:"Statt des Knopfes löst ein Kamera-Bereich Halten/Loslassen aus. Bereich vor jeder Sitzung platzieren & kalibrieren.",
+        camTitle:"Kamera-Steuerung", camSub:"Bereich über das platzieren, was sich bewegt, Ruhezustand kalibrieren, dann Schwellen einstellen.",
+        camCalibrate:"Kalibrieren (Ruhezustand)",
+        camReleaseThr:"Loslassen unter", camPressThr:"Drücken über",
+        camStatePressed:"Gedrückt", camStateReleased:"Losgelassen", camStateCalib:"Erst kalibrieren",
+        camNoAccess:"Kein Kamerazugriff — Berechtigung erteilen (und per HTTPS ausliefern).",
+        camNotSupported:"Kamera wird auf diesem Gerät/Browser nicht unterstützt.",
+        camCalibrateFirst:"Zuerst den Ruhezustand kalibrieren.",
+        camThrOrder:"Drücken-% muss über Loslassen-% liegen.",
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -920,6 +1030,18 @@
         sumEyesClosed:"Eyes closed", sumSwipeGuard:"Swipe guard", sumDefault:"default",
         sumPenalty:x=>`penalty +${x}`,
         sumPresetsLine:(p,s)=>`${p} presets · ${s} sessions`,
+        sumCamOn:"on",
+        cancel:"Cancel",
+        camPanelTitle:"Camera control", labelCamControl:"Control by camera",
+        hintCamControl:"Instead of the button, a webcam region triggers hold/release. Place & calibrate the region before each session.",
+        camTitle:"Camera control", camSub:"Place the region over what moves, calibrate the resting state, then set the thresholds.",
+        camCalibrate:"Calibrate (resting state)",
+        camReleaseThr:"Release below", camPressThr:"Press above",
+        camStatePressed:"Pressed", camStateReleased:"Released", camStateCalib:"Calibrate first",
+        camNoAccess:"No camera access — grant permission (and serve over HTTPS).",
+        camNotSupported:"Camera is not supported on this device or browser.",
+        camCalibrateFirst:"Calibrate the resting state first.",
+        camThrOrder:"Press % must be above release %.",
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -1347,7 +1469,7 @@
     "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
-    "voice","beep","vibrate","eyesClosed","guardExit",
+    "voice","beep","vibrate","eyesClosed","guardExit","cameraControl",
     "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdFinishWord","cmdRate",
     "appLang",
     "progressTone","prAnnounce",
@@ -1425,6 +1547,7 @@
     if(s.eyesClosed) dsp.push(t.sumEyesClosed);
     if(s.guardExit) dsp.push(t.sumSwipeGuard);
     setTxt("sumDisplay", dsp.length ? dsp.join(" · ") : t.sumDefault);
+    setTxt("sumCamera", s.cameraControl ? t.sumCamOn : t.sumOff);
     const p = KV.get(K.presets, {});
     const h = KV.get(K.history, []);
     setTxt("sumPresets", t.sumPresetsLine(Object.keys(p).length, h.length));
@@ -2023,6 +2146,9 @@
     const msg = validate();
     $("err").textContent = msg || "";
     if(msg) return;
+
+    // camera mode: place & calibrate the ROI first, then this runs again in "session" mode
+    if(camEnabled() && cam.mode!=="session"){ camOpenSetup(); return; }
 
     if(synth){ try{ synth.cancel(); synth.resume(); }catch(e){} }
 
@@ -2734,7 +2860,7 @@
       renderStats();
     }
     renderFinishGame(gameResult);
-    releaseWake(); disableGuard(); setTapSurface(false);
+    releaseWake(); disableGuard(); setTapSurface(false); camDetach();
     show("finish");
     S = null;
   }
@@ -2752,10 +2878,173 @@
     $("swStats").classList.add("hidden");
     if(synth){ try{ synth.cancel(); }catch(e){} }
     releaseWake(); disableGuard(); setTapSurface(false);
+    camDetach();
     holding = false;
     S = null;
     show("setup");
   }
+
+  // ================= camera control (ROI change detection + hysteresis) =====
+  const cam = {
+    stream:null, video:null, running:false, raf:0, mode:"idle",
+    roi:{x:0.35,y:0.35,w:0.30,h:0.30},
+    ref:null, aw:48, ah:48, actx:null,
+    pressThr:25, releaseThr:10, pixelDelta:25,
+    pressed:false, lastPct:0
+  };
+  const CAMK = "lat.cam";
+  function camSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
+  function camEnabled(){ const el=$("cameraControl"); return !!(el && el.checked); }
+  function loadCamCfg(){
+    const c = KV.get(CAMK, null); if(!c) return;
+    if(c.roi && typeof c.roi.x==="number") cam.roi = { x:c.roi.x, y:c.roi.y, w:c.roi.w, h:c.roi.h };
+    if(typeof c.pressThr==="number") cam.pressThr = c.pressThr;
+    if(typeof c.releaseThr==="number") cam.releaseThr = c.releaseThr;
+  }
+  function saveCamCfg(){ KV.set(CAMK, { roi:cam.roi, pressThr:cam.pressThr, releaseThr:cam.releaseThr }); }
+  function camGetVideo(){
+    if(!cam.video){
+      const v = document.createElement("video");
+      v.setAttribute("playsinline",""); v.muted = true; v.autoplay = true;
+      cam.video = v;
+    }
+    return cam.video;
+  }
+  function camMoveVideoTo(host){ const v=camGetVideo(); if(host && v.parentNode!==host) host.insertBefore(v, host.firstChild); }
+  function camEnsureCanvas(){
+    if(!cam.actx){ const c=document.createElement("canvas"); c.width=cam.aw; c.height=cam.ah; cam.actx=c.getContext("2d",{willReadFrequently:true}); }
+  }
+  // source rect inside the (horizontally mirrored) preview
+  function camSrcRect(vw,vh){
+    return { sx:(1-cam.roi.x-cam.roi.w)*vw, sy:cam.roi.y*vh, sw:cam.roi.w*vw, sh:cam.roi.h*vh };
+  }
+  function camSampleGray(){
+    const v=cam.video; if(!v||!v.videoWidth||!cam.actx) return null;
+    const r=camSrcRect(v.videoWidth, v.videoHeight);
+    if(r.sw<2||r.sh<2) return null;
+    try{ cam.actx.drawImage(v, r.sx,r.sy,r.sw,r.sh, 0,0, cam.aw,cam.ah); }catch(e){ return null; }
+    let d; try{ d=cam.actx.getImageData(0,0,cam.aw,cam.ah).data; }catch(e){ return null; }
+    const n=cam.aw*cam.ah, g=new Float32Array(n);
+    for(let i=0;i<n;i++) g[i]=d[i*4]*0.299+d[i*4+1]*0.587+d[i*4+2]*0.114;
+    return g;
+  }
+  function camComputeChange(){
+    if(!cam.ref) return 0;
+    const g=camSampleGray(); if(!g) return cam.lastPct||0;
+    const n=g.length; let changed=0;
+    for(let i=0;i<n;i++) if(Math.abs(g[i]-cam.ref[i])>cam.pixelDelta) changed++;
+    return changed/n*100;
+  }
+  function camCalibrate(){
+    const g=camSampleGray(); if(!g) return;
+    cam.ref=g; cam.pressed=false; saveCamCfg();
+  }
+  function camOnPress(){ if(cam.mode==="session"){ try{ pressStart(); }catch(e){} } }
+  function camOnRelease(){ if(cam.mode==="session"){ try{ pressEnd(); }catch(e){} } }
+  function startCamLoop(){
+    if(cam.running) return; cam.running=true;
+    const tick=()=>{
+      if(!cam.running) return;
+      const pct=camComputeChange(); cam.lastPct=pct;
+      if(cam.ref){
+        if(!cam.pressed && pct>=cam.pressThr){ cam.pressed=true; camOnPress(); }
+        else if(cam.pressed && pct<=cam.releaseThr){ cam.pressed=false; camOnRelease(); }
+      }
+      camRender(pct);
+      cam.raf=requestAnimationFrame(tick);
+    };
+    cam.raf=requestAnimationFrame(tick);
+  }
+  function stopCamLoop(){ cam.running=false; if(cam.raf) cancelAnimationFrame(cam.raf); cam.raf=0; }
+  function camRender(pct){
+    const p=Math.max(0,Math.min(100,pct));
+    const fill=$("camBarFill"); if(fill) fill.style.width=p+"%";
+    const pctEl=$("camPct"); if(pctEl) pctEl.textContent=Math.round(p)+"%";
+    const st=$("camState");
+    if(st){
+      if(!cam.ref){ st.textContent=T().camStateCalib; st.className="camState"; }
+      else if(cam.pressed){ st.textContent=T().camStatePressed; st.className="camState pressed"; }
+      else { st.textContent=T().camStateReleased; st.className="camState released"; }
+    }
+    const roi=$("camRoi"); if(roi) roi.classList.toggle("pressed", cam.pressed);
+    const pip=$("camPip");
+    if(pip && !pip.classList.contains("hidden")){
+      pip.classList.toggle("pressed", cam.pressed);
+      const pf=$("camPipFill"); if(pf) pf.style.width=p+"%";
+    }
+  }
+  function positionRoiBox(){
+    const set=(el)=>{ if(!el) return; el.style.left=(cam.roi.x*100)+"%"; el.style.top=(cam.roi.y*100)+"%"; el.style.width=(cam.roi.w*100)+"%"; el.style.height=(cam.roi.h*100)+"%"; };
+    set($("camRoi")); set($("camPipRoi"));
+  }
+  function updateCamMarks(){
+    const mr=$("camMarkRel"), mp=$("camMarkPress");
+    if(mr) mr.style.left=cam.releaseThr+"%";
+    if(mp) mp.style.left=cam.pressThr+"%";
+  }
+  async function camOpenSetup(){
+    const open=()=>{ const o=$("camOverlay"); o.classList.remove("hidden"); o.setAttribute("aria-hidden","false"); };
+    $("camErr").textContent="";
+    if(!camSupported()){ open(); $("camErr").textContent=T().camNotSupported; return; }
+    let stream;
+    try{ stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480} }, audio:false }); }
+    catch(e){ open(); $("camErr").textContent=T().camNoAccess; return; }
+    cam.stream=stream;
+    camEnsureCanvas(); loadCamCfg();
+    cam.ref=null; cam.pressed=false; cam.mode="setup";
+    const v=camGetVideo(); v.srcObject=stream;
+    camMoveVideoTo($("camStage"));
+    try{ await v.play(); }catch(e){}
+    $("camRelThr").value=cam.releaseThr; $("camPressThr").value=cam.pressThr;
+    $("camRelVal").textContent=cam.releaseThr; $("camPressVal").textContent=cam.pressThr;
+    positionRoiBox(); updateCamMarks();
+    open(); startCamLoop();
+  }
+  function closeCamOverlay(){ const o=$("camOverlay"); o.classList.add("hidden"); o.setAttribute("aria-hidden","true"); }
+  function camStopStream(){
+    if(cam.stream){ try{ cam.stream.getTracks().forEach(t=>t.stop()); }catch(e){} cam.stream=null; }
+    if(cam.video){ try{ cam.video.srcObject=null; }catch(e){} }
+  }
+  function camCancelSetup(){ stopCamLoop(); camStopStream(); closeCamOverlay(); cam.mode="idle"; }
+  function camDetach(){
+    if(cam.mode!=="session") return;
+    stopCamLoop(); camStopStream();
+    const pip=$("camPip"); if(pip){ pip.classList.add("hidden"); pip.classList.remove("pressed"); }
+    cam.mode="idle"; cam.pressed=false;
+  }
+  function camConfirmStart(){
+    if(!cam.ref){ $("camErr").textContent=T().camCalibrateFirst; return; }
+    if(cam.pressThr<=cam.releaseThr){ $("camErr").textContent=T().camThrOrder; return; }
+    $("camErr").textContent=""; cam.mode="session";
+    closeCamOverlay();
+    camMoveVideoTo($("camPipHost")); positionRoiBox();
+    $("camPip").classList.remove("hidden");
+    startSession();
+  }
+  (function wireCamera(){
+    const calib=$("camCalibrate"); if(calib) calib.addEventListener("click", camCalibrate);
+    const rel=$("camRelThr");
+    if(rel) rel.addEventListener("input", ()=>{ cam.releaseThr=+rel.value; if(cam.releaseThr>=cam.pressThr){ cam.pressThr=Math.min(95,cam.releaseThr+1); $("camPressThr").value=cam.pressThr; $("camPressVal").textContent=cam.pressThr; } $("camRelVal").textContent=cam.releaseThr; updateCamMarks(); saveCamCfg(); });
+    const pr=$("camPressThr");
+    if(pr) pr.addEventListener("input", ()=>{ cam.pressThr=+pr.value; if(cam.pressThr<=cam.releaseThr){ cam.releaseThr=Math.max(1,cam.pressThr-1); $("camRelThr").value=cam.releaseThr; $("camRelVal").textContent=cam.releaseThr; } $("camPressVal").textContent=cam.pressThr; updateCamMarks(); saveCamCfg(); });
+    const cancel=$("camCancel"); if(cancel) cancel.addEventListener("click", camCancelSetup);
+    const start=$("camStart"); if(start) start.addEventListener("click", camConfirmStart);
+    // ROI drag / resize
+    const stage=$("camStage"), box=$("camRoi"), handle=$("camRoiHandle");
+    if(stage && box){
+      let drag=null; const rect=()=>stage.getBoundingClientRect();
+      box.addEventListener("pointerdown", e=>{ if(e.target===handle) return; e.preventDefault(); try{box.setPointerCapture(e.pointerId);}catch(_){} drag={mode:"move",px:e.clientX,py:e.clientY,ox:cam.roi.x,oy:cam.roi.y}; });
+      handle.addEventListener("pointerdown", e=>{ e.preventDefault(); e.stopPropagation(); try{handle.setPointerCapture(e.pointerId);}catch(_){} drag={mode:"resize",px:e.clientX,py:e.clientY,ow:cam.roi.w,oh:cam.roi.h}; });
+      const move=e=>{ if(!drag) return; const rc=rect(); const dx=(e.clientX-drag.px)/rc.width, dy=(e.clientY-drag.py)/rc.height;
+        if(drag.mode==="move"){ cam.roi.x=Math.max(0,Math.min(1-cam.roi.w,drag.ox+dx)); cam.roi.y=Math.max(0,Math.min(1-cam.roi.h,drag.oy+dy)); }
+        else { cam.roi.w=Math.max(0.06,Math.min(1-cam.roi.x,drag.ow+dx)); cam.roi.h=Math.max(0.06,Math.min(1-cam.roi.y,drag.oh+dy)); }
+        positionRoiBox(); };
+      const up=()=>{ if(drag){ drag=null; saveCamCfg(); } };
+      box.addEventListener("pointermove", move); handle.addEventListener("pointermove", move);
+      box.addEventListener("pointerup", up); handle.addEventListener("pointerup", up);
+      box.addEventListener("lostpointercapture", up); handle.addEventListener("lostpointercapture", up);
+    }
+  })();
 
   const btn = $("holdBtn");
   btn.addEventListener("pointerdown", e=>{
