@@ -728,8 +728,9 @@
         streakLine:n=>`🔥 <b>${n}</b> Tage in Folge`,
         newBest:"Neuer Bestwert!",
         recStopwatch:"Längster Hold", recSdHold:"Sudden-Death-Runden", recSdSpeed:"Beste Rep-Phase",
-        recReps:"Meiste Reps", recTime:"Meiste Reps (Zeit)", recPace:"Bestes Tempo",
+        recReps:"Meiste Reps", recTime:"Meiste Reps (Zeit)", recPace:"Bestes Tempo", recSpeedPace:"Bestes Action-Tempo",
         paceLine:p=>`Tempo: <b>${p}</b> Reps/min`,
+        paceActionLine:p=>`Action-Tempo: <b>${p}</b> Reps/min`,
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -754,8 +755,9 @@
         streakLine:n=>`🔥 <b>${n}</b> day streak`,
         newBest:"New best!",
         recStopwatch:"Longest hold", recSdHold:"Sudden-death rounds", recSdSpeed:"Best rep phase",
-        recReps:"Most reps", recTime:"Most reps (timed)", recPace:"Best pace",
+        recReps:"Most reps", recTime:"Most reps (timed)", recPace:"Best pace", recSpeedPace:"Best action pace",
         paceLine:p=>`Pace: <b>${p}</b> reps/min`,
+        paceActionLine:p=>`Action pace: <b>${p}</b> reps/min`,
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -1260,7 +1262,7 @@
       xp: g.xp || 0,
       streakCount: g.streakCount || 0,
       streakLast: (g.streakLast == null ? null : g.streakLast),
-      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, reps:0, time:0, pace:0 }, g.rec || {})
+      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, reps:0, time:0, pace:0, speedPace:0 }, g.rec || {})
     };
   }
   function saveGame(g){ KV.set(K.game, g); }
@@ -1321,13 +1323,22 @@
       tryRecord("time", reps);
     }
 
-    // ---- pace (reps per minute), tracked across all modes ----
-    let pace = 0, paceShown = false;
-    if(reps > 0 && elapsed > 0){
-      pace = Math.round((reps * 60 / elapsed) * 10) / 10;
-      paceShown = true;
-      // only chase a pace record on sessions substantial enough to be meaningful
-      if(reps >= 5 && elapsed >= 30) tryRecord("pace", pace);
+    // ---- pace (reps per minute) ----
+    // Speed mode gets its own "action pace" over action-phase time only
+    // (pauses excluded), tracked as a distinct record from the generic pace.
+    let pace = 0, paceShown = false, paceKind = null;
+    const isSpeed = snap.goal === "scenario" && snap.scenario === "sd_speed";
+    if(reps > 0){
+      if(isSpeed && (snap.actionSec || 0) > 0){
+        pace = Math.round((reps * 60 / snap.actionSec) * 10) / 10;
+        paceShown = true; paceKind = "speed";
+        if(reps >= 5 && snap.actionSec >= 20) tryRecord("speedPace", pace);
+      } else if(!isSpeed && elapsed > 0){
+        pace = Math.round((reps * 60 / elapsed) * 10) / 10;
+        paceShown = true; paceKind = "total";
+        // only chase a pace record on sessions substantial enough to be meaningful
+        if(reps >= 5 && elapsed >= 30) tryRecord("pace", pace);
+      }
     }
 
     if(records.length) xp += 25;
@@ -1339,7 +1350,7 @@
     const rank = rankInfo(g.xp);
     return {
       xpGained: xp, streakBonus, streakCount: g.streakCount, streakEvent,
-      records, pace, paceShown,
+      records, pace, paceShown, paceKind,
       rank, leveledUp: rank.idx > beforeIdx, totalXp: g.xp
     };
   }
@@ -1347,12 +1358,12 @@
   function recordText(t, rec){
     const map = {
       stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed,
-      reps: t.recReps, time: t.recTime, pace: t.recPace
+      reps: t.recReps, time: t.recTime, pace: t.recPace, speedPace: t.recSpeedPace
     };
     const label = map[rec.key] || "";
     let val;
     if(rec.key === "stopwatch") val = fmtSW(rec.val);
-    else if(rec.key === "pace") val = rec.val + "/min";
+    else if(rec.key === "pace" || rec.key === "speedPace") val = rec.val + "/min";
     else val = rec.val;
     return (t.newBest || "New best!") + " · " + label + " " + val;
   }
@@ -1385,8 +1396,11 @@
     else lu.classList.add("hidden");
 
     const pc = $("fgPace");
-    if(r.paceShown){ pc.classList.remove("hidden"); pc.innerHTML = t.paceLine ? t.paceLine(r.pace) : ("Pace: " + r.pace + " reps/min"); }
-    else pc.classList.add("hidden");
+    if(r.paceShown){
+      pc.classList.remove("hidden");
+      const paceFn = (r.paceKind === "speed") ? (t.paceActionLine || t.paceLine) : t.paceLine;
+      pc.innerHTML = paceFn ? paceFn(r.pace) : ("Pace: " + r.pace + " reps/min");
+    } else pc.classList.add("hidden");
 
     const st = $("fgStreak");
     if(r.streakCount > 1){ st.classList.remove("hidden"); st.innerHTML = t.streakLine ? t.streakLine(r.streakCount) : ("🔥 " + r.streakCount); }
@@ -1460,6 +1474,7 @@
     let gameLine = `${t.statsRank || "Rank"}: <b>${ri.name}</b> · <b>${g.xp}</b> XP`;
     if(g.streakCount > 1) gameLine += ` · 🔥 <b>${g.streakCount}</b>`;
     if(g.rec && g.rec.pace > 0) gameLine += ` · <b>${g.rec.pace}</b>/min`;
+    if(g.rec && g.rec.speedPace > 0) gameLine += ` · ⚡<b>${g.rec.speedPace}</b>/min`;
     box.innerHTML =
       gameLine + `<br>` +
       `Total sessions: <b>${total}</b> · last 7 days: <b>${recent.length}</b><br>` +
@@ -1854,6 +1869,7 @@
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
       S.sd_prevPhaseReps = 0;
+      S.sd_actionMsAcc = 0;   // total action-phase time (pauses excluded), for action pace
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
@@ -1890,6 +1906,7 @@
                        finish();
                        return;
                    }
+                   S.sd_actionMsAcc = (S.sd_actionMsAcc || 0) + actionMs;   // completed action phase
                    S.sd_phase = "rest";
                    S.sd_phaseEndTs = now + pauseMs;
                    S.sd_prevPhaseReps = Math.max(S.sd_prevPhaseReps || 0, S.sd_repsThisPhase);
@@ -2319,9 +2336,20 @@
         longestHold: S.longestHold || 0,
       });
       if((S.longestHold||0) > getPR()) setPR(S.longestHold);
+      let sdActionSec = 0;
+      if(S.scenario === "sd_speed"){
+        sdActionSec = (S.sd_actionMsAcc || 0) / 1000;
+        // add the in-progress action phase (if finishing mid-action)
+        if(S.sd_phase === "action" && S.sd_phaseEndTs){
+          const actionMs = S.sd_actionMs || 60000;
+          const remain = Math.max(0, S.sd_phaseEndTs - Date.now());
+          sdActionSec += Math.max(0, actionMs - remain) / 1000;
+        }
+      }
       gameResult = commitGameSession({
         goal: S.goal, scenario: S.scenario,
         holdSec: S.holdSec || 0, reps: total, elapsedSec: elapsedSec,
+        actionSec: sdActionSec,
         swLongest: S.swLongest || 0,
         sdRounds: (S.scenario === "sd_hold") ? (S.done || 0) : 0,
         sdSpeedBest: S.sd_prevPhaseReps || 0
