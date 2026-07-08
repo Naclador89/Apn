@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Breath-hold trainer</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#14161d">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Breath-hold trainer","short_name":"Apnea","display":"standalone","orientation":"any","background_color":"%2314161d","theme_color":"%2314161d","start_url":"."}'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161d;
+    --ink-2:#1c1f29;
+    --ink-3:#23273400;
+    --line:#2c303d;
+    --text:#ECEAE3;
+    --muted:#959aab;
+    --rise:#F5B544;
+    --rise-deep:#e89a25;
+    --good:#74d39a;
+    --bad:#e8736b;
+    --radius:18px;
+    --maxw:520px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overscroll-behavior:none}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1d212c 0%, var(--ink) 55%) fixed;
+    color:var(--text);
+    font-family:"Inter",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 18px calc(24px + env(safe-area-inset-bottom));
+  }
+  .wrap{width:100%;max-width:var(--maxw);flex:1;display:flex;flex-direction:column}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:baseline;gap:10px;margin-bottom:22px}
+  header .langSel{margin-left:auto;background:#11131a;border:1px solid var(--line);color:var(--muted);
+    font-family:"Inter";font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;appearance:none;-webkit-appearance:none}
+  header .langSel:hover{color:var(--text);border-color:var(--rise)}
+  .mark{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:13px;
+    letter-spacing:.32em;text-transform:uppercase;color:var(--rise);
+  }
+  .mark::before{content:"";}
+  h1{
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;
+    letter-spacing:.02em;color:var(--muted);
+  }
+
+  /* ---------- panels ---------- */
+  .panel{
+    background:linear-gradient(180deg,var(--ink-2),#181b24);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .panel + .panel{margin-top:14px}
+
+  /* collapsible sections */
+  details.panel{padding:0;overflow:hidden}
+  details.panel > summary{
+    list-style:none;cursor:pointer;
+    padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;letter-spacing:.01em;
+    color:var(--text);
+  }
+  details.panel > summary::-webkit-details-marker{display:none}
+  details.panel > summary::after{
+    content:"›";color:var(--muted);font-size:22px;line-height:1;
+    transform:rotate(90deg);transition:transform .18s;
+  }
+  details.panel[open] > summary::after{transform:rotate(-90deg)}
+  details.panel > summary .sumSub{
+    color:var(--muted);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;
+    margin-left:8px;flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  details.panel > .body{padding:0 18px 18px}
+  /* small primary summary variant */
+  details.panel.primary > summary{background:linear-gradient(180deg,#1f2330,#1a1e28)}
+
+  /* probability curve editor */
+  .curveBox{margin-top:12px;padding:12px;background:#0f1118;border:1px solid var(--line);border-radius:12px}
+  .curveHeader{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .curveHeader .lbl{margin:0;color:var(--muted);font-size:12px;font-weight:500}
+  .curveHeader button{background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-family:"Inter";font-size:11px;padding:5px 9px;border-radius:8px;cursor:pointer}
+  .curveHeader button:hover{color:var(--text);border-color:var(--rise)}
+  .curveHeader button:active{transform:translateY(1px)}
+  canvas.curve{
+    display:block;width:100%;height:88px;background:#0b0d13;border:1px solid var(--line);
+    border-radius:8px;touch-action:none;-webkit-user-select:none;user-select:none;cursor:crosshair;
+  }
+  .curveAxis{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;
+    color:var(--muted);font-family:"Space Grotesk",sans-serif;letter-spacing:.05em}
+
+  /* small inline preview */
+  canvas.curvePreview{display:block;width:100%;height:56px;background:#0b0d13;
+    border:1px solid var(--line);border-radius:8px;cursor:pointer}
+
+  /* full-screen curve editor overlay */
+  .overlay{
+    position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;
+    background:radial-gradient(120% 80% at 50% -10%, #1d212c 0%, var(--ink) 55%);
+    padding:max(16px,env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    touch-action:none;
+  }
+  .overlay.hidden{display:none !important}
+  .overlay .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px}
+  .overlay .head h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:16px;color:var(--text)}
+  .overlay .head .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .overlay .toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .overlay .toolbar button{background:#11131a;border:1px solid var(--line);color:var(--muted);
+    font-family:"Inter";font-size:12px;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .overlay .toolbar button:hover{color:var(--text);border-color:var(--rise)}
+  .overlay .toolbar button:active{transform:translateY(1px)}
+  .overlay .toolbar button[aria-pressed="true"]{background:var(--rise);color:#1a1305;border-color:var(--rise)}
+  .overlay .stage{flex:1;position:relative;background:#0b0d13;border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;min-height:0}
+  .overlay canvas.big{position:absolute;inset:0;width:100%;height:100%;touch-action:none;
+    -webkit-user-select:none;user-select:none;cursor:crosshair}
+  .overlay .axis{display:flex;justify-content:space-between;margin-top:6px;
+    font-size:11px;color:var(--muted);font-family:"Space Grotesk",sans-serif;letter-spacing:.05em}
+
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  label.lbl{display:block;font-size:13px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+  input[type="number"],input[type="text"],select{
+    width:100%;background:#11131a;border:1px solid var(--line);color:var(--text);
+    font-family:"Space Grotesk",sans-serif;font-size:17px;font-weight:500;
+    padding:12px 14px;border-radius:12px;outline:none;
+  }
+  input[type="text"]{font-size:16px}
+  select{font-size:15px;appearance:none;-webkit-appearance:none;cursor:pointer}
+  input[type="number"]:focus,input[type="text"]:focus,select:focus{border-color:var(--rise)}
+
+  /* probability curve editor */
+  .curveBox{margin-top:10px}
+  .curveHeader{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+  .curveHeader .lbl{margin:0}
+  .curveHeader button{background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-family:"Inter";font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;cursor:pointer}
+  .curveHeader button:active{transform:translateY(1px)}
+  canvas.curve{
+    display:block;width:100%;height:88px;background:#11131a;
+    border:1px solid var(--line);border-radius:12px;touch-action:none;cursor:crosshair;
+  }
+  .curveAxis{display:flex;justify-content:space-between;font-family:"Space Grotesk";font-size:11px;
+    color:var(--muted);margin-top:4px;padding:0 2px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .sublbl{display:block;font-size:11px;color:var(--muted);margin:0 0 5px 2px}
+  @media (max-width:420px){ .row3{grid-template-columns:1fr} }
+
+  /* segmented control */
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+    background:#11131a;border:1px solid var(--line);border-radius:12px;padding:5px}
+  .seg button{
+    background:transparent;border:none;color:var(--muted);cursor:pointer;
+    font-family:"Inter",sans-serif;font-size:13px;font-weight:600;
+    padding:9px 4px;border-radius:8px;transition:.15s;
+  }
+  .seg button[aria-pressed="true"]{background:var(--rise);color:#1a1305}
+  .seg button:focus-visible{outline:2px solid var(--rise);outline-offset:2px}
+
+  /* toggle row */
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .toggle .lbl{margin:0}
+  .switch{position:relative;display:inline-block;width:48px;height:28px;flex:none;cursor:pointer}
+  .switch input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+  .track{position:absolute;inset:0;background:#11131a;border:1px solid var(--line);
+    border-radius:999px;transition:.18s;pointer-events:none}
+  .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+    background:var(--muted);transition:.18s;pointer-events:none}
+  .switch input:checked + .track{background:rgba(245,181,68,.22);border-color:var(--rise)}
+  .switch input:checked + .track .knob{transform:translateX(20px);background:var(--rise)}
+  .switch input:focus-visible + .track{outline:2px solid var(--rise);outline-offset:2px}
+
+  .start{
+    width:100%;margin-top:16px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,var(--rise),var(--rise-deep));
+    color:#1a1305;font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:17px;letter-spacing:.04em;padding:17px;border-radius:14px;
+  }
+  .start:active{transform:translateY(1px)}
+  .start:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .err{color:var(--bad);font-size:13px;margin-top:12px;min-height:1em;text-align:center}
+
+  /* ---------- session ---------- */
+  .hidden{display:none !important}
+  .session{
+    position:fixed;inset:0;z-index:5;
+    display:flex;flex-direction:column;touch-action:none;
+    background:radial-gradient(120% 80% at 50% -10%, #1d212c 0%, var(--ink) 55%);
+  }
+  .sessionTop{padding:max(16px,env(safe-area-inset-top)) 16px 0}
+  /* full-screen tap surface for the eyes-closed mode.
+     Transparent so the whole screen accepts taps except the top meta bar. */
+  .tapSurface{position:absolute;inset:0;z-index:6;touch-action:none;
+    -webkit-tap-highlight-color:transparent;
+    background:transparent;cursor:pointer;
+    /* keep the top area free for the Stop button and meta info */
+    padding-top:72px;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .tapHint{pointer-events:none;color:var(--muted);font-size:14px;
+    font-family:"Space Grotesk",sans-serif;letter-spacing:.02em;text-align:center;
+    padding:0 24px 24px;opacity:.7}
+  /* no text selection / callout during a session -> swiping never grabs text or drops the touch */
+  .session, .session *{
+    -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  .meta{position:relative;z-index:8;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  /* the Stop button must always beat the tap surface (eyes-closed) */
+  .meta #stopBtn{position:relative;z-index:9;pointer-events:auto}
+  .meta .count{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;color:var(--muted)}
+  .meta .count b{color:var(--text);font-size:18px}
+  .clock{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;
+    color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-family:"Inter";font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer}
+  .ghost:active{transform:translateY(1px)}
+
+  .cue{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(28px,9vw,40px);line-height:1.05;text-align:center;
+    min-height:1.1em;margin:4px 0 2px;
+  }
+  .cue.up{color:var(--rise)}
+  .cue.down{color:var(--text)}
+  .cue.rest{color:var(--good)}
+  .subcue{text-align:center;color:var(--muted);font-size:14px;min-height:1.2em;margin-bottom:14px}
+  .swStats{display:flex;justify-content:center;gap:28px;margin:-6px 0 14px}
+  .swStat{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .swLbl{font-size:11px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+  .swVal{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:17px;color:var(--text);
+    font-variant-numeric:tabular-nums}
+  .swVal.pb{color:var(--rise)}
+
+  /* the rise button */
+  .stage{flex:1;display:flex;align-items:stretch;gap:12px;min-height:0}
+  .riser{
+    position:relative;width:60px;flex:none;border:1px solid var(--line);
+    border-bottom:none;border-left:none;
+    border-radius:0 14px 0 0;overflow:hidden;background:#11131a;
+  }
+  .fill{position:absolute;left:0;right:0;bottom:0;height:0%;
+    background:linear-gradient(180deg,var(--rise),var(--rise-deep));
+    transition:height .08s linear}
+  .riser .tick{position:absolute;left:0;right:0;height:1px;background:var(--line)}
+
+  .holdBtn{
+    flex:1;position:relative;border:1px solid var(--line);
+    border-bottom:none;border-right:none;
+    border-radius:18px 18px 0 0;
+    background:radial-gradient(120% 90% at 50% 0%,#222634,#161922);
+    color:var(--text);cursor:pointer;user-select:none;-webkit-user-select:none;
+    touch-action:none;-webkit-tap-highlight-color:transparent;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+    transition:transform .06s, border-color .12s, box-shadow .12s;
+    overflow:hidden;
+  }
+  .holdBtn:focus-visible{outline:3px solid var(--rise);outline-offset:3px}
+  .holdBtn.holding{
+    border-color:var(--rise);
+    box-shadow:inset 0 0 0 1px var(--rise), 0 0 40px -8px var(--rise);
+    transform:scale(.992);
+  }
+  .holdBtn .big{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(54px,18vw,92px);line-height:1;font-variant-numeric:tabular-nums;
+  }
+  .holdBtn .lab{font-size:14px;color:var(--muted);letter-spacing:.02em}
+  .holdBtn.holding .lab{color:var(--rise)}
+
+  .done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px}
+  .done .num{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:72px;color:var(--rise);line-height:1}
+  .done .msg{color:var(--muted);font-size:15px}
+
+  kbd{background:#11131a;border:1px solid var(--line);border-radius:6px;padding:1px 6px;
+    font-family:"Space Grotesk";font-size:11px;color:var(--text)}
+
+  /* keep everything usable on short / landscape screens */
+  @media (max-height:560px){
+    .cue{font-size:clamp(20px,7vh,32px);margin:2px 0 1px}
+    .subcue{font-size:12px;margin-bottom:8px}
+    .meta{margin-bottom:6px}
+    .sessionTop{padding-top:max(10px,env(safe-area-inset-top))}
+    .holdBtn .big{font-size:clamp(40px,14vh,80px)}
+    .riser{width:52px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="mark">Apnea</span>
+    <h1 id="appTitle">Breath-hold trainer</h1>
+    <select id="appLang" class="langSel" aria-label="App language"></select>
+  </header>
+
+  <section id="setup">
+
+    <details class="panel primary" id="secGoal" open>
+      <summary>Session goal <span class="sumSub" id="sumGoal"></span></summary>
+      <div class="body">
+        <div class="field" style="margin-bottom:12px">
+          <div class="seg" id="goalSeg" role="group" aria-label="Session goal">
+            <button type="button" data-goal="reps" aria-pressed="true">Reps</button>
+            <button type="button" data-goal="time" aria-pressed="false">Time</button>
+            <button type="button" data-goal="scenario" aria-pressed="false">Scenario</button>
+          </div>
+        </div>
+
+        <div class="field" id="repsField">
+          <label class="lbl">Number of reps (random in range)</label>
+          <div class="row">
+            <input id="minReps" type="number" min="1" value="15" aria-label="Minimum reps">
+            <input id="maxReps" type="number" min="1" value="25" aria-label="Maximum reps">
+          </div>
+          <div class="hint">The app picks a random number between min and max.</div>
+        </div>
+
+        <div class="field hidden" id="timeField">
+          <label class="lbl">Session duration (minutes)</label>
+          <input id="totalMin" type="number" min="1" value="5" aria-label="Duration in minutes">
+        </div>
+
+        <div class="field hidden" id="scenarioField" style="margin-bottom:0">
+          <label class="lbl">Scenario</label>
+          <select id="scenarioSel" aria-label="Choose scenario">
+            <option value="stopwatch" selected>Stopwatch — hold as long as you can</option>
+            <option value="sd_hold">Sudden death: Hold — Jeder Hold länger als der davor</option>
+            <option value="sd_speed">Sudden death: Speed — 60s Action / 20s Pause</option>
+          </select>
+          <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secTiming" open>
+      <summary>Timing <span class="sumSub" id="sumTiming"></span></summary>
+      <div class="body">
+        <div class="field" id="fBase">
+          <label class="lbl">Hold time per rep (seconds)</label>
+          <input id="baseHold" type="number" min="0.1" step="0.1" value="2" aria-label="Base hold time">
+          <div class="hint">How long you must keep the button pressed for the rep to count. Values below 1 s are allowed (e.g. 0.5).</div>
+        </div>
+
+        <div class="field" id="fRest">
+          <label class="lbl">Rest between reps (seconds, random in range)</label>
+          <div class="row">
+            <input id="minRest" type="number" min="0" value="3" aria-label="Minimum rest">
+            <input id="maxRest" type="number" min="0" value="3" aria-label="Maximum rest">
+          </div>
+          <div class="hint">Equal min and max = fixed rest.</div>
+          <div class="curveBox">
+            <div class="curveHeader">
+              <span class="lbl">Probability curve</span>
+              <button type="button" class="curveOpen" data-curve="rest">Edit curve</button>
+            </div>
+            <canvas class="curvePreview" id="curveRest" width="600" height="56" aria-label="Open rest curve editor"></canvas>
+            <div class="curveAxis"><span id="curveRestLo">min</span><span id="curveRestHi">max</span></div>
+          </div>
+        </div>
+
+        <div class="field" id="fChance">
+          <label class="lbl">Chance of a long hold (%)</label>
+          <input id="holdChance" type="number" min="0" max="100" value="25" aria-label="Long-hold chance">
+          <div class="hint">Some reps randomly become longer endurance holds.</div>
+        </div>
+
+        <div class="field" id="fHolds" style="margin-bottom:0">
+          <label class="lbl">Long hold duration (seconds, random in range)</label>
+          <div class="row">
+            <input id="minHold" type="number" min="1" value="5" aria-label="Minimum long hold">
+            <input id="maxHold" type="number" min="1" value="12" aria-label="Maximum long hold">
+          </div>
+          <div class="curveBox">
+            <div class="curveHeader">
+              <span class="lbl">Probability curve</span>
+              <button type="button" class="curveOpen" data-curve="hold">Edit curve</button>
+            </div>
+            <canvas class="curvePreview" id="curveHold" width="600" height="56" aria-label="Open hold curve editor"></canvas>
+            <div class="curveAxis"><span id="curveHoldLo">min</span><span id="curveHoldHi">max</span></div>
+            <div class="hint" style="margin-top:6px">Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.</div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secChallenge">
+      <summary>Difficulty <span class="sumSub" id="sumChallenge"></span></summary>
+      <div class="body">
+        <div class="field toggle" id="fStrict">
+          <div>
+            <label class="lbl" for="strict">Strict mode</label>
+            <div class="hint" style="margin-top:2px">If you release the button too early, the rep restarts.</div>
+          </div>
+          <label class="switch"><input id="strict" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+        </div>
+
+        <div class="field toggle" id="fPenaltyToggle">
+          <div>
+            <label class="lbl" for="penalty">Penalty for early release</label>
+            <div class="hint" style="margin-top:2px">Extends the session every time you release before the hold is complete.</div>
+          </div>
+          <label class="switch"><input id="penalty" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field" id="penaltyValField">
+          <div class="row">
+            <div>
+              <span class="sublbl" id="penaltyLbl">Penalty amount (+reps)</span>
+              <input id="penaltyX" type="number" min="1" value="2" aria-label="Penalty amount">
+            </div>
+            <div>
+              <span class="sublbl">Allowed late-start (s)</span>
+              <input id="lateTol" type="number" min="1" value="3" aria-label="Allowed late start">
+            </div>
+          </div>
+          <div class="hint" id="lateTolHint">If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.</div>
+        </div>
+
+        <div class="field toggle" id="fHideDur">
+          <div>
+            <label class="lbl" for="hideDur">Hide required hold time</label>
+            <div class="hint" style="margin-top:2px">The needed hold duration is not shown. Once you start holding, the voice says the hold cue and counts down the last few seconds.</div>
+          </div>
+          <label class="switch"><input id="hideDur" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+
+        <div class="field" id="fReleaseGrace" style="margin-bottom:0">
+          <label class="lbl">Release tolerance (ms)</label>
+          <input id="releaseGrace" type="number" min="0" step="10" value="150" aria-label="Release tolerance">
+          <div class="hint">If you briefly lift your finger, it doesn't count as releasing yet — the hold continues seamlessly. 0 = release is immediate.</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secSignals">
+      <summary>Cues &amp; language <span class="sumSub" id="sumSignals"></span></summary>
+      <div class="body">
+        <div class="field toggle">
+          <div>
+            <label class="lbl" for="voice">Voice cues</label>
+            <div class="hint" style="margin-top:2px">Speaks the cues (start / release) — once each.</div>
+          </div>
+          <label class="switch"><input id="voice" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field toggle">
+          <div>
+            <label class="lbl" for="beep">Beeps</label>
+            <div class="hint" style="margin-top:2px">Short tones as cues (rising = start holding, low = release).</div>
+          </div>
+          <label class="switch"><input id="beep" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field toggle">
+          <div>
+            <label class="lbl" for="vibrate">Vibration</label>
+            <div class="hint" id="vibrateHint" style="margin-top:2px">Vibration patterns as cues. Tap the switch to test.</div>
+          </div>
+          <label class="switch"><input id="vibrate" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+
+        <div class="field">
+          <label class="lbl">Custom cue words</label>
+          <div class="row3">
+            <div>
+              <span class="sublbl">Start hold</span>
+              <input id="cmdDown" type="text" value="Hold" aria-label="Start-hold cue word">
+            </div>
+            <div>
+              <span class="sublbl">Release</span>
+              <input id="cmdUp" type="text" value="Breathe" aria-label="Release cue word">
+            </div>
+            <div>
+              <span class="sublbl">Long hold</span>
+              <input id="cmdHold" type="text" value="Keep going" aria-label="Long-hold cue word">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div>
+              <span class="sublbl">Penalty word</span>
+              <input id="cmdPenaltyWord" type="text" value="Penalty" aria-label="Penalty word">
+            </div>
+            <div>
+              <span class="sublbl">Finish word</span>
+              <input id="cmdFinishWord" type="text" value="Done" aria-label="Finish word">
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <span class="sublbl">Speech rate (0.5–2)</span>
+          <input id="cmdRate" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate">
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secCoaching">
+      <summary>Feedback <span class="sumSub" id="sumCoaching"></span></summary>
+      <div class="body">
+        <div class="field toggle">
+          <div>
+            <label class="lbl" for="progressTone">Hold progress tone</label>
+            <div class="hint" style="margin-top:2px">A quiet, slowly rising tone during the hold — great for the eyes-closed mode.</div>
+          </div>
+          <label class="switch"><input id="progressTone" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field toggle" style="margin-bottom:0">
+          <div>
+            <label class="lbl" for="prAnnounce">Personal-best announcement</label>
+            <div class="hint" style="margin-top:2px">When you beat your longest recorded hold, the app announces it.</div>
+          </div>
+          <label class="switch"><input id="prAnnounce" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secDisplay">
+      <summary>Display &amp; handling <span class="sumSub" id="sumDisplay"></span></summary>
+      <div class="body">
+        <div class="field toggle">
+          <div>
+            <label class="lbl" for="eyesClosed">Eyes-closed mode</label>
+            <div class="hint" style="margin-top:2px">Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.</div>
+          </div>
+          <label class="switch"><input id="eyesClosed" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field toggle" style="margin-bottom:0">
+          <div>
+            <label class="lbl" for="guardExit">Swipe guard</label>
+            <div class="hint" style="margin-top:2px">Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.</div>
+          </div>
+          <label class="switch"><input id="guardExit" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secPresets">
+      <summary>Presets &amp; stats <span class="sumSub" id="sumPresets"></span></summary>
+      <div class="body">
+        <div class="field">
+          <label class="lbl">Presets</label>
+          <div class="row">
+            <input id="presetName" type="text" placeholder="Name (e.g. \u201CEvening set\u201D)" aria-label="Preset name">
+            <select id="presetSel" aria-label="Load preset"><option value="">– load –</option></select>
+          </div>
+          <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="ghost" id="presetSave">Save</button>
+            <button type="button" class="ghost" id="presetLoad">Load</button>
+            <button type="button" class="ghost" id="presetDel">Delete</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label class="lbl">Stats</label>
+          <div id="statsBox" class="hint" style="line-height:1.6">No sessions yet.</div>
+          <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="ghost" id="statsClear">Clear history</button>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <button class="start" id="startBtn">Start session</button>
+    <div class="err" id="err"></div>
+  </section>
+
+  <section id="session" class="session hidden" aria-live="polite">
+    <div class="sessionTop">
+      <div class="meta">
+        <span class="count"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
+        <span class="clock" id="clock">0:00</span>
+        <button class="ghost" id="stopBtn">Stop</button>
+      </div>
+      <div class="cue" id="cue">Ready?</div>
+      <div class="subcue" id="subcue">Press &amp; hold on the start cue, release on the release cue.</div>
+      <div id="swStats" class="swStats hidden">
+        <div class="swStat"><span class="swLbl">Rest since last hold</span><span class="swVal" id="swRest">0.0s</span></div>
+        <div class="swStat"><span class="swLbl">Longest hold</span><span class="swVal" id="swLongest">0.0s</span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="riser" id="riser"><div class="fill" id="fill"></div></div>
+      <button class="holdBtn" id="holdBtn">
+        <span class="big" id="timer">–</span>
+        <span class="lab" id="btnLab">Press &amp; hold</span>
+      </button>
+    </div>
+
+    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface"><span class="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
+  </section>
+
+  <section id="finish" class="session hidden">
+    <div class="sessionTop">
+      <div class="meta">
+        <span class="count">Done</span>
+        <button class="ghost" id="againBtn">New session</button>
+      </div>
+    </div>
+    <div class="done">
+      <div class="num" id="doneNum">0</div>
+      <div class="msg" id="doneMsg">Reps completed.</div>
+    </div>
+  </section>
+
+  <div id="curveOverlay" class="overlay hidden" aria-hidden="true">
+    <div class="head">
+      <div>
+        <h2 id="curveOverlayTitle">Probability curve</h2>
+        <div class="sub" id="curveOverlaySub">Draw with your finger or mouse. Higher = more likely.</div>
+      </div>
+      <button class="ghost" id="curveOverlayDone">Done</button>
+    </div>
+    <div class="toolbar" role="group" aria-label="Curve mode">
+      <button type="button" id="modeRandom" data-mode="random" aria-pressed="true">Random</button>
+      <button type="button" id="modeTiming" data-mode="timing" aria-pressed="false">Timing</button>
+    </div>
+    <div class="toolbar" role="group" aria-label="Curve presets">
+      <button type="button" data-overlay-preset="uniform">Uniform</button>
+      <button type="button" data-overlay-preset="low">Skew low</button>
+      <button type="button" data-overlay-preset="middle">Middle</button>
+      <button type="button" data-overlay-preset="high">Skew high</button>
+      <button type="button" data-overlay-preset="clear">Clear</button>
+    </div>
+    <div class="stage">
+      <canvas id="curveBig" class="big" aria-label="Draw probability curve"></canvas>
+    </div>
+    <div class="axis"><span id="curveBigLo">min</span><span id="curveBigHi">max</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+
+  // ---------- storage helpers (localStorage; degrade silently if unavailable) ----------
+  const KV = {
+    get(k, dflt){ try{ const v=localStorage.getItem(k); return v==null?dflt:JSON.parse(v); }catch(e){ return dflt; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+    del(k){ try{ localStorage.removeItem(k); }catch(e){} },
+  };
+  const K = { settings:"lat.settings", presets:"lat.presets", history:"lat.history", pr:"lat.pr", curves:"lat.curves" };
+
+  // ---------- i18n: top-10 most-spoken languages ----------
+  const I18N = {
+    de: { name:"Deutsch", speech:"de-DE",
+      cueDown:"Halten", cueUp:"Atmen", cueLong:"Weiter so", cuePenalty:"Strafe", cueFinish:"Fertig",
+      strings:{
+        release:"Loslassen", startWithin:s=>`Drücke in ${s}s`,
+        swRestLabel:"Pause seit letztem Hold", swLongestLabel:"Längster Hold",
+        scenarioTitle:"Szenario", scenarioStopwatch:"Stoppuhr — Halte so lange du kannst",
+        title:"Breath-hold trainer", mark:"Apnea",
+        ready:"Bereit", pressToStart:"Drücken zum Starten", tapToStart:"Tippen zum Starten",
+        subCue:"Beim Startsignal gedrückt halten, beim Loslass-Signal loslassen.",
+        pressHold:"Gedrückt halten", holding:"Halte...", stop:"Stopp", rep:"Wdh",
+        rest:"Pause", breathe:"Atmen", pressAndHold:"Drücken und halten",
+        done:"Fertig", newSession:"Neue Sitzung", repsCompleted:"Wiederholungen abgeschlossen.",
+        newRecord:s=>`Neuer Rekord! ${s} Sekunden.`, holdForN:n=>`Halte für ${n} Sekunden`,
+        andHold:"— und halten", continueWord:"Weiter",
+        tooLate:"Zu spät gestartet", tooEarly:"Zu früh losgelassen", tooEarlyLab:"Zu früh — nochmal"
+      }
+    },
+    en: { name:"English", speech:"en-US",
+      cueDown:"Hold", cueUp:"Breathe", cueLong:"Keep going", cuePenalty:"Penalty", cueFinish:"Done",
+      strings:{
+        release:"Release", startWithin:s=>`Press within ${s}s`,
+        swRestLabel:"Rest since last hold", swLongestLabel:"Longest hold",
+        scenarioTitle:"Scenario", scenarioStopwatch:"Stopwatch — hold as long as you can",
+        title:"Breath-hold trainer", mark:"Apnea",
+        ready:"Ready", pressToStart:"Press to start", tapToStart:"Tap anywhere to start",
+        subCue:"Press & hold on the start cue, release on the release cue.",
+        pressHold:"Press & hold", holding:"Holding…", stop:"Stop", rep:"Rep",
+        rest:"Rest", breathe:"Breathe", pressAndHold:"Press and hold",
+        done:"Done", newSession:"New session", repsCompleted:"Reps completed.",
+        newRecord:s=>`New record! ${s} seconds.`, holdForN:n=>`Hold for ${n} seconds`,
+        andHold:"— and hold", continueWord:"Continue",
+        tooLate:"Started too late", tooEarly:"Released too early", tooEarlyLab:"Too early — retry",
+      }
+    },
+    zh: { name:"中文", speech:"zh-CN",
+      cueDown:"憋气", cueUp:"呼吸", cueLong:"坚持", cuePenalty:"惩罚", cueFinish:"完成",
+      strings:{ ready:"准备", pressToStart:"按下开始", tapToStart:"任意位置点击",
+        release:"松开", startWithin:s=>`${s}秒内按下`,
+        swRestLabel:"距上次憋气的休息", swLongestLabel:"最长憋气",
+        scenarioTitle:"场景", scenarioStopwatch:"秒表 —— 尽力憋气",
+        subCue:"在开始提示时按住,在释放提示时松开。", pressHold:"按住", holding:"憋气中…",
+        stop:"停止", rep:"次", rest:"休息", breathe:"呼吸", pressAndHold:"按下并保持",
+        done:"完成", newSession:"新训练", repsCompleted:"次数已完成。",
+        newRecord:s=>`新纪录!${s} 秒。`, holdForN:n=>`憋气 ${n} 秒`, andHold:"—— 保持",
+        continueWord:"继续", tooLate:"开始太晚", tooEarly:"过早松开", tooEarlyLab:"过早 —— 重来" }
+    },
+    hi: { name:"हिन्दी", speech:"hi-IN",
+      cueDown:"रोकें", cueUp:"सांस लें", cueLong:"बनाए रखें", cuePenalty:"दंड", cueFinish:"पूरा",
+      strings:{ ready:"तैयार", pressToStart:"शुरू के लिए दबाएँ", tapToStart:"शुरू करने के लिए कहीं भी टैप",
+        release:"छोड़ें", startWithin:s=>`${s} सेकंड में दबाएँ`,
+        swRestLabel:"पिछले होल्ड के बाद विश्राम", swLongestLabel:"सबसे लंबा होल्ड",
+        scenarioTitle:"परिदृश्य", scenarioStopwatch:"स्टॉपवॉच — जितना हो सके रोकें",
+        subCue:"शुरू-संकेत पर दबाकर रखें, रिलीज़-संकेत पर छोड़ें।",
+        pressHold:"दबाएँ और रखें", holding:"होल्ड…", stop:"रोकें", rep:"बार",
+        rest:"विश्राम", breathe:"साँस लें", pressAndHold:"दबाएँ और होल्ड",
+        done:"पूर्ण", newSession:"नয়া सत्र", repsCompleted:"रेप पूरे।",
+        newRecord:s=>`नया रिकॉर्ड! ${s} सेकंड।`, holdForN:n=>`${n} सेकंड होल्ड करें`,
+        andHold:"— और होल्ड", continueWord:"जारी रखें",
+        tooLate:"बहुत देर से शुरू", tooEarly:"बहुत जल्दी छोड़ा", tooEarlyLab:"बहुत जल्दी — फिर" }
+    },
+    es: { name:"Español", speech:"es-ES",
+      cueDown:"Aguanta", cueUp:"Respira", cueLong:"Sigue", cuePenalty:"Castigo", cueFinish:"Listo",
+      strings:{ ready:"Listo", pressToStart:"Pulsa para empezar", tapToStart:"Toca cualquier lugar",
+        release:"Suelta", startWithin:s=>`Pulsa en ${s}s`,
+        swRestLabel:"Descanso desde la última apnea", swLongestLabel:"Apnea más larga",
+        scenarioTitle:"Escenario", scenarioStopwatch:"Cronómetro — aguanta lo que puedas",
+        subCue:"Pulsa y mantén en la señal de inicio, suelta en la señal de soltar.",
+        pressHold:"Pulsa y mantén", holding:"Aguantando…", stop:"Parar", rep:"Rep",
+        rest:"Descanso", breathe:"Respira", pressAndHold:"Pulsa y aguanta",
+        done:"Listo", newSession:"Nueva sesión", repsCompleted:"Repeticiones completadas.",
+        newRecord:s=>`¡Nuevo récord! ${s} segundos.`, holdForN:n=>`Aguanta ${n} segundos`,
+        andHold:"— y aguanta", continueWord:"Continúa",
+        tooLate:"Empezaste tarde", tooEarly:"Soltaste demasiado pronto", tooEarlyLab:"Muy pronto — reintenta" }
+    },
+    fr: { name:"Français", speech:"fr-FR",
+      cueDown:"Bloque", cueUp:"Respire", cueLong:"Continue", cuePenalty:"Pénalité", cueFinish:"Terminé",
+      strings:{ ready:"Prêt", pressToStart:"Appuie pour démarrer", tapToStart:"Touche n’importe où",
+        release:"Relâche", startWithin:s=>`Appuie sous ${s}s`,
+        swRestLabel:"Repos depuis la dernière apnée", swLongestLabel:"Apnée la plus longue",
+        scenarioTitle:"Scénario", scenarioStopwatch:"Chronomètre — tiens le plus longtemps possible",
+        subCue:"Appuie et maintiens au signal de début, relâche au signal.",
+        pressHold:"Appuyer & maintenir", holding:"En apnée…", stop:"Stop", rep:"Rép.",
+        rest:"Repos", breathe:"Respire", pressAndHold:"Appuyer et tenir",
+        done:"Terminé", newSession:"Nouvelle séance", repsCompleted:"Répétitions terminées.",
+        newRecord:s=>`Nouveau record ! ${s} secondes.`, holdForN:n=>`Tiens ${n} secondes`,
+        andHold:"— et tiens", continueWord:"Continue",
+        tooLate:"Départ trop tardif", tooEarly:"Relâché trop tôt", tooEarlyLab:"Trop tôt — réessaie" }
+    },
+    ar: { name:"العربية", speech:"ar-SA",
+      cueDown:"احبس", cueUp:"تنفّس", cueLong:"استمر", cuePenalty:"عقوبة", cueFinish:"انتهى",
+      strings:{ ready:"مستعد", pressToStart:"اضغط للبدء", tapToStart:"اضغط في أي مكان",
+        release:"إفلات", startWithin:s=>`اضغط خلال ${s} ث`,
+        swRestLabel:"الراحة منذ آخر حبس", swLongestLabel:"أطول حبس",
+        scenarioTitle:"سيناريو", scenarioStopwatch:"ساعة إيقاف — احبس أطول ما يمكنك",
+        subCue:"اضغط عند إشارة البدء، وأفلت عند إشارة الإفلات.",
+        pressHold:"اضغط واستمر", holding:"محتجز…", stop:"إيقاف", rep:"تكرار",
+        rest:"راحة", breathe:"تنفّس", pressAndHold:"اضغط واحتفظ",
+        done:"انتهى", newSession:"جلسة جديدة", repsCompleted:"اكتملت التكرارات.",
+        newRecord:s=>`رقم قياسي جديد! ${s} ثانية.`, holdForN:n=>`احبس ${n} ثانية`,
+        andHold:"— واحبس", continueWord:"استمر",
+        tooLate:"بدأت متأخرًا", tooEarly:"أفلتّ مبكرًا", tooEarlyLab:"مبكر جدًا — أعد" }
+    },
+    bn: { name:"বাংলা", speech:"bn-BD",
+      cueDown:"ধরুন", cueUp:"শ্বাস নিন", cueLong:"চালিয়ে যান", cuePenalty:"শাস্তি", cueFinish:"শেষ",
+      strings:{ ready:"প্রস্তুত", pressToStart:"শুরু করতে চাপুন", tapToStart:"যেকোনো জায়গায় ট্যাপ",
+        release:"ছাড়ুন", startWithin:s=>`${s} সেকেন্ডে চাপুন`,
+        swRestLabel:"শেষ হোল্ডের পর বিশ্রাম", swLongestLabel:"সবচেয়ে দীর্ঘ হোল্ড",
+        scenarioTitle:"দৃশ্যকল্প", scenarioStopwatch:"স্টপওয়াচ — যতটা পারো ধরে রাখো",
+        subCue:"শুরু সংকেতে চেপে ধরুন, ছাড়া সংকেতে ছাড়ুন।",
+        pressHold:"চাপ ও ধরুন", holding:"ধরা আছে…", stop:"বন্ধ", rep:"রেপ",
+        rest:"বিশ্রাম", breathe:"শ্বাস", pressAndHold:"চাপ ও ধরে রাখুন",
+        done:"সম্পন্ন", newSession:"নতুন সেশন", repsCompleted:"রেপ সম্পন্ন।",
+        newRecord:s=>`নতুন রেকর্ড! ${s} সেকেন্ড।`, holdForN:n=>`${n} সেকেন্ড ধরুন`,
+        andHold:"— এবং ধরুন", continueWord:"চালিয়ে যান",
+        tooLate:"দেরি করে শুরু", tooEarly:"খুব দ্রুত ছাড়া", tooEarlyLab:"দ্রুত হয়েছে — আবার" }
+    },
+    pt: { name:"Português", speech:"pt-BR",
+      cueDown:"Segure", cueUp:"Respire", cueLong:"Continue", cuePenalty:"Penalidade", cueFinish:"Pronto",
+      strings:{ ready:"Pronto", pressToStart:"Pressione para iniciar", tapToStart:"Toque em qualquer lugar",
+        release:"Solte", startWithin:s=>`Pressione em ${s}s`,
+        swRestLabel:"Descanso desde a última apneia", swLongestLabel:"Apneia mais longa",
+        scenarioTitle:"Cenário", scenarioStopwatch:"Cronômetro — segure o quanto puder",
+        subCue:"Segure no sinal de início, solte no sinal de soltar.",
+        pressHold:"Pressione e segure", holding:"Segurando…", stop:"Parar", rep:"Rep",
+        rest:"Descanso", breathe:"Respire", pressAndHold:"Pressione e segure",
+        done:"Pronto", newSession:"Nova sessão", repsCompleted:"Repetições concluídas.",
+        newRecord:s=>`Novo recorde! ${s} segundos.`, holdForN:n=>`Segure por ${n} segundos`,
+        andHold:"— e segure", continueWord:"Continue",
+        tooLate:"Início atrasado", tooEarly:"Soltou cedo demais", tooEarlyLab:"Cedo demais — tente de novo" }
+    },
+    ru: { name:"Русский", speech:"ru-RU",
+      cueDown:"Задержи", cueUp:"Дыши", cueLong:"Держи", cuePenalty:"Штраф", cueFinish:"Готово",
+      strings:{ ready:"Готов", pressToStart:"Нажми для старта", tapToStart:"Тапни где угодно",
+        release:"Отпусти", startWithin:s=>`Нажми за ${s}с`,
+        swRestLabel:"Отдых с последней задержки", swLongestLabel:"Самая долгая задержка",
+        scenarioTitle:"Сценарий", scenarioStopwatch:"Секундомер — держи сколько сможешь",
+        subCue:"Держи на сигнале старта, отпусти на сигнале отпуска.",
+        pressHold:"Нажми и держи", holding:"Держу…", stop:"Стоп", rep:"Повтор",
+        rest:"Отдых", breathe:"Дыши", pressAndHold:"Нажать и держать",
+        done:"Готово", newSession:"Новая сессия", repsCompleted:"Повторы выполнены.",
+        newRecord:s=>`Новый рекорд! ${s} секунд.`, holdForN:n=>`Держи ${n} секунд`,
+        andHold:"— и держи", continueWord:"Продолжай",
+        tooLate:"Слишком поздно начал", tooEarly:"Отпустил слишком рано", tooEarlyLab:"Рано — повтор" }
+    },
+    ur: { name:"اردو", speech:"ur-PK",
+      cueDown:"سانس روکیں", cueUp:"سانس لیں", cueLong:"جاری رکھیں", cuePenalty:"سزا", cueFinish:"مکمل",
+      strings:{ ready:"تیار", pressToStart:"شروع کرنے کے لیے دبائیں", tapToStart:"کہیں بھی ٹیپ کریں",
+        release:"چھوڑیں", startWithin:s=>`${s} سیکنڈ میں دبائیں`,
+        swRestLabel:"آخری روک کے بعد آرام", swLongestLabel:"سب سے لمبی روک",
+        scenarioTitle:"منظرنامہ", scenarioStopwatch:"اسٹاپ واچ — جتنا ممکن ہو روکیں",
+        subCue:"شروع اشارے پر دبائیں، چھوڑنے کے اشارے پر چھوڑیں۔",
+        pressHold:"دبائیں اور تھامیں", holding:"روک رہا ہے…", stop:"روکیں", rep:"دہرائی",
+        rest:"آرام", breathe:"سانس", pressAndHold:"دبائیں اور تھامیں",
+        done:"مکمل", newSession:"نیا سیشن", repsCompleted:"دہرائیاں مکمل۔",
+        newRecord:s=>`نیا ریکارڈ! ${s} سیکنڈ۔`, holdForN:n=>`${n} سیکنڈ روکیں`,
+        andHold:"— اور تھامیں", continueWord:"جاری رکھیں",
+        tooLate:"دیر سے شروع", tooEarly:"جلد چھوڑ دیا", tooEarlyLab:"جلد — دوبارہ" }
+    },
+  };
+  let LANG = "en";
+  const T = () => Object.assign({}, I18N.en.strings, (I18N[LANG] && I18N[LANG].strings) || {});
+  const cueWord = (kind) => {
+    const L = I18N[LANG] || I18N.en;
+    return kind==="down" ? L.cueDown : kind==="up" ? L.cueUp : kind==="long" ? L.cueLong :
+           kind==="penalty" ? L.cuePenalty : kind==="finish" ? L.cueFinish : "";
+  };
+  const speechTag = () => (I18N[LANG] || I18N.en).speech;
+
+  function populateLangSelect(){
+    const sel = $("appLang"); if(!sel) return;
+    sel.innerHTML = Object.keys(I18N).map(code=>
+      `<option value="${code}">${I18N[code].name}</option>`).join("");
+    sel.value = LANG;
+  }
+  function setLang(code){
+    if(!I18N[code]) code = "en";
+    LANG = code;
+    KV.set("lat.lang", code);
+    document.documentElement.setAttribute("lang", code);
+    document.documentElement.setAttribute("dir", (code==="ar"||code==="ur") ? "rtl" : "ltr");
+    applyRuntimeI18n();
+  }
+  function applyRuntimeI18n(){
+    const t = T();
+    const stop = $("stopBtn"); if(stop) stop.textContent = t.stop;
+    const again = $("againBtn"); if(again) again.textContent = t.newSession;
+    const rl2 = $("repLabel"); if(rl2) rl2.textContent = t.rep;
+    const scBtn = document.querySelector('#goalSeg button[data-goal="scenario"]');
+    if(scBtn) scBtn.textContent = t.scenarioTitle;
+    const scOpt = document.querySelector('#scenarioSel option[value="stopwatch"]');
+    if(scOpt) scOpt.textContent = t.scenarioStopwatch;
+    if($("appLang")) $("appLang").value = LANG;
+  }
+
+
+
+  // ---------- probability curves (hand-drawn) ----------
+  const CURVE_N = 60;
+  const curves = { hold: new Array(CURVE_N).fill(0), rest: new Array(CURVE_N).fill(0) };
+  const curveMode = { hold: "random", rest: "random" };
+  function loadCurves(){
+    const stored = KV.get(K.curves, null);
+    if(stored && Array.isArray(stored.hold) && stored.hold.length===CURVE_N) curves.hold = stored.hold.slice();
+    if(stored && Array.isArray(stored.rest) && stored.rest.length===CURVE_N) curves.rest = stored.rest.slice();
+    if(stored && stored.modeHold==="timing") curveMode.hold = "timing";
+    if(stored && stored.modeRest==="timing") curveMode.rest = "timing";
+  }
+  function saveCurves(){ KV.set(K.curves, {hold:curves.hold, rest:curves.rest, modeHold:curveMode.hold, modeRest:curveMode.rest}); }
+
+  const CURVE_PRESETS = {
+    uniform: i => 0.6,
+    high:    i => 0.05 + 0.95 * (i/(CURVE_N-1)),
+    low:     i => 0.05 + 0.95 * (1 - i/(CURVE_N-1)),
+    middle:  i => { const x = (i/(CURVE_N-1) - 0.5)*2; return 0.05 + 0.95*Math.exp(-x*x*3); },
+  };
+  function applyPreset(which, name){
+    if(name === undefined) return;
+    if(name === "clear"){ curves[which] = new Array(CURVE_N).fill(0); }
+    else { const f = CURVE_PRESETS[name]; if(!f) return; curves[which] = Array.from({length:CURVE_N}, (_,i)=>f(i)); }
+    saveCurves(); drawCurve(which);
+  }
+
+  function drawCurve(which, targetCanvas){
+    const cv = targetCanvas || $(which==="hold" ? "curveHold" : "curveRest");
+    if(!cv) return;
+    const rect = cv.getBoundingClientRect();
+    if(rect.width < 1 || rect.height < 1) return;
+    const dpr = window.devicePixelRatio || 1;
+    if(cv.width !== Math.round(rect.width*dpr) || cv.height !== Math.round(rect.height*dpr)){
+      cv.width = Math.max(1, Math.round(rect.width*dpr));
+      cv.height = Math.max(1, Math.round(rect.height*dpr));
+    }
+    const w = cv.width, h = cv.height;
+    const ctx = cv.getContext("2d");
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle = "#1e2230"; ctx.lineWidth = 1;
+    for(let i=1;i<4;i++){ const y = h*i/4; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    for(let i=1;i<6;i++){ const x = w*i/6; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+    const arr = curves[which];
+    const isEmpty = arr.every(v => v<=0.001);
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for(let i=0;i<CURVE_N;i++){
+      const x = (i/(CURVE_N-1))*w;
+      const y = h - (isEmpty ? 0.6 : arr[i]) * h * 0.92 - h*0.04;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0, isEmpty ? "rgba(149,154,171,.18)" : "rgba(245,181,68,.45)");
+    grad.addColorStop(1, isEmpty ? "rgba(149,154,171,.05)" : "rgba(245,181,68,.06)");
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.beginPath();
+    for(let i=0;i<CURVE_N;i++){
+      const x = (i/(CURVE_N-1))*w;
+      const y = h - (isEmpty ? 0.6 : arr[i]) * h * 0.92 - h*0.04;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = isEmpty ? "#5a6072" : "#F5B544"; ctx.lineWidth = 2*dpr; ctx.stroke();
+    if(isEmpty){
+      ctx.fillStyle = "#5a6072"; ctx.font = `${12*dpr}px "Space Grotesk", sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const msg = targetCanvas ? "Draw with your finger or mouse" : "Tap to draw the probability curve";
+      ctx.fillText(msg, w/2, h/2);
+    }
+  }
+
+  function attachCurveDrawing(which, cv){
+    if(!cv) cv = $(which==="hold" ? "curveHold" : "curveRest");
+    if(!cv) return;
+    let drawing = false, lastIdx = -1, lastVal = 0;
+    const posToIdxVal = (ev)=>{
+      const r = cv.getBoundingClientRect();
+      const x = Math.max(0, Math.min(r.width, ev.clientX - r.left));
+      const y = Math.max(0, Math.min(r.height, ev.clientY - r.top));
+      const idx = Math.max(0, Math.min(CURVE_N-1, Math.round(x/r.width*(CURVE_N-1))));
+      const val = Math.max(0, Math.min(1, 1 - (y/r.height - 0.04)/0.92));
+      return {idx, val};
+    };
+    const write = (idx, val)=>{
+      if(lastIdx < 0){ curves[which][idx] = val; }
+      else {
+        const a = Math.min(lastIdx, idx), b = Math.max(lastIdx, idx);
+        for(let i=a;i<=b;i++){
+          const t = (b===a) ? 1 : (i-a)/(b-a);
+          const v = (lastIdx<=idx) ? (lastVal + (val-lastVal)*t) : (val + (lastVal-val)*t);
+          curves[which][i] = v;
+        }
+      }
+      lastIdx = idx; lastVal = val;
+    };
+    const redraw = ()=>{ drawCurve(which, cv); };
+    cv.addEventListener("pointerdown", e=>{
+      e.preventDefault(); drawing = true; lastIdx = -1;
+      try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+      const {idx,val} = posToIdxVal(e); write(idx,val); redraw();
+    });
+    cv.addEventListener("pointermove", e=>{
+      if(!drawing) return;
+      const {idx,val} = posToIdxVal(e); write(idx,val); redraw();
+    });
+    const stop = ()=>{ if(!drawing) return; drawing = false; lastIdx = -1; saveCurves(); updateSummaries && updateSummaries(); drawCurve(which); };
+    cv.addEventListener("pointerup", stop);
+    cv.addEventListener("pointercancel", stop);
+    cv.addEventListener("lostpointercapture", stop);
+    cv.addEventListener("contextmenu", e=>e.preventDefault());
+  }
+
+  let overlayWhich = null;
+  function openCurveEditor(which){
+    overlayWhich = which;
+    const ov = $("curveOverlay"); if(!ov) return;
+    refreshCurveOverlayForMode();
+    ov.classList.remove("hidden");
+    ov.setAttribute("aria-hidden", "false");
+    const big = $("curveBig");
+    if(!big.dataset.wired){
+      attachCurveDrawing("__dyn__", big);
+      big.dataset.wired = "1";
+    }
+    requestAnimationFrame(()=>drawCurve(which, big));
+  }
+  function refreshCurveOverlayForMode(){
+    const which = overlayWhich; if(!which) return;
+    const isHold = which==="hold";
+    const mode = curveMode[which];
+    $("curveOverlayTitle").textContent = isHold
+      ? (mode==="timing" ? "Long-hold duration over the session" : "Long-hold probability curve")
+      : (mode==="timing" ? "Rest duration over the session" : "Rest probability curve");
+    $("curveOverlaySub").textContent = mode==="timing"
+      ? (isHold ? "X = session progress. Y = long-hold duration at that time."
+                : "X = session progress. Y = rest length at that time.")
+      : (isHold ? "Higher on the curve = long hold more likely to be that duration."
+                : "Higher on the curve = rest more likely to be that length.");
+    if(mode==="timing"){
+      $("curveBigLo").textContent = "0% · " + (isHold ? num("minHold") : num("minRest")) + "s";
+      $("curveBigHi").textContent = "100% · " + (isHold ? num("maxHold") : num("maxRest")) + "s";
+    } else {
+      $("curveBigLo").textContent = (isHold ? num("minHold") : num("minRest")) + "s";
+      $("curveBigHi").textContent = (isHold ? num("maxHold") : num("maxRest")) + "s";
+    }
+    const mr = $("modeRandom"), mt = $("modeTiming");
+    if(mr && mt){
+      mr.setAttribute("aria-pressed", mode==="random" ? "true" : "false");
+      mt.setAttribute("aria-pressed", mode==="timing" ? "true" : "false");
+    }
+    drawCurve(which, $("curveBig"));
+  }
+  function closeCurveEditor(){
+    const ov = $("curveOverlay"); if(!ov) return;
+    ov.classList.add("hidden");
+    ov.setAttribute("aria-hidden", "true");
+    if(overlayWhich) drawCurve(overlayWhich);
+    updateSummaries();
+    overlayWhich = null;
+  }
+
+  function wireOverlayCanvas(){
+    const cv = $("curveBig"); if(!cv) return;
+    let drawing = false, lastIdx = -1, lastVal = 0;
+    const posToIdxVal = (ev)=>{
+      const r = cv.getBoundingClientRect();
+      const x = Math.max(0, Math.min(r.width, ev.clientX - r.left));
+      const y = Math.max(0, Math.min(r.height, ev.clientY - r.top));
+      const idx = Math.max(0, Math.min(CURVE_N-1, Math.round(x/r.width*(CURVE_N-1))));
+      const val = Math.max(0, Math.min(1, 1 - (y/r.height - 0.04)/0.92));
+      return {idx, val};
+    };
+    const write = (which, idx, val)=>{
+      if(lastIdx < 0){ curves[which][idx] = val; }
+      else {
+        const a = Math.min(lastIdx, idx), b = Math.max(lastIdx, idx);
+        for(let i=a;i<=b;i++){
+          const t = (b===a) ? 1 : (i-a)/(b-a);
+          const v = (lastIdx<=idx) ? (lastVal + (val-lastVal)*t) : (val + (lastVal-val)*t);
+          curves[which][i] = v;
+        }
+      }
+      lastIdx = idx; lastVal = val;
+    };
+    cv.addEventListener("pointerdown", e=>{
+      if(!overlayWhich) return;
+      e.preventDefault(); drawing = true; lastIdx = -1;
+      try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+      const {idx,val} = posToIdxVal(e); write(overlayWhich, idx, val); drawCurve(overlayWhich, cv);
+    });
+    cv.addEventListener("pointermove", e=>{
+      if(!drawing || !overlayWhich) return;
+      const {idx,val} = posToIdxVal(e); write(overlayWhich, idx, val); drawCurve(overlayWhich, cv);
+    });
+    const stop = ()=>{ if(!drawing) return; drawing = false; lastIdx = -1; saveCurves(); };
+    cv.addEventListener("pointerup", stop);
+    cv.addEventListener("pointercancel", stop);
+    cv.addEventListener("lostpointercapture", stop);
+    cv.addEventListener("contextmenu", e=>e.preventDefault());
+  }
+
+  function sampleFromCurve(which, min, max){
+    if(!(max>min)) return min;
+    const arr = curves[which];
+    const isEmpty = arr.every(v=>v<=0.001);
+    if(curveMode[which]==="timing" && !isEmpty){
+      const p = sessionProgress();               
+      const x = p * (CURVE_N - 1);
+      const i = Math.max(0, Math.min(CURVE_N-2, Math.floor(x)));
+      const f = x - i;
+      const y = Math.max(0, Math.min(1, arr[i]*(1-f) + arr[i+1]*f));
+      return Math.round(min + y * (max - min));
+    }
+    let total = 0;
+    for(let i=0;i<CURVE_N;i++) total += Math.max(0, arr[i]);
+    if(total <= 0.0001) return rand(min, max);
+    let r = Math.random() * total, i = 0;
+    for(; i<CURVE_N; i++){ r -= Math.max(0, arr[i]); if(r <= 0) break; }
+    if(i >= CURVE_N) i = CURVE_N - 1;
+    const t = (i + Math.random()) / CURVE_N;
+    return Math.round(min + t * (max - min));
+  }
+
+  function sessionProgress(){
+    if(!S) return 0;
+    if(S.goal==="time" && S.startTime && S.endAt){
+      return Math.max(0, Math.min(1, (Date.now()-S.startTime)/(S.endAt-S.startTime)));
+    }
+    if(S.totalReps && S.totalReps>0){
+      return Math.max(0, Math.min(1, (S.done || 0)/S.totalReps));
+    }
+    return 0;
+  }
+
+  function updateCurveAxes(){
+    const set = (id, v)=>{ const e=$(id); if(e) e.textContent = v; };
+    set("curveHoldLo", num("minHold") + "s");
+    set("curveHoldHi", num("maxHold") + "s");
+    set("curveRestLo", num("minRest") + "s");
+    set("curveRestHi", num("maxRest") + "s");
+  }
+
+
+  const SETTING_IDS = [
+    "minReps","maxReps","totalMin","scenarioSel",
+    "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
+    "strict","penalty","penaltyX","lateTol","hideDur",
+    "voice","beep","vibrate","eyesClosed","guardExit",
+    "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdFinishWord","cmdRate",
+    "appLang",
+    "progressTone","prAnnounce",
+  ];
+  function readAll(){
+    const o = { goal };
+    for(const id of SETTING_IDS){
+      const el = $(id); if(!el) continue;
+      o[id] = (el.type==="checkbox") ? el.checked : el.value;
+    }
+    return o;
+  }
+  function writeAll(o){
+    if(!o) return;
+    if(o.rest !== undefined && o.minRest === undefined){
+      o.minRest = o.rest; o.maxRest = o.rest;
+    }
+    if(o.goal){
+      const btn = document.querySelector(`#goalSeg button[data-goal="${o.goal}"]`);
+      if(btn) btn.click();
+    }
+    for(const id of SETTING_IDS){
+      if(!(id in o)) continue;
+      const el = $(id); if(!el) continue;
+      if(el.type==="checkbox") el.checked = !!o[id]; else el.value = o[id];
+    }
+    if($("goalSeg")) [...$("goalSeg").children].forEach(b=>{
+      if(b.getAttribute("aria-pressed")==="true"){ /* sync handled */ }
+    });
+  }
+  function saveSettingsNow(){ KV.set(K.settings, readAll()); }
+  function debouncedSaveSettings(){
+    clearTimeout(saveSettingsTimer);
+    saveSettingsTimer = setTimeout(()=>{ saveSettingsNow(); updateSummaries(); }, 400);
+    try{ updateSummaries(); }catch(e){}
+  }
+  let saveSettingsTimer = 0;
+
+  function updateSummaries(){
+    const s = readAll();
+    const setTxt = (id, t) => { const e = $(id); if(e) e.textContent = t; };
+    const goalTxt = {
+      reps: `Reps ${s.minReps}–${s.maxReps}`,
+      time: `Time ${s.totalMin} min`,
+      scenario: `${T().scenarioTitle} · ${s.scenarioSel === 'sd_hold' ? 'Sudden death (Hold)' : (s.scenarioSel === 'sd_speed' ? 'Sudden death (Speed)' : T().scenarioStopwatch.split(" — ")[0])}`,
+      }[goal] || "";
+    setTxt("sumGoal", goalTxt);
+    const hasHoldCurve = curves.hold.some(v=>v>0.001);
+    const hasRestCurve = curves.rest.some(v=>v>0.001);
+    const holdMark = hasHoldCurve ? (curveMode.hold==="timing" ? " →" : " ~") : "";
+    const restMark = hasRestCurve ? (curveMode.rest==="timing" ? " →" : " ~") : "";
+    const restTxt = s.minRest===s.maxRest ? (s.minRest+"s") : (s.minRest+"–"+s.maxRest+"s"+restMark);
+    const holdTxt = (s.minHold+"–"+s.maxHold+"s"+holdMark);
+    setTxt("sumTiming", (goal==="scenario") ? "freeform" : `Hold ${s.baseHold}s · Rest ${restTxt} · ${s.holdChance}% long (${holdTxt})`);
+    const ch = [];
+    if(goal!=="scenario"){
+      if(s.strict) ch.push("strict");
+      if(s.penalty) ch.push(`penalty +${s.penaltyX}`);
+      if(s.hideDur) ch.push("hidden");
+    }
+    setTxt("sumChallenge", ch.length ? ch.join(" · ") : "relaxed");
+    const sig = [];
+    if(s.voice) sig.push("Voice");
+    if(s.beep) sig.push("Beep");
+    if(s.vibrate) sig.push("Vibrate");
+    setTxt("sumSignals", sig.length ? sig.join(" · ") : "no cues");
+    const co = [];
+    if(s.progressTone) co.push("Tone");
+    if(s.prAnnounce) co.push("PB");
+    setTxt("sumCoaching", co.length ? co.join(" · ") : "off");
+    const dsp = [];
+    if(s.eyesClosed) dsp.push("Eyes closed");
+    if(s.guardExit) dsp.push("Swipe guard");
+    setTxt("sumDisplay", dsp.length ? dsp.join(" · ") : "default");
+    const p = KV.get(K.presets, {});
+    const h = KV.get(K.history, []);
+    setTxt("sumPresets", `${Object.keys(p).length} presets · ${h.length} sessions`);
+  }
+
+  function getPR(){ return KV.get(K.pr, 0) || 0; }
+  function setPR(v){ KV.set(K.pr, v); }
+
+  function addHistory(entry){
+    const h = KV.get(K.history, []);
+    h.push(entry);
+    if(h.length>200) h.splice(0, h.length-200);
+    KV.set(K.history, h);
+  }
+  function renderStats(){
+    const h = KV.get(K.history, []);
+    const box = $("statsBox"); if(!box) return;
+    if(!h.length){ box.textContent = "No sessions yet."; return; }
+    const total = h.length;
+    const last = h[h.length-1];
+    const week = Date.now() - 7*24*3600*1000;
+    const recent = h.filter(x=>x.at>=week);
+    const sumHold = h.reduce((a,x)=>a + (x.holdSec||0), 0);
+    const bestRep = Math.max(0, ...h.map(x=>x.longestHold||0));
+    const fmt = s=>{ s=Math.round(s); const m=Math.floor(s/60); return m? (m+":"+String(s%60).padStart(2,"0")) : (s+" s"); };
+    box.innerHTML =
+      `Total sessions: <b>${total}</b> · last 7 days: <b>${recent.length}</b><br>` +
+      `Longest hold (record): <b>${bestRep} s</b><br>` +
+      `Total time held: <b>${fmt(sumHold)}</b><br>` +
+      `Last session: <b>${new Date(last.at).toLocaleString()}</b> · ${last.reps} reps · ${fmt(last.elapsed)}`;
+  }
+
+  function refreshPresetSelect(){
+    const sel = $("presetSel"); if(!sel) return;
+    const p = KV.get(K.presets, {});
+    const names = Object.keys(p).sort();
+    sel.innerHTML = '<option value="">– laden –</option>' +
+      names.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${n}</option>`).join("");
+  }
+  function presetSave(){
+    const name = ($("presetName").value || "").trim();
+    if(!name){ alert("Please enter a name."); return; }
+    const p = KV.get(K.presets, {});
+    p[name] = readAll();
+    KV.set(K.presets, p);
+    refreshPresetSelect();
+    $("presetSel").value = name;
+  }
+  function presetLoad(){
+    const name = $("presetSel").value;
+    if(!name) return;
+    const p = KV.get(K.presets, {});
+    if(!p[name]) return;
+    writeAll(p[name]);
+    $("presetName").value = name;
+    saveSettingsNow();
+  }
+  function presetDel(){
+    const name = $("presetSel").value;
+    if(!name) return;
+    const p = KV.get(K.presets, {});
+    delete p[name];
+    KV.set(K.presets, p);
+    refreshPresetSelect();
+  }
+
+  let progOsc = null, progGain = null;
+  function progressStart(){
+    if(!S || !S.progressTone) return;
+    const ctx = ensureAudio(); if(!ctx) return;
+    try{
+      progOsc = ctx.createOscillator(); progGain = ctx.createGain();
+      progOsc.type = "sine"; progOsc.frequency.value = 220;
+      progGain.gain.value = 0;
+      progGain.gain.linearRampToValueAtTime(0.035, ctx.currentTime + 0.15);
+      progOsc.connect(progGain); progGain.connect(ctx.destination);
+      progOsc.start();
+    }catch(e){ progOsc = progGain = null; }
+  }
+  function progressUpdate(p){
+    if(!progOsc || !progGain) return;
+    try{
+      progOsc.frequency.setTargetAtTime(220 + 440*Math.min(1,Math.max(0,p)), audioCtx.currentTime, 0.1);
+    }catch(e){}
+  }
+  function progressStop(){
+    if(!progOsc){ return; }
+    try{
+      const ctx = audioCtx;
+      progGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      const osc = progOsc, g = progGain;
+      setTimeout(()=>{ try{ osc.stop(); osc.disconnect(); g.disconnect(); }catch(e){} }, 250);
+    }catch(e){}
+    progOsc = null; progGain = null;
+  }
+
+  const synth = window.speechSynthesis || null;
+  function say(text){
+    if(!S || !S.sig || !S.sig.speech || !synth) return;
+    try{
+      synth.cancel();                 
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = speechTag();
+      u.rate = (S && S.rate) || 1;
+      synth.speak(u);
+    }catch(e){}
+  }
+
+  let audioCtx = null;
+  function ensureAudio(){
+    if(audioCtx) return audioCtx;
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+    return audioCtx;
+  }
+  function beep(freq, durMs, delayMs){
+    const ctx = ensureAudio(); if(!ctx) return;
+    try{
+      const t0 = ctx.currentTime + (delayMs||0)/1000;
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = "sine"; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.28, t0+0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+durMs/1000);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0+durMs/1000+0.03);
+    }catch(e){}
+  }
+  function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
+  function cmd(kind){            
+    if(!S) return;
+    if(S.sig.speech) say(S.words[kind]);
+    if(S.sig.beep){
+      if(kind==="down"){ beep(520,90,0); beep(700,120,110); }
+      else if(kind==="up"){ beep(400,170,0); }
+      else if(kind==="hold"){ beep(760,280,0); }
+    }
+    if(S.sig.vibrate){
+      if(kind==="down") vibrate([60,40,60]);
+      else if(kind==="up") vibrate(200);
+      else if(kind==="hold") vibrate([220,90,220]);
+    }
+  }
+  function cmdCount(n){
+    if(!S) return;
+    if(S.sig.speech) say(String(n));
+    if(S.sig.beep) beep(900,55,0);
+    if(S.sig.vibrate) vibrate(40);
+  }
+  function cmdFinish(){
+    if(!S) return;
+    if(S.sig.speech) say(S.words.finish);
+    if(S.sig.beep){ beep(660,120,0); beep(880,120,150); beep(1175,220,320); }
+    if(S.sig.vibrate) vibrate([120,60,120,60,220]);
+  }
+  function cmdPenalty(){
+    if(!S) return;
+    if(S.sig.speech) say(S.words.penalty);
+    if(S.sig.beep){ beep(320,150,0); beep(220,200,170); }
+    if(S.sig.vibrate) vibrate([300,120,300]);
+  }
+  function cmdPenaltyThenDown(){
+    if(!S) return;
+    if(S.sig.speech) say(S.words.penalty + ". " + S.words.down);
+    if(S.sig.beep){ beep(320,150,0); beep(220,200,170); beep(520,90,470); beep(700,120,580); }
+    if(S.sig.vibrate) vibrate([300,120,300, 220, 60,40,60]);
+  }
+
+  let goal = "reps";
+  function applyGoalVisibility(){
+    const isScenario = goal==="scenario";
+    $("repsField").classList.toggle("hidden", goal!=="reps");
+    $("timeField").classList.toggle("hidden", goal!=="time");
+    $("scenarioField").classList.toggle("hidden", !isScenario);
+    ["fBase","fChance","fHolds","fRest"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
+    ["fStrict","fPenaltyToggle","penaltyValField","fHideDur"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
+    $("penaltyLbl").textContent = goal==="time"
+      ? "Penalty amount (+seconds)"
+      : "Penalty amount (+reps)";
+  }
+  $("goalSeg").addEventListener("click", e=>{
+    const b = e.target.closest("button[data-goal]");
+    if(!b) return;
+    goal = b.dataset.goal;
+    [...$("goalSeg").children].forEach(c=>c.setAttribute("aria-pressed", c===b));
+    applyGoalVisibility();
+  });
+
+  const num = id => parseInt($(id).value, 10);
+  const fnum = id => parseFloat($(id).value);
+  const rand = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+
+  let S = null;          
+  let holding = false;   
+  let raf = 0;           
+  let restTimer = 0;     
+  let reactTimer = 0;    
+  let pendingRelease = false; 
+  let releaseTimer = 0;  
+
+  let wakeLock = null;
+  async function acquireWake(){
+    try{
+      if("wakeLock" in navigator){
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener && wakeLock.addEventListener("release", ()=>{ wakeLock = null; });
+      }
+    }catch(e){ wakeLock = null; }
+  }
+  function releaseWake(){ try{ if(wakeLock){ wakeLock.release(); } }catch(e){} wakeLock = null; }
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState==="visible" && S && !wakeLock) acquireWake();
+  });
+
+  function setTapSurface(on){
+    const el = $("tapSurface");
+    if(!el) return;
+    el.classList.toggle("hidden", !on);
+  }
+
+  let guardActive = false;
+  function beforeUnloadHandler(e){ if(S){ e.preventDefault(); e.returnValue = ""; return ""; } }
+  function popStateHandler(){ if(S && guardActive){ try{ history.pushState({tt:1}, ""); }catch(e){} } }
+  function enableGuard(){
+    if(guardActive) return;
+    guardActive = true;
+    try{ history.pushState({tt:1}, ""); }catch(e){}
+    window.addEventListener("popstate", popStateHandler);
+    window.addEventListener("beforeunload", beforeUnloadHandler);
+    try{ if(document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen(); }catch(e){}
+  }
+  function disableGuard(){
+    if(!guardActive) return;
+    guardActive = false;
+    window.removeEventListener("popstate", popStateHandler);
+    window.removeEventListener("beforeunload", beforeUnloadHandler);
+    try{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); }catch(e){}
+  }
+
+  function validate(){
+    if(goal==="reps"){
+      const a=num("minReps"), b=num("maxReps");
+      if(!(a>=1) || !(b>=1)) return "Please enter valid rep counts.";
+      if(a>b) return "Min must not be greater than max.";
+    } else if(goal==="time"){
+      if(!(num("totalMin")>=1)) return "Please choose a duration of at least 1 minute.";
+    }
+    if(goal!=="scenario"){
+      if(!(fnum("baseHold")>=0.1)) return "Hold time per rep must be at least 0.1 s.";
+      const hc=num("holdChance");
+      if(!(hc>=0 && hc<=100)) return "Long-hold chance must be between 0 and 100.";
+      const mn=num("minHold"), mx=num("maxHold");
+      if(!(mn>=1)||!(mx>=1)) return "Please enter valid long-hold times.";
+      if(mn>mx) return "Min long hold must not exceed max.";
+      const rn=num("minRest"), rx=num("maxRest");
+      if(rn<0 || rx<0 || isNaN(rn) || isNaN(rx)) return "Rest must not be negative.";
+      if(rn>rx) return "Min rest must not exceed max rest.";
+    }
+    if(num("releaseGrace")<0 || isNaN(num("releaseGrace"))) return "Release tolerance must not be negative.";
+    if(goal!=="scenario"){
+      if($("penalty").checked && !(num("penaltyX")>=1)) return "Please enter a valid penalty amount (min 1).";
+      if($("penalty").checked && !(num("lateTol")>=1)) return "Allowed late-start must be at least 1 second.";
+    }
+    return null;
+  }
+
+  function buildPlan(){
+    const cfg = {
+      goal,
+      base: fnum("baseHold"),
+      chance: num("holdChance"),
+      minHold: num("minHold"),
+      maxHold: num("maxHold"),
+      minRest: num("minRest"),
+      maxRest: num("maxRest"),
+      releaseGrace: Math.max(0, num("releaseGrace") || 0),
+      strict: $("strict").checked,
+      penalty: $("penalty").checked,
+      penaltyX: num("penaltyX") || 0,
+      lateTol: num("lateTol") || 0,
+      hide: $("hideDur").checked,
+      armed: false,
+      progressTone: $("progressTone").checked,
+      prAnnounce: $("prAnnounce").checked,
+      pr: getPR(),          
+      longestHold: 0,       
+      prBeaten: false,      
+      sig: {
+        speech: $("voice").checked,
+        beep: $("beep").checked,
+        vibrate: $("vibrate").checked,
+      },
+      words: {
+        down: ($("cmdDown").value || "").trim() || "Hold",
+        up:   ($("cmdUp").value || "").trim() || "Breathe",
+        hold: ($("cmdHold").value || "").trim() || "Keep going",
+        penalty: ($("cmdPenaltyWord").value || "").trim() || "Penalty",
+        finish: ($("cmdFinishWord").value || "").trim() || "Done",
+      },
+      rate: Math.min(2, Math.max(0.5, parseFloat($("cmdRate").value) || 1)),
+      eyesClosed: $("eyesClosed").checked,
+      guardExit: $("guardExit").checked,
+    };
+    let reps;
+    if(goal==="scenario"){
+      cfg.scenario = $("scenarioSel").value || "stopwatch";
+      reps = null; 
+    } else if(goal==="time"){
+      reps = null; 
+      cfg.totalMin = num("totalMin"); 
+    } else {
+      reps = rand(num("minReps"), num("maxReps"));
+    }
+    cfg.totalReps = reps;
+    return cfg;
+  }
+
+  function holdDurationFor(cfg){
+    if(Math.random()*100 < cfg.chance){
+      return { secs: sampleFromCurve("hold", cfg.minHold, cfg.maxHold), long:true };
+    }
+    return { secs: cfg.base, long:false };
+  }
+
+  function restSecsForNext(){
+    return sampleFromCurve("rest", S.minRest, S.maxRest);
+  }
+
+  function show(which){
+    $("setup").classList.toggle("hidden", which!=="setup");
+    $("session").classList.toggle("hidden", which!=="session");
+    $("finish").classList.toggle("hidden", which!=="finish");
+  }
+
+  function startSession(){
+    const msg = validate();
+    $("err").textContent = msg || "";
+    if(msg) return;
+
+    if(synth){ try{ synth.cancel(); synth.resume(); }catch(e){} }
+
+    S = buildPlan();
+    S.done = 0;
+    show("session");
+    $("repTotalWrap").style.display = S.totalReps ? "" : "none";
+    $("repTotal").textContent = S.totalReps || "";
+    $("repNow").textContent = "0";
+    armReady();   
+  }
+
+  function fmtSW(s){
+    s = Math.max(0,s);
+    return s.toFixed(1) + "s";
+  }
+
+  function armReady(){
+    if(!S) return;
+    if(S.goal === "scenario") return armReadyScenario();
+    S.cur = holdDurationFor(S);
+    S.heldMs = 0;
+    S.spokeHold = false;
+    S.lastSpokenSec = null;
+    holding = false;
+    setFill(0);
+    $("repNow").textContent = 1;
+    S.subBase = (!S.hide && S.cur.long) ? T().holdForN(S.cur.secs) : T().pressAndHold;
+    $("timer").textContent = "";
+    setCue("up", T().ready, S.eyesClosed ? T().tapToStart : T().pressToStart);
+    $("btnLab").textContent = T().pressToStart;
+    S.armed = true;          
+    S.waitingStart = true;   
+    setTapSurface(S.eyesClosed);
+    $("clock").textContent = (S.goal==="time") ? ("0:00 / " + fmtTime(S.totalMin*60)) : "0:00";
+  }
+
+  function armReadyScenario(){
+    holding = false;
+    pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
+    setFill(0);
+    $("repNow").textContent = 0;
+    S.subBase = "";
+    $("timer").textContent = "–";
+    setCue("up", T().ready, S.eyesClosed ? T().tapToStart : T().pressToStart);
+    $("btnLab").textContent = T().pressToStart;
+    S.armed = true;          
+    S.waitingStart = true;   
+    setTapSurface(S.eyesClosed);
+    $("clock").textContent = "0:00";
+    
+    $("swStats").classList.remove("hidden");
+    if(S.scenario === "stopwatch"){
+      S.swLongest = 0;
+      S.swLastReleaseTs = null;
+      $("swRest").textContent = fmtSW(0);
+      $("swLongest").textContent = fmtSW(0);
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().swRestLabel || "Rest since last hold";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().swLongestLabel || "Longest hold";
+    } else if (S.scenario === "sd_hold") {
+      S.sd_prevHold = 0;
+      S.swLastReleaseTs = null;
+      $("swRest").textContent = fmtSW(0);
+      $("swLongest").textContent = "0.0s";
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().swRestLabel || "Rest since last hold";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Letzter Hold";
+    } else if (S.scenario === "sd_speed") {
+      S.sd_phase = "action";
+      S.sd_repsThisPhase = 0;
+      S.sd_prevPhaseReps = 0;
+      $("swRest").textContent = "60.0s";
+      $("swLongest").textContent = "0";
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Reps (Ziel: 0)";
+    }
+  }
+
+  function bootFirstPress(){
+    S.waitingStart = false;
+    S.startTime = Date.now();
+    if(S.goal==="time") S.endAt = S.startTime + S.totalMin*60*1000;
+
+    if(S.scenario==="sd_speed") {
+       S.sd_phaseEndTs = S.startTime + 60000;
+       S.sd_timer = setInterval(()=>{
+           if(!S || S.scenario !== "sd_speed") { clearInterval(S.sd_timer); return; }
+           const now = Date.now();
+           const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
+           $("swRest").textContent = fmtSW(remain);
+           
+           if (S.sd_phase === "action" && !holding) {
+               $("subcue").textContent = `Action-Phase endet in ${Math.ceil(remain)}s`;
+           } else if (S.sd_phase === "rest") {
+               $("subcue").textContent = `Erholung... nächste Action in ${Math.ceil(remain)}s`;
+           }
+
+           if (remain <= 0) {
+               if (S.sd_phase === "action") {
+                   if (holding) pressEndStopwatch(); 
+                   if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
+                       S.sd_failMsg = `Game Over. ${S.sd_repsThisPhase} Reps (Ziel war ${S.sd_prevPhaseReps}).`;
+                       finish();
+                       return;
+                   }
+                   S.sd_phase = "rest";
+                   S.sd_phaseEndTs = now + 20000;
+                   S.sd_prevPhaseReps = Math.max(S.sd_prevPhaseReps || 0, S.sd_repsThisPhase);
+                   S.sd_repsThisPhase = 0;
+                   $("repNow").textContent = 0;
+                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: ${S.sd_prevPhaseReps})`;
+                   $("swLongest").textContent = "0";
+                   setCue("rest", "Pause", "Atme durch");
+                   cmd("up");
+               } else {
+                   S.sd_phase = "action";
+                   S.sd_phaseEndTs = now + 60000;
+                   setCue("up", T().ready, "Action Phase!");
+                   cmd("down");
+               }
+           }
+       }, 100);
+    }
+
+    startClock();
+    acquireWake();
+    const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
+    if(S.guardExit) enableGuard();
+  }
+
+  let swRestTimer = 0;
+  function pressStartStopwatch(){
+    if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
+
+    if(pendingRelease){
+      clearTimeout(releaseTimer); releaseTimer = 0;
+      pendingRelease = false;
+      holding = true;
+      $("holdBtn").classList.add("holding");
+      progressStart();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(stopwatchHoldLoop);
+      return;
+    }
+    if(S.waitingStart) bootFirstPress();
+    clearInterval(swRestTimer); swRestTimer = 0;
+    S.swHoldStartTs = Date.now();
+    holding = true;
+    $("holdBtn").classList.add("holding");
+    setCue("up", S.words.down, "");
+    $("btnLab").textContent = T().holding;
+    $("timer").textContent = fmtSW(0);
+    if(S.sig.vibrate) vibrate(25);
+    cmd("down");
+    progressStart();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(stopwatchHoldLoop);
+  }
+  function stopwatchHoldLoop(){
+    if(!holding || !S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold" && S.scenario !== "sd_speed")) return;
+    const elapsed = (Date.now() - S.swHoldStartTs)/1000;
+    $("timer").textContent = fmtSW(elapsed);
+    progressUpdate(Math.min(1, elapsed/30));   
+    raf = requestAnimationFrame(stopwatchHoldLoop);
+  }
+  function pressEndStopwatch(){
+    holding = false;
+    cancelAnimationFrame(raf);
+    S.swReleaseTs = Date.now();   
+    const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
+    if(graceMs > 0){
+      pendingRelease = true;
+      clearTimeout(releaseTimer);
+      releaseTimer = setTimeout(()=>{ releaseTimer=0; pendingRelease=false; finalizeStopwatchRelease(); }, graceMs);
+      return;
+    }
+    finalizeStopwatchRelease();
+  }
+  function finalizeStopwatchRelease(){
+    progressStop();
+    $("holdBtn").classList.remove("holding");
+    if(!S) return;
+    const heldSec = Math.max(0, ((S.swReleaseTs || Date.now()) - S.swHoldStartTs)/1000);
+
+    if (S.scenario === "sd_hold") {
+        if (S.sd_prevHold > 0 && heldSec < S.sd_prevHold) {
+            S.sd_failMsg = `Game Over. ${heldSec.toFixed(1)}s war kürzer als dein vorheriger Hold (${S.sd_prevHold.toFixed(1)}s).`;
+            finish();
+            return;
+        }
+        S.sd_prevHold = heldSec;
+        $("swLongest").textContent = fmtSW(S.sd_prevHold);
+    }
+
+    if (S.scenario === "sd_speed") {
+        if (S.sd_phase === "action") {
+            S.sd_repsThisPhase++;
+            S.done = (S.done || 0) + 1;
+            $("swLongest").textContent = S.sd_repsThisPhase;
+            $("repNow").textContent = S.sd_repsThisPhase;
+        }
+    } else {
+        S.done = (S.done||0) + 1;
+        $("repNow").textContent = S.done;
+    }
+
+    S.holdSec = (S.holdSec||0) + heldSec;                 
+    if(S.scenario === "stopwatch") {
+        if(heldSec > S.swLongest) S.swLongest = heldSec;
+        $("swLongest").textContent = fmtSW(S.swLongest);
+    }
+
+    if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;  
+    const heldSecRounded = Math.round(heldSec);
+    if(heldSecRounded > (S.pr||0) && !S.prBeaten && S.prAnnounce){
+      S.prBeaten = true;
+      say(T().newRecord(heldSecRounded));
+    }
+    cmd("up");
+
+    if (S.scenario === "sd_speed") {
+        setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
+        $("btnLab").textContent = T().pressToStart;
+        $("timer").textContent = fmtSW(0);
+    } else {
+        S.swLastReleaseTs = S.swReleaseTs || Date.now();
+        $("swRest").textContent = fmtSW(0);
+        setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
+        $("btnLab").textContent = T().pressToStart;
+        $("timer").textContent = fmtSW(0);
+        clearInterval(swRestTimer);
+        swRestTimer = setInterval(()=>{
+          if(!S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold")) { clearInterval(swRestTimer); return; }
+          const rs = (Date.now() - S.swLastReleaseTs)/1000;
+          $("timer").textContent = fmtSW(rs);
+          $("swRest").textContent = fmtSW(rs);
+        }, 100);
+    }
+  }
+
+  let clockTimer = 0;
+  function fmtTime(totalSec){
+    totalSec = Math.max(0, Math.floor(totalSec));
+    const m = Math.floor(totalSec/60), s = totalSec%60;
+    return m + ":" + String(s).padStart(2,"0");
+  }
+  function updateClock(){
+    if(!S){ return; }
+    const elapsed = (Date.now() - S.startTime)/1000;
+    if(S.goal==="time"){
+      const target = (S.endAt - S.startTime)/1000;
+      $("clock").textContent = fmtTime(elapsed) + " / " + fmtTime(target);
+    } else {
+      $("clock").textContent = fmtTime(elapsed);
+    }
+  }
+  function startClock(){
+    clearInterval(clockTimer);
+    updateClock();
+    clockTimer = setInterval(updateClock, 1000);
+  }
+
+  function timeUp(){ return S.goal==="time" && S.endAt && Date.now() >= S.endAt; }
+
+  function nextRep(first){
+    if(!S) return;
+    S.armed = false;   
+    if(S.totalReps && S.done >= S.totalReps) return finish();
+    if(timeUp()) return finish();
+
+    const restSecs = restSecsForNext();
+    const restMs = first ? 0 : restSecs*1000;
+    if(restMs>0){
+      let left = restSecs;
+      setCue("rest", T().rest, `${T().breathe} · ${left}s`);
+      $("timer").textContent = "";
+      restTimer = setInterval(()=>{
+        left--;
+        if(left<=0){ clearInterval(restTimer); beginRep(); }
+        else $("subcue").textContent = `${T().breathe} · ${left}s`;
+      },1000);
+    } else {
+      beginRep();
+    }
+  }
+
+  function beginRep(){
+    if(!S) return;
+    if(timeUp()) return finish();
+    pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
+    S.cur = holdDurationFor(S);
+    S.heldMs = 0;
+    S.spokeHold = false;      
+    S.lastSpokenSec = null;   
+    holding = false;
+    setFill(0);
+    const n = S.done + 1;
+    $("repNow").textContent = n;
+    let big, sub;
+    if(S.hide){
+      big = S.words.down; sub = T().pressAndHold;
+    } else if(S.cur.long){
+      big = S.words.down + " " + T().andHold; sub = T().holdForN(S.cur.secs);
+    } else {
+      big = S.words.down; sub = T().pressAndHold;
+    }
+    $("timer").textContent = "";
+    S.subBase = sub;
+    S.armed = true;    
+    setCue("up", big, sub);
+    cmd("down");
+    $("btnLab").textContent = T().pressHold;
+    startReactionWindow();
+  }
+
+  function startReactionWindow(){
+    clearInterval(reactTimer); reactTimer = 0;
+    if(!S || !S.penalty || !(S.lateTol > 0)) return;
+    S.reactLeft = S.lateTol;
+    renderReact();
+    reactTimer = setInterval(()=>{
+      if(!S || !S.cur || holding) return;
+      S.reactLeft--;
+      if(S.reactLeft <= 0){
+        applyPenalty();
+        S.subBase = penaltyNote(T().tooLate);
+        S.reactLeft = S.lateTol;
+        cmdPenaltyThenDown();
+      }
+      renderReact();
+    },1000);
+  }
+  function renderReact(){
+    if(!S) return;
+    $("subcue").textContent = `${S.subBase} · ${T().startWithin(S.reactLeft)}`;
+  }
+
+  function setCue(kind, big, sub){
+    const c = $("cue");
+    c.className = "cue " + kind;
+    c.textContent = big;
+    $("subcue").textContent = sub || "";
+  }
+  function setFill(p){ $("fill").style.height = Math.max(0,Math.min(100,p*100)) + "%"; }
+
+  let lastTs = 0;
+  function loop(ts){
+    if(!holding || !S || !S.cur){ return; }
+    if(!lastTs) lastTs = ts;
+    const dt = ts - lastTs;
+    lastTs = ts;
+    S.heldMs += dt;
+    const target = S.cur.secs*1000;
+    const p = S.heldMs/target;
+    setFill(p);
+    progressUpdate(p);
+    const remain = Math.max(0, Math.ceil((target - S.heldMs)/1000));
+
+    if(S.cur.long){
+      if(S.hide){
+        $("timer").textContent = "•";
+        if(remain>=1 && remain<=5 && remain!==S.lastSpokenSec){
+          S.lastSpokenSec = remain;
+          cmdCount(remain);
+        }
+      } else {
+        $("timer").textContent = remain;   
+      }
+    } else {
+      $("timer").textContent = "";
+    }
+
+    if(S.heldMs >= target){
+      completeRep();
+      return;
+    }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function pressStart(){
+    if(!S || !S.armed) return;   
+    if(holding) return;
+    if(S.goal === "scenario"){
+      pressStartStopwatch();
+      return;
+    }
+    if(!S.cur) return;
+    if(pendingRelease){
+      clearTimeout(releaseTimer); releaseTimer = 0;
+      pendingRelease = false;
+      holding = true;
+      lastTs = 0;
+      $("holdBtn").classList.add("holding");
+      progressStart();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(loop);
+      return;
+    }
+    if(S.waitingStart){
+      bootFirstPress();
+      setCue("up", S.cur.long ? (S.words.down + " " + T().andHold) : S.words.down, S.subBase);
+    }
+    clearInterval(reactTimer); reactTimer = 0;     
+    if(S.subBase) $("subcue").textContent = S.subBase;
+    holding = true;
+    lastTs = 0;
+    $("holdBtn").classList.add("holding");
+    $("btnLab").textContent = T().holding;
+    if(S.sig.vibrate) vibrate(25);  
+    if(S.cur.long) cmd("hold");   
+    progressStart();               
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+  }
+
+  function pressEnd(){
+    if(!holding) return;
+    if(S && S.goal === "scenario"){
+      pressEndStopwatch();
+      return;
+    }
+    holding = false;
+    cancelAnimationFrame(raf);
+    const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
+    if(graceMs > 0 && S && S.cur){
+      pendingRelease = true;
+      clearTimeout(releaseTimer);
+      releaseTimer = setTimeout(()=>{ releaseTimer = 0; pendingRelease = false; finalizeRelease(); }, graceMs);
+      return;
+    }
+    finalizeRelease();
+  }
+
+  function finalizeRelease(){
+    progressStop();
+    $("holdBtn").classList.remove("holding");
+    if(!S || !S.cur) return;
+    const target = S.cur.secs*1000;
+    if(S.heldMs < target){
+      const realAttempt = S.heldMs > 150;
+      const penalized = S.penalty && realAttempt;
+      if(penalized) applyPenalty();
+      if(S.strict){
+        S.heldMs = 0;
+        S.lastSpokenSec = null;
+        S.spokeHold = false;
+        setFill(0);
+        $("timer").textContent = "";
+        $("btnLab").textContent = T().tooEarlyLab;
+        S.subBase = penaltyNote(T().tooEarly);
+        setCue("up", S.words.down, S.subBase);
+        if(penalized) cmdPenaltyThenDown(); else cmd("down");
+        startReactionWindow();
+      } else {
+        $("btnLab").textContent = T().pressHold;
+        if(penalized){
+          setCue("up", T().continueWord, penaltyNote(T().tooEarly));
+          cmdPenalty();
+        }
+      }
+    }
+  }
+
+  function applyPenalty(){
+    if(!S) return;
+    if(S.goal==="time"){
+      S.endAt += S.penaltyX*1000;
+    } else if(S.totalReps != null){
+      S.totalReps += S.penaltyX;
+      $("repTotal").textContent = S.totalReps;
+    }
+  }
+
+  function penaltyNote(base){
+    if(!S || !S.penalty) return base;
+    const unit = S.goal==="time" ? `+${S.penaltyX}s` : `+${S.penaltyX} reps`;
+    return base + " · " + unit;
+  }
+
+  function completeRep(){
+    holding = false;
+    pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
+    S.armed = false;   
+    cancelAnimationFrame(raf);
+    clearInterval(reactTimer); reactTimer = 0;
+    progressStop();
+    $("holdBtn").classList.remove("holding");
+    setFill(1);
+    const heldSec = Math.round((S.heldMs || 0)/1000);
+    if(heldSec > S.longestHold) S.longestHold = heldSec;
+    if(heldSec > (S.pr || 0) && !S.prBeaten && S.prAnnounce){
+      S.prBeaten = true;
+      say(T().newRecord(heldSec));
+    }
+    S.done++;
+    S.holdSec = (S.holdSec || 0) + heldSec;
+    setCue("down", S.words.up, T().release);
+    cmd("up");
+    $("btnLab").textContent = T().pressHold;
+    setTimeout(()=>{ if(S) nextRep(false); }, 650);
+  }
+
+  function finish(){
+    cancelAnimationFrame(raf);
+    clearInterval(restTimer);
+    clearInterval(reactTimer); reactTimer = 0;
+    clearInterval(clockTimer); clockTimer = 0;
+    clearInterval(swRestTimer); swRestTimer = 0;
+    clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
+    if (S && S.sd_timer) clearInterval(S.sd_timer);
+    
+    progressStop();
+    $("swStats").classList.add("hidden");
+    const total = S ? S.done : 0;
+    const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
+    $("doneNum").textContent = total;
+    if (S && S.sd_failMsg) {
+        $("doneMsg").textContent = S.sd_failMsg;
+    } else {
+        $("doneMsg").textContent = (total===1 ? T().rep : (T().rep + "s")) + " · " + fmtTime(elapsedSec);
+    }
+    
+    cmdFinish();
+    if(S && S.startTime){
+      addHistory({
+        at: Date.now(),
+        goal: S.goal,
+        reps: total,
+        elapsed: elapsedSec,
+        holdSec: S.holdSec || 0,
+        longestHold: S.longestHold || 0,
+      });
+      if((S.longestHold||0) > getPR()) setPR(S.longestHold);
+      renderStats();
+    }
+    releaseWake(); disableGuard(); setTapSurface(false);
+    show("finish");
+    S = null;
+  }
+
+  function stopSession(){
+    cancelAnimationFrame(raf);
+    clearInterval(restTimer);
+    clearInterval(reactTimer); reactTimer = 0;
+    clearInterval(clockTimer); clockTimer = 0;
+    clearInterval(swRestTimer); swRestTimer = 0;
+    clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
+    if (S && S.sd_timer) clearInterval(S.sd_timer);
+    
+    progressStop();
+    $("swStats").classList.add("hidden");
+    if(synth){ try{ synth.cancel(); }catch(e){} }
+    releaseWake(); disableGuard(); setTapSurface(false);
+    holding = false;
+    S = null;
+    show("setup");
+  }
+
+  const btn = $("holdBtn");
+  btn.addEventListener("pointerdown", e=>{
+    e.preventDefault();
+    try{ btn.setPointerCapture(e.pointerId); }catch(_){}
+    pressStart();
+  });
+  btn.addEventListener("pointerup",     e=>{ e.preventDefault(); pressEnd(); });
+  btn.addEventListener("pointercancel", e=>{ pressEnd(); });
+  btn.addEventListener("lostpointercapture", ()=>{ pressEnd(); });
+  window.addEventListener("pointerup", ()=>{ if(holding) pressEnd(); });
+  btn.addEventListener("contextmenu", e=>e.preventDefault());
+
+  const tap = $("tapSurface");
+  tap.addEventListener("pointerdown", e=>{
+    e.preventDefault();
+    try{ tap.setPointerCapture(e.pointerId); }catch(_){}
+    pressStart();
+  });
+  tap.addEventListener("pointerup",     e=>{ e.preventDefault(); pressEnd(); });
+  tap.addEventListener("pointercancel", ()=>{ pressEnd(); });
+  tap.addEventListener("lostpointercapture", ()=>{ pressEnd(); });
+  tap.addEventListener("contextmenu", e=>e.preventDefault());
+
+  let keyHeld = false;
+  window.addEventListener("keydown", e=>{
+    if($("session").classList.contains("hidden")) return;
+    if((e.code==="Space"||e.code==="Enter") && !e.repeat && !keyHeld){
+      e.preventDefault(); keyHeld=true; pressStart();
+    }
+  });
+  window.addEventListener("keyup", e=>{
+    if((e.code==="Space"||e.code==="Enter") && keyHeld){
+      e.preventDefault(); keyHeld=false; pressEnd();
+    }
+  });
+  window.addEventListener("blur", ()=>{ if(keyHeld){ keyHeld=false; pressEnd(); } });
+
+  $("startBtn").addEventListener("click", startSession);
+  $("stopBtn").addEventListener("click", ()=>{
+    if(S && S.goal==="scenario") finish(); else stopSession();
+  });
+  $("againBtn").addEventListener("click", ()=>{ show("setup"); });
+
+  $("presetSave").addEventListener("click", ()=>{ presetSave(); updateSummaries(); });
+  $("presetLoad").addEventListener("click", ()=>{ presetLoad(); updateSummaries(); });
+  $("presetDel").addEventListener("click", ()=>{ presetDel(); updateSummaries(); });
+  $("statsClear").addEventListener("click", ()=>{
+    if(confirm("Clear the whole history and personal best?")){
+      KV.del(K.history); KV.del(K.pr); renderStats();
+    }
+  });
+
+  for(const id of SETTING_IDS){
+    const el = $(id); if(!el) continue;
+    const ev = (el.type==="checkbox" || el.tagName==="SELECT") ? "change" : "input";
+    el.addEventListener(ev, debouncedSaveSettings);
+  }
+  $("goalSeg").addEventListener("click", debouncedSaveSettings);
+
+  (function bootRestore(){
+    const savedLang = KV.get("lat.lang", null);
+    const browserLang = (navigator.language || "en").slice(0,2).toLowerCase();
+    LANG = I18N[savedLang] ? savedLang : (I18N[browserLang] ? browserLang : "en");
+    populateLangSelect();
+    document.documentElement.setAttribute("lang", LANG);
+    document.documentElement.setAttribute("dir", (LANG==="ar"||LANG==="ur") ? "rtl" : "ltr");
+    $("appLang").addEventListener("change", e=>{
+      const newLang = e.target.value;
+      const prev = I18N[LANG] || I18N.en;
+      const nx = I18N[newLang] || I18N.en;
+      const swap = (id, from, to) => { const el = $(id); if(!el) return; if((el.value||"").trim()===from) el.value = to; };
+      swap("cmdDown", prev.cueDown, nx.cueDown);
+      swap("cmdUp", prev.cueUp, nx.cueUp);
+      swap("cmdHold", prev.cueLong, nx.cueLong);
+      swap("cmdPenaltyWord", prev.cuePenalty, nx.cuePenalty);
+      swap("cmdFinishWord", prev.cueFinish, nx.cueFinish);
+      setLang(newLang);
+      saveSettingsNow();
+    });
+
+    const saved = KV.get(K.settings, null);
+    if(saved) writeAll(saved);
+    const lg = I18N[LANG] || I18N.en;
+    const seed = (id, val) => { const el = $(id); if(el && !((el.value||"").trim())) el.value = val; };
+    seed("cmdDown", lg.cueDown);
+    seed("cmdUp", lg.cueUp);
+    seed("cmdHold", lg.cueLong);
+    seed("cmdPenaltyWord", lg.cuePenalty);
+    seed("cmdFinishWord", lg.cueFinish);
+    applyRuntimeI18n();
+
+    refreshPresetSelect();
+    renderStats();
+    loadCurves();
+    ["hold","rest"].forEach(which=>{
+      const cv = $(which==="hold" ? "curveHold" : "curveRest"); if(!cv) return;
+      cv.addEventListener("click", ()=>openCurveEditor(which));
+    });
+    document.querySelectorAll('.curveOpen').forEach(btn=>{
+      btn.addEventListener("click", ()=>openCurveEditor(btn.dataset.curve));
+    });
+    wireOverlayCanvas();
+    document.querySelectorAll('[data-overlay-preset]').forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if(!overlayWhich) return;
+        applyPreset(overlayWhich, btn.dataset.overlayPreset);
+        drawCurve(overlayWhich, $("curveBig"));
+      });
+    });
+    $("curveOverlayDone").addEventListener("click", closeCurveEditor);
+    document.querySelectorAll('#curveOverlay [data-mode]').forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if(!overlayWhich) return;
+        curveMode[overlayWhich] = btn.dataset.mode;
+        saveCurves();
+        refreshCurveOverlayForMode();
+        updateSummaries();
+      });
+    });
+    ["minHold","maxHold","minRest","maxRest"].forEach(id=>{
+      const el = $(id); if(!el) return;
+      el.addEventListener("input", ()=>{ updateCurveAxes(); });
+    });
+    updateCurveAxes();
+    requestAnimationFrame(()=>{ drawCurve("hold"); drawCurve("rest"); });
+    window.addEventListener("resize", ()=>{
+      drawCurve("hold"); drawCurve("rest");
+      if(overlayWhich) drawCurve(overlayWhich, $("curveBig"));
+    });
+    ["secTiming"].forEach(id=>{
+      const d = $(id); if(!d) return;
+      d.addEventListener("toggle", ()=>{ if(d.open) requestAnimationFrame(()=>{ drawCurve("hold"); drawCurve("rest"); }); });
+    });
+    updateSummaries();
+  })();
+
+  (function(){
+    const vt = $("vibrate"), vh = $("vibrateHint");
+    if(!("vibrate" in navigator)){
+      if(vh) vh.textContent = "This browser reports no vibration support.";
+      return;
+    }
+    vt.addEventListener("change", ()=>{
+      if(!vt.checked) return;
+      let ok = false;
+      try{ ok = navigator.vibrate([120,60,200]); }catch(e){ ok = false; }
+      if(vh){
+        vh.textContent = ok
+          ? "Test triggered. Nothing felt? On Android: Settings → Sound & vibration → enable Vibration & haptics; and make sure the phone is not silenced/Do-Not-Disturb."
+          : "Vibration was blocked by the browser (user gesture or system setting required).";
+      }
+    });
+  })();
+
+  document.addEventListener("selectstart", e=>{ if(S) e.preventDefault(); });
+  document.addEventListener("pointerdown", function prime(){
+    if(synth){ try{ const u=new SpeechSynthesisUtterance(""); synth.speak(u); synth.cancel(); }catch(e){} }
+    const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
+    document.removeEventListener("pointerdown", prime);
+  }, {once:true});
+})();
+</script>
+</body>
+</html>
