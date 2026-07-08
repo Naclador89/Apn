@@ -295,6 +295,7 @@
   .finishGame{width:100%;max-width:var(--maxw);margin:0 auto;
     padding:0 18px calc(18px + env(safe-area-inset-bottom));
     display:flex;flex-direction:column;gap:12px;align-items:center}
+  .fgBadges{display:flex;flex-direction:column;gap:8px;align-items:center}
   .fgBadge,.fgLevelUp{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;
     padding:8px 16px;border-radius:999px;text-align:center;animation:fgPop .4s cubic-bezier(.2,1.3,.4,1) both}
   .fgBadge{background:rgba(245,181,68,.14);border:1px solid var(--rise);color:var(--rise)}
@@ -650,7 +651,7 @@
       <div class="msg" id="doneMsg">Reps completed.</div>
     </div>
     <div class="finishGame hidden" id="finishGame">
-      <div class="fgBadge hidden" id="fgBadge">🏆 <span id="fgBadgeTxt"></span></div>
+      <div class="fgBadges hidden" id="fgBadges"></div>
       <div class="fgLevelUp hidden" id="fgLevelUp">⬆️ <span id="fgLevelUpTxt"></span></div>
       <div class="fgCard">
         <div class="fgTop">
@@ -660,6 +661,7 @@
         <div class="fgBar"><div class="fgBarFill" id="fgBarFill"></div></div>
         <div class="fgXpText" id="fgXpText"></div>
       </div>
+      <div class="fgStreak hidden" id="fgPace"></div>
       <div class="fgStreak hidden" id="fgStreak"></div>
     </div>
   </section>
@@ -726,6 +728,8 @@
         streakLine:n=>`🔥 <b>${n}</b> Tage in Folge`,
         newBest:"Neuer Bestwert!",
         recStopwatch:"Längster Hold", recSdHold:"Sudden-Death-Runden", recSdSpeed:"Beste Rep-Phase",
+        recReps:"Meiste Reps", recTime:"Meiste Reps (Zeit)", recPace:"Bestes Tempo",
+        paceLine:p=>`Tempo: <b>${p}</b> Reps/min`,
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -750,6 +754,8 @@
         streakLine:n=>`🔥 <b>${n}</b> day streak`,
         newBest:"New best!",
         recStopwatch:"Longest hold", recSdHold:"Sudden-death rounds", recSdSpeed:"Best rep phase",
+        recReps:"Most reps", recTime:"Most reps (timed)", recPace:"Best pace",
+        paceLine:p=>`Pace: <b>${p}</b> reps/min`,
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -1254,7 +1260,7 @@
       xp: g.xp || 0,
       streakCount: g.streakCount || 0,
       streakLast: (g.streakLast == null ? null : g.streakLast),
-      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0 }, g.rec || {})
+      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, reps:0, time:0, pace:0 }, g.rec || {})
     };
   }
   function saveGame(g){ KV.set(K.game, g); }
@@ -1297,15 +1303,34 @@
     const streakBonus = Math.min(g.streakCount, 10) * 2;
     xp += streakBonus;
 
-    // per-scenario personal best
-    let recKey = null, recVal = 0, newRecord = false;
-    if(snap.goal === "scenario"){
-      if(snap.scenario === "stopwatch"){ recKey = "stopwatch"; recVal = Math.round((snap.swLongest || 0) * 10) / 10; }
-      else if(snap.scenario === "sd_hold"){ recKey = "sd_hold"; recVal = snap.sdRounds || 0; }
-      else if(snap.scenario === "sd_speed"){ recKey = "sd_speed"; recVal = snap.sdSpeedBest || 0; }
-      if(recKey && recVal > (g.rec[recKey] || 0)){ g.rec[recKey] = recVal; newRecord = true; }
+    // ---- personal-best records (may be several in one session) ----
+    const records = [];
+    function tryRecord(key, val){
+      if(val > (g.rec[key] || 0)){ g.rec[key] = val; records.push({ key, val }); }
     }
-    if(newRecord) xp += 25;
+    const reps = snap.reps || 0;
+    const elapsed = snap.elapsedSec || 0;
+
+    if(snap.goal === "scenario"){
+      if(snap.scenario === "stopwatch") tryRecord("stopwatch", Math.round((snap.swLongest || 0) * 10) / 10);
+      else if(snap.scenario === "sd_hold") tryRecord("sd_hold", snap.sdRounds || 0);
+      else if(snap.scenario === "sd_speed") tryRecord("sd_speed", snap.sdSpeedBest || 0);
+    } else if(snap.goal === "reps"){
+      tryRecord("reps", reps);
+    } else if(snap.goal === "time"){
+      tryRecord("time", reps);
+    }
+
+    // ---- pace (reps per minute), tracked across all modes ----
+    let pace = 0, paceShown = false;
+    if(reps > 0 && elapsed > 0){
+      pace = Math.round((reps * 60 / elapsed) * 10) / 10;
+      paceShown = true;
+      // only chase a pace record on sessions substantial enough to be meaningful
+      if(reps >= 5 && elapsed >= 30) tryRecord("pace", pace);
+    }
+
+    if(records.length) xp += 25;
 
     xp = Math.max(xp, 1);
     g.xp += xp;
@@ -1314,14 +1339,21 @@
     const rank = rankInfo(g.xp);
     return {
       xpGained: xp, streakBonus, streakCount: g.streakCount, streakEvent,
-      newRecord, recKey, recVal, rank, leveledUp: rank.idx > beforeIdx, totalXp: g.xp
+      records, pace, paceShown,
+      rank, leveledUp: rank.idx > beforeIdx, totalXp: g.xp
     };
   }
 
-  function recordText(t, r){
-    const map = { stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed };
-    const label = map[r.recKey] || "";
-    const val = (r.recKey === "stopwatch") ? fmtSW(r.recVal) : r.recVal;
+  function recordText(t, rec){
+    const map = {
+      stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed,
+      reps: t.recReps, time: t.recTime, pace: t.recPace
+    };
+    const label = map[rec.key] || "";
+    let val;
+    if(rec.key === "stopwatch") val = fmtSW(rec.val);
+    else if(rec.key === "pace") val = rec.val + "/min";
+    else val = rec.val;
     return (t.newBest || "New best!") + " · " + label + " " + val;
   }
 
@@ -1341,19 +1373,26 @@
       ? (r.totalXp + " XP · MAX")
       : (r.rank.into + " / " + r.rank.span + " XP");
 
-    const badge = $("fgBadge");
-    if(r.newRecord){ badge.classList.remove("hidden"); $("fgBadgeTxt").textContent = recordText(t, r); }
-    else badge.classList.add("hidden");
+    const badges = $("fgBadges");
+    if(r.records && r.records.length){
+      badges.classList.remove("hidden");
+      badges.innerHTML = r.records.map(rec=>
+        `<div class="fgBadge">🏆 ${recordText(t, rec)}</div>`).join("");
+    } else { badges.classList.add("hidden"); badges.innerHTML = ""; }
 
     const lu = $("fgLevelUp");
     if(r.leveledUp){ lu.classList.remove("hidden"); $("fgLevelUpTxt").textContent = t.levelUp ? t.levelUp(r.rank.name) : ("Rank up: " + r.rank.name); }
     else lu.classList.add("hidden");
 
+    const pc = $("fgPace");
+    if(r.paceShown){ pc.classList.remove("hidden"); pc.innerHTML = t.paceLine ? t.paceLine(r.pace) : ("Pace: " + r.pace + " reps/min"); }
+    else pc.classList.add("hidden");
+
     const st = $("fgStreak");
     if(r.streakCount > 1){ st.classList.remove("hidden"); st.innerHTML = t.streakLine ? t.streakLine(r.streakCount) : ("🔥 " + r.streakCount); }
     else st.classList.add("hidden");
 
-    if(r.newRecord || r.leveledUp){ confettiBurst(); vibrate([0,40,60,40]); }
+    if((r.records && r.records.length) || r.leveledUp){ confettiBurst(); vibrate([0,40,60,40]); }
   }
 
   function confettiBurst(){
@@ -1420,6 +1459,7 @@
     const ri = rankInfo(g.xp);
     let gameLine = `${t.statsRank || "Rank"}: <b>${ri.name}</b> · <b>${g.xp}</b> XP`;
     if(g.streakCount > 1) gameLine += ` · 🔥 <b>${g.streakCount}</b>`;
+    if(g.rec && g.rec.pace > 0) gameLine += ` · <b>${g.rec.pace}</b>/min`;
     box.innerHTML =
       gameLine + `<br>` +
       `Total sessions: <b>${total}</b> · last 7 days: <b>${recent.length}</b><br>` +
@@ -2281,7 +2321,7 @@
       if((S.longestHold||0) > getPR()) setPR(S.longestHold);
       gameResult = commitGameSession({
         goal: S.goal, scenario: S.scenario,
-        holdSec: S.holdSec || 0, reps: total,
+        holdSec: S.holdSec || 0, reps: total, elapsedSec: elapsedSec,
         swLongest: S.swLongest || 0,
         sdRounds: (S.scenario === "sd_hold") ? (S.done || 0) : 0,
         sdSpeedBest: S.sd_prevPhaseReps || 0
