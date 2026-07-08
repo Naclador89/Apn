@@ -368,9 +368,17 @@
           <select id="scenarioSel" aria-label="Choose scenario">
             <option value="stopwatch" selected>Stopwatch — hold as long as you can</option>
             <option value="sd_hold">Sudden death: Hold — Jeder Hold länger als der davor</option>
-            <option value="sd_speed">Sudden death: Speed — 60s Action / 20s Pause</option>
+            <option value="sd_speed">Sudden death: Speed — Action / Pause (einstellbar)</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
+          <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
+            <label class="lbl" id="sdSpeedLbl">Action / Pause length (seconds)</label>
+            <div class="row">
+              <input id="sdActionSec" type="number" min="5" max="600" step="1" value="60" aria-label="Action phase length in seconds">
+              <input id="sdPauseSec" type="number" min="3" max="300" step="1" value="20" aria-label="Pause phase length in seconds">
+            </div>
+            <div class="hint" id="sdSpeedHint">Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.</div>
+          </div>
         </div>
       </div>
     </details>
@@ -1151,7 +1159,7 @@
 
 
   const SETTING_IDS = [
-    "minReps","maxReps","totalMin","scenarioSel",
+    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "voice","beep","vibrate","eyesClosed","guardExit",
@@ -1184,6 +1192,7 @@
     if($("goalSeg")) [...$("goalSeg").children].forEach(b=>{
       if(b.getAttribute("aria-pressed")==="true"){ /* sync handled */ }
     });
+    applyScenarioVisibility();
   }
   function saveSettingsNow(){ KV.set(K.settings, readAll()); }
   function debouncedSaveSettings(){
@@ -1563,10 +1572,16 @@
     $("scenarioField").classList.toggle("hidden", !isScenario);
     ["fBase","fChance","fHolds","fRest"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
     ["fStrict","fPenaltyToggle","penaltyValField","fHideDur"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
+    applyScenarioVisibility();
     $("penaltyLbl").textContent = goal==="time"
       ? "Penalty amount (+seconds)"
       : "Penalty amount (+reps)";
   }
+  function applyScenarioVisibility(){
+    const isSpeed = goal==="scenario" && $("scenarioSel").value==="sd_speed";
+    $("sdSpeedField").classList.toggle("hidden", !isSpeed);
+  }
+  $("scenarioSel").addEventListener("change", applyScenarioVisibility);
   $("goalSeg").addEventListener("click", e=>{
     const b = e.target.closest("button[data-goal]");
     if(!b) return;
@@ -1693,7 +1708,11 @@
     let reps;
     if(goal==="scenario"){
       cfg.scenario = $("scenarioSel").value || "stopwatch";
-      reps = null; 
+      const actSec = Math.min(600, Math.max(5, Math.round(parseFloat($("sdActionSec").value) || 60)));
+      const pauSec = Math.min(300, Math.max(3, Math.round(parseFloat($("sdPauseSec").value) || 20)));
+      cfg.sd_actionMs = actSec * 1000;
+      cfg.sd_pauseMs  = pauSec * 1000;
+      reps = null;
     } else if(goal==="time"){
       reps = null; 
       cfg.totalMin = num("totalMin"); 
@@ -1795,7 +1814,7 @@
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
       S.sd_prevPhaseReps = 0;
-      $("swRest").textContent = "60.0s";
+      $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
       document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Reps (Ziel: 0)";
@@ -1808,7 +1827,9 @@
     if(S.goal==="time") S.endAt = S.startTime + S.totalMin*60*1000;
 
     if(S.scenario==="sd_speed") {
-       S.sd_phaseEndTs = S.startTime + 60000;
+       const actionMs = S.sd_actionMs || 60000;
+       const pauseMs  = S.sd_pauseMs  || 20000;
+       S.sd_phaseEndTs = S.startTime + actionMs;
        S.sd_timer = setInterval(()=>{
            if(!S || S.scenario !== "sd_speed") { clearInterval(S.sd_timer); return; }
            const now = Date.now();
@@ -1830,7 +1851,7 @@
                        return;
                    }
                    S.sd_phase = "rest";
-                   S.sd_phaseEndTs = now + 20000;
+                   S.sd_phaseEndTs = now + pauseMs;
                    S.sd_prevPhaseReps = Math.max(S.sd_prevPhaseReps || 0, S.sd_repsThisPhase);
                    S.sd_repsThisPhase = 0;
                    $("repNow").textContent = 0;
@@ -1840,7 +1861,7 @@
                    cmd("up");
                } else {
                    S.sd_phase = "action";
-                   S.sd_phaseEndTs = now + 60000;
+                   S.sd_phaseEndTs = now + actionMs;
                    setCue("up", T().ready, "Action Phase!");
                    cmd("down");
                }
