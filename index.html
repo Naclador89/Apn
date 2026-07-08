@@ -188,6 +188,21 @@
   .switch input:checked + .track .knob{transform:translateX(20px);background:var(--rise)}
   .switch input:focus-visible + .track{outline:2px solid var(--rise);outline-offset:2px}
 
+  /* advanced-settings toggle */
+  .advToggle{
+    width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:transparent;border:1px dashed var(--line);border-radius:12px;
+    color:var(--muted);cursor:pointer;
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;letter-spacing:.02em;
+    padding:13px;transition:.15s;
+  }
+  .advToggle:hover{color:var(--text);border-color:var(--rise)}
+  .advToggle .advChevron{font-size:18px;line-height:1;transition:transform .18s}
+  .advToggle.open{color:var(--text);border-style:solid}
+  .advToggle.open .advChevron{transform:rotate(90deg)}
+  .advWrap{margin-top:14px;display:flex;flex-direction:column;gap:14px}
+  .advWrap .panel + .panel{margin-top:0}
+
   .start{
     width:100%;margin-top:16px;border:none;cursor:pointer;
     background:linear-gradient(180deg,var(--rise),var(--rise-deep));
@@ -334,87 +349,87 @@
 <body>
 <div class="wrap">
   <header>
-    <span class="mark">Apnea</span>
-    <h1 id="appTitle">Breath-hold trainer</h1>
+    <span class="mark" data-i18n="mark">Apnea</span>
+    <h1 id="appTitle" data-i18n="title">Breath-hold trainer</h1>
     <select id="appLang" class="langSel" aria-label="App language"></select>
   </header>
 
   <section id="setup">
 
     <details class="panel primary" id="secGoal" open>
-      <summary>Session goal <span class="sumSub" id="sumGoal"></span></summary>
+      <summary><span data-i18n="uiGoalTitle">Session goal</span> <span class="sumSub" id="sumGoal"></span></summary>
       <div class="body">
         <div class="field" style="margin-bottom:12px">
           <div class="seg" id="goalSeg" role="group" aria-label="Session goal">
-            <button type="button" data-goal="reps" aria-pressed="true">Reps</button>
-            <button type="button" data-goal="time" aria-pressed="false">Time</button>
-            <button type="button" data-goal="scenario" aria-pressed="false">Scenario</button>
+            <button type="button" data-goal="reps" aria-pressed="true" data-i18n="goalReps">Reps</button>
+            <button type="button" data-goal="time" aria-pressed="false" data-i18n="goalTime">Time</button>
+            <button type="button" data-goal="scenario" aria-pressed="false" data-i18n="goalScenario">Scenario</button>
           </div>
         </div>
 
         <div class="field" id="repsField">
-          <label class="lbl">Number of reps (random in range)</label>
+          <label class="lbl" data-i18n="labelReps">Number of reps (random in range)</label>
           <div class="row">
             <input id="minReps" type="number" min="1" value="15" aria-label="Minimum reps">
             <input id="maxReps" type="number" min="1" value="25" aria-label="Maximum reps">
           </div>
-          <div class="hint">The app picks a random number between min and max.</div>
+          <div class="hint" data-i18n="hintReps">The app picks a random number between min and max.</div>
         </div>
 
         <div class="field hidden" id="timeField">
-          <label class="lbl">Session duration (minutes)</label>
+          <label class="lbl" data-i18n="labelDuration">Session duration (minutes)</label>
           <input id="totalMin" type="number" min="1" value="5" aria-label="Duration in minutes">
         </div>
 
         <div class="field hidden" id="scenarioField" style="margin-bottom:0">
-          <label class="lbl">Scenario</label>
+          <label class="lbl" data-i18n="labelScenario">Scenario</label>
           <select id="scenarioSel" aria-label="Choose scenario">
-            <option value="stopwatch" selected>Stopwatch — hold as long as you can</option>
-            <option value="sd_hold">Sudden death: Hold — Jeder Hold länger als der davor</option>
-            <option value="sd_speed">Sudden death: Speed — Action / Pause (einstellbar)</option>
-            <option value="sd_mixed">Sudden death: Mixed — Action + Hold + Pause</option>
+            <option value="stopwatch" selected data-i18n="scenarioStopwatch">Stopwatch — hold as long as you can</option>
+            <option value="sd_hold" data-i18n="scenarioSdHold">Sudden death: Hold</option>
+            <option value="sd_speed" data-i18n="scenarioSdSpeed">Sudden death: Speed</option>
+            <option value="sd_mixed" data-i18n="scenarioSdMixed">Sudden death: Mixed</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
           <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
-            <label class="lbl" id="sdSpeedLbl">Action / Pause length (seconds)</label>
+            <label class="lbl" id="sdSpeedLbl" data-i18n="labelActionPause">Action / Pause length (seconds)</label>
             <div class="row">
               <input id="sdActionSec" type="number" min="5" max="600" step="1" value="60" aria-label="Action phase length in seconds">
               <input id="sdPauseSec" type="number" min="3" max="300" step="1" value="20" aria-label="Pause phase length in seconds">
             </div>
-            <div class="hint" id="sdSpeedHint">Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.</div>
+            <div class="hint" id="sdSpeedHint" data-i18n="hintActionPause">Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.</div>
           </div>
           <div class="field hidden" id="sdMixedField" style="margin:12px 0 0">
-            <label class="lbl">Mixed — Startwerte (Runde 1)</label>
+            <label class="lbl" data-i18n="labelMixedStart">Mixed — start values (round 1)</label>
             <div class="row">
               <input id="sdStartReps" type="number" min="1" max="50" step="1" value="1" aria-label="Start rep target for round 1">
               <input id="sdStartHold" type="number" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1">
             </div>
-            <div class="hint">Links: Reps in Runde 1 · rechts: Mindest-Hold (s) in Runde 1. Danach muss jede Runde beides steigern.</div>
+            <div class="hint" data-i18n="hintMixedStart">Left: reps in round 1 · right: minimum hold (s) in round 1. Each round must then raise both.</div>
           </div>
         </div>
       </div>
     </details>
 
     <details class="panel" id="secTiming" open>
-      <summary>Timing <span class="sumSub" id="sumTiming"></span></summary>
+      <summary><span data-i18n="uiTimingTitle">Timing</span> <span class="sumSub" id="sumTiming"></span></summary>
       <div class="body">
         <div class="field" id="fBase">
-          <label class="lbl">Hold time per rep (seconds)</label>
+          <label class="lbl" data-i18n="labelHoldPerRep">Hold time per rep (seconds)</label>
           <input id="baseHold" type="number" min="0.1" step="0.1" value="2" aria-label="Base hold time">
-          <div class="hint">How long you must keep the button pressed for the rep to count. Values below 1 s are allowed (e.g. 0.5).</div>
+          <div class="hint" data-i18n="hintHoldPerRep">How long you must keep the button pressed for the rep to count. Values below 1 s are allowed (e.g. 0.5).</div>
         </div>
 
         <div class="field" id="fRest">
-          <label class="lbl">Rest between reps (seconds, random in range)</label>
+          <label class="lbl" data-i18n="labelRest">Rest between reps (seconds, random in range)</label>
           <div class="row">
             <input id="minRest" type="number" min="0" value="3" aria-label="Minimum rest">
             <input id="maxRest" type="number" min="0" value="3" aria-label="Maximum rest">
           </div>
-          <div class="hint">Equal min and max = fixed rest.</div>
+          <div class="hint" data-i18n="hintRest">Equal min and max = fixed rest.</div>
           <div class="curveBox">
             <div class="curveHeader">
-              <span class="lbl">Probability curve</span>
-              <button type="button" class="curveOpen" data-curve="rest">Edit curve</button>
+              <span class="lbl" data-i18n="labelCurve">Probability curve</span>
+              <button type="button" class="curveOpen" data-curve="rest" data-i18n="btnEditCurve">Edit curve</button>
             </div>
             <canvas class="curvePreview" id="curveRest" width="600" height="56" aria-label="Open rest curve editor"></canvas>
             <div class="curveAxis"><span id="curveRestLo">min</span><span id="curveRestHi">max</span></div>
@@ -422,45 +437,51 @@
         </div>
 
         <div class="field" id="fChance">
-          <label class="lbl">Chance of a long hold (%)</label>
+          <label class="lbl" data-i18n="labelChance">Chance of a long hold (%)</label>
           <input id="holdChance" type="number" min="0" max="100" value="25" aria-label="Long-hold chance">
-          <div class="hint">Some reps randomly become longer endurance holds.</div>
+          <div class="hint" data-i18n="hintChance">Some reps randomly become longer endurance holds.</div>
         </div>
 
         <div class="field" id="fHolds" style="margin-bottom:0">
-          <label class="lbl">Long hold duration (seconds, random in range)</label>
+          <label class="lbl" data-i18n="labelLongHold">Long hold duration (seconds, random in range)</label>
           <div class="row">
             <input id="minHold" type="number" min="1" value="5" aria-label="Minimum long hold">
             <input id="maxHold" type="number" min="1" value="12" aria-label="Maximum long hold">
           </div>
           <div class="curveBox">
             <div class="curveHeader">
-              <span class="lbl">Probability curve</span>
-              <button type="button" class="curveOpen" data-curve="hold">Edit curve</button>
+              <span class="lbl" data-i18n="labelCurve">Probability curve</span>
+              <button type="button" class="curveOpen" data-curve="hold" data-i18n="btnEditCurve">Edit curve</button>
             </div>
             <canvas class="curvePreview" id="curveHold" width="600" height="56" aria-label="Open hold curve editor"></canvas>
             <div class="curveAxis"><span id="curveHoldLo">min</span><span id="curveHoldHi">max</span></div>
-            <div class="hint" style="margin-top:6px">Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.</div>
+            <div class="hint" style="margin-top:6px" data-i18n="hintCurveDraw">Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.</div>
           </div>
         </div>
       </div>
     </details>
 
+    <button type="button" class="advToggle" id="advToggle" aria-expanded="false">
+      <span data-i18n="uiAdvanced">Advanced settings</span>
+      <span class="advChevron" aria-hidden="true">›</span>
+    </button>
+    <div id="advancedWrap" class="advWrap hidden">
+
     <details class="panel" id="secChallenge">
-      <summary>Difficulty <span class="sumSub" id="sumChallenge"></span></summary>
+      <summary><span data-i18n="uiDifficultyTitle">Difficulty</span> <span class="sumSub" id="sumChallenge"></span></summary>
       <div class="body">
         <div class="field toggle" id="fStrict">
           <div>
-            <label class="lbl" for="strict">Strict mode</label>
-            <div class="hint" style="margin-top:2px">If you release the button too early, the rep restarts.</div>
+            <label class="lbl" for="strict" data-i18n="labelStrict">Strict mode</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintStrict">If you release the button too early, the rep restarts.</div>
           </div>
           <label class="switch"><input id="strict" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
 
         <div class="field toggle" id="fPenaltyToggle">
           <div>
-            <label class="lbl" for="penalty">Penalty for early release</label>
-            <div class="hint" style="margin-top:2px">Extends the session every time you release before the hold is complete.</div>
+            <label class="lbl" for="penalty" data-i18n="labelPenalty">Penalty for early release</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintPenalty">Extends the session every time you release before the hold is complete.</div>
           </div>
           <label class="switch"><input id="penalty" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -471,67 +492,67 @@
               <input id="penaltyX" type="number" min="1" value="2" aria-label="Penalty amount">
             </div>
             <div>
-              <span class="sublbl">Allowed late-start (s)</span>
+              <span class="sublbl" data-i18n="sublblLateStart">Allowed late-start (s)</span>
               <input id="lateTol" type="number" min="1" value="3" aria-label="Allowed late start">
             </div>
           </div>
-          <div class="hint" id="lateTolHint">If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.</div>
+          <div class="hint" id="lateTolHint" data-i18n="hintLateStart">If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.</div>
         </div>
 
         <div class="field toggle" id="fHideDur">
           <div>
-            <label class="lbl" for="hideDur">Hide required hold time</label>
-            <div class="hint" style="margin-top:2px">The needed hold duration is not shown. Once you start holding, the voice says the hold cue and counts down the last few seconds.</div>
+            <label class="lbl" for="hideDur" data-i18n="labelHideDur">Hide required hold time</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintHideDur">The needed hold duration is not shown. Once you start holding, the voice says the hold cue and counts down the last few seconds.</div>
           </div>
           <label class="switch"><input id="hideDur" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
 
         <div class="field" id="fReleaseGrace" style="margin-bottom:0">
-          <label class="lbl">Release tolerance (ms)</label>
+          <label class="lbl" data-i18n="labelReleaseGrace">Release tolerance (ms)</label>
           <input id="releaseGrace" type="number" min="0" step="10" value="150" aria-label="Release tolerance">
-          <div class="hint">If you briefly lift your finger, it doesn't count as releasing yet — the hold continues seamlessly. 0 = release is immediate.</div>
+          <div class="hint" data-i18n="hintReleaseGrace">If you briefly lift your finger, it doesn't count as releasing yet — the hold continues seamlessly. 0 = release is immediate.</div>
         </div>
       </div>
     </details>
 
     <details class="panel" id="secSignals">
-      <summary>Cues &amp; language <span class="sumSub" id="sumSignals"></span></summary>
+      <summary><span data-i18n="uiSignalsTitle">Cues &amp; language</span> <span class="sumSub" id="sumSignals"></span></summary>
       <div class="body">
         <div class="field toggle">
           <div>
-            <label class="lbl" for="voice">Voice cues</label>
-            <div class="hint" style="margin-top:2px">Speaks the cues (start / release) — once each.</div>
+            <label class="lbl" for="voice" data-i18n="labelVoice">Voice cues</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintVoice">Speaks the cues (start / release) — once each.</div>
           </div>
           <label class="switch"><input id="voice" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle">
           <div>
-            <label class="lbl" for="beep">Beeps</label>
-            <div class="hint" style="margin-top:2px">Short tones as cues (rising = start holding, low = release).</div>
+            <label class="lbl" for="beep" data-i18n="labelBeep">Beeps</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintBeep">Short tones as cues (rising = start holding, low = release).</div>
           </div>
           <label class="switch"><input id="beep" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle">
           <div>
-            <label class="lbl" for="vibrate">Vibration</label>
-            <div class="hint" id="vibrateHint" style="margin-top:2px">Vibration patterns as cues. Tap the switch to test.</div>
+            <label class="lbl" for="vibrate" data-i18n="labelVibration">Vibration</label>
+            <div class="hint" id="vibrateHint" style="margin-top:2px" data-i18n="hintVibration">Vibration patterns as cues. Tap the switch to test.</div>
           </div>
           <label class="switch"><input id="vibrate" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
 
         <div class="field">
-          <label class="lbl">Custom cue words</label>
+          <label class="lbl" data-i18n="labelCueWords">Custom cue words</label>
           <div class="row3">
             <div>
-              <span class="sublbl">Start hold</span>
+              <span class="sublbl" data-i18n="sublblStartHold">Start hold</span>
               <input id="cmdDown" type="text" value="Hold" aria-label="Start-hold cue word">
             </div>
             <div>
-              <span class="sublbl">Release</span>
+              <span class="sublbl" data-i18n="sublblRelease">Release</span>
               <input id="cmdUp" type="text" value="Breathe" aria-label="Release cue word">
             </div>
             <div>
-              <span class="sublbl">Long hold</span>
+              <span class="sublbl" data-i18n="sublblLongHold">Long hold</span>
               <input id="cmdHold" type="text" value="Keep going" aria-label="Long-hold cue word">
             </div>
           </div>
@@ -539,36 +560,36 @@
         <div class="field">
           <div class="row">
             <div>
-              <span class="sublbl">Penalty word</span>
+              <span class="sublbl" data-i18n="sublblPenaltyWord">Penalty word</span>
               <input id="cmdPenaltyWord" type="text" value="Penalty" aria-label="Penalty word">
             </div>
             <div>
-              <span class="sublbl">Finish word</span>
+              <span class="sublbl" data-i18n="sublblFinishWord">Finish word</span>
               <input id="cmdFinishWord" type="text" value="Done" aria-label="Finish word">
             </div>
           </div>
         </div>
         <div class="field" style="margin-bottom:0">
-          <span class="sublbl">Speech rate (0.5–2)</span>
+          <span class="sublbl" data-i18n="sublblRate">Speech rate (0.5–2)</span>
           <input id="cmdRate" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate">
         </div>
       </div>
     </details>
 
     <details class="panel" id="secCoaching">
-      <summary>Feedback <span class="sumSub" id="sumCoaching"></span></summary>
+      <summary><span data-i18n="uiFeedbackTitle">Feedback</span> <span class="sumSub" id="sumCoaching"></span></summary>
       <div class="body">
         <div class="field toggle">
           <div>
-            <label class="lbl" for="progressTone">Hold progress tone</label>
-            <div class="hint" style="margin-top:2px">A quiet, slowly rising tone during the hold — great for the eyes-closed mode.</div>
+            <label class="lbl" for="progressTone" data-i18n="labelProgressTone">Hold progress tone</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintProgressTone">A quiet, slowly rising tone during the hold — great for the eyes-closed mode.</div>
           </div>
           <label class="switch"><input id="progressTone" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle" style="margin-bottom:0">
           <div>
-            <label class="lbl" for="prAnnounce">Personal-best announcement</label>
-            <div class="hint" style="margin-top:2px">When you beat your longest recorded hold, the app announces it.</div>
+            <label class="lbl" for="prAnnounce" data-i18n="labelPrAnnounce">Personal-best announcement</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintPrAnnounce">When you beat your longest recorded hold, the app announces it.</div>
           </div>
           <label class="switch"><input id="prAnnounce" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -576,19 +597,19 @@
     </details>
 
     <details class="panel" id="secDisplay">
-      <summary>Display &amp; handling <span class="sumSub" id="sumDisplay"></span></summary>
+      <summary><span data-i18n="uiDisplayTitle">Display &amp; handling</span> <span class="sumSub" id="sumDisplay"></span></summary>
       <div class="body">
         <div class="field toggle">
           <div>
-            <label class="lbl" for="eyesClosed">Eyes-closed mode</label>
-            <div class="hint" style="margin-top:2px">Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.</div>
+            <label class="lbl" for="eyesClosed" data-i18n="labelEyesClosed">Eyes-closed mode</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintEyesClosed">Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.</div>
           </div>
           <label class="switch"><input id="eyesClosed" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle" style="margin-bottom:0">
           <div>
-            <label class="lbl" for="guardExit">Swipe guard</label>
-            <div class="hint" style="margin-top:2px">Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.</div>
+            <label class="lbl" for="guardExit" data-i18n="labelSwipeGuard">Swipe guard</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintSwipeGuard">Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.</div>
           </div>
           <label class="switch"><input id="guardExit" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -596,31 +617,33 @@
     </details>
 
     <details class="panel" id="secPresets">
-      <summary>Presets &amp; stats <span class="sumSub" id="sumPresets"></span></summary>
+      <summary><span data-i18n="uiPresetsTitle">Presets &amp; stats</span> <span class="sumSub" id="sumPresets"></span></summary>
       <div class="body">
         <div class="field">
-          <label class="lbl">Presets</label>
+          <label class="lbl" data-i18n="labelPresets">Presets</label>
           <div class="row">
-            <input id="presetName" type="text" placeholder="Name (e.g. \u201CEvening set\u201D)" aria-label="Preset name">
-            <select id="presetSel" aria-label="Load preset"><option value="">– load –</option></select>
+            <input id="presetName" type="text" placeholder="Name" data-i18n-ph="phPresetName" aria-label="Preset name">
+            <select id="presetSel" aria-label="Load preset"><option value="" data-i18n="optLoad">– load –</option></select>
           </div>
           <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-            <button type="button" class="ghost" id="presetSave">Save</button>
-            <button type="button" class="ghost" id="presetLoad">Load</button>
-            <button type="button" class="ghost" id="presetDel">Delete</button>
+            <button type="button" class="ghost" id="presetSave" data-i18n="btnSave">Save</button>
+            <button type="button" class="ghost" id="presetLoad" data-i18n="btnLoad">Load</button>
+            <button type="button" class="ghost" id="presetDel" data-i18n="btnDelete">Delete</button>
           </div>
         </div>
         <div class="field" style="margin-bottom:0">
-          <label class="lbl">Stats</label>
+          <label class="lbl" data-i18n="labelStats">Stats</label>
           <div id="statsBox" class="hint" style="line-height:1.6">No sessions yet.</div>
           <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-            <button type="button" class="ghost" id="statsClear">Clear history</button>
+            <button type="button" class="ghost" id="statsClear" data-i18n="btnClearHistory">Clear history</button>
           </div>
         </div>
       </div>
     </details>
 
-    <button class="start" id="startBtn">Start session</button>
+    </div><!-- /advancedWrap -->
+
+    <button class="start" id="startBtn" data-i18n="btnStartSession">Start session</button>
     <div class="err" id="err"></div>
   </section>
 
@@ -629,10 +652,10 @@
       <div class="meta">
         <span class="count"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
         <span class="clock" id="clock">0:00</span>
-        <button class="ghost" id="stopBtn">Stop</button>
+        <button class="ghost" id="stopBtn" data-i18n="stop">Stop</button>
       </div>
-      <div class="cue" id="cue">Ready?</div>
-      <div class="subcue" id="subcue">Press &amp; hold on the start cue, release on the release cue.</div>
+      <div class="cue" id="cue" data-i18n="ready">Ready?</div>
+      <div class="subcue" id="subcue" data-i18n="subCue">Press &amp; hold on the start cue, release on the release cue.</div>
       <div id="swStats" class="swStats hidden">
         <div class="swStat"><span class="swLbl">Rest since last hold</span><span class="swVal" id="swRest">0.0s</span></div>
         <div class="swStat"><span class="swLbl">Longest hold</span><span class="swVal" id="swLongest">0.0s</span></div>
@@ -643,7 +666,7 @@
       <div class="riser" id="riser"><div class="fill" id="fill"></div></div>
       <button class="holdBtn" id="holdBtn">
         <span class="big" id="timer">–</span>
-        <span class="lab" id="btnLab">Press &amp; hold</span>
+        <span class="lab" id="btnLab" data-i18n="pressHold">Press &amp; hold</span>
       </button>
     </div>
 
@@ -653,13 +676,13 @@
   <section id="finish" class="session hidden">
     <div class="sessionTop">
       <div class="meta">
-        <span class="count">Done</span>
-        <button class="ghost" id="againBtn">New session</button>
+        <span class="count" data-i18n="done">Done</span>
+        <button class="ghost" id="againBtn" data-i18n="newSession">New session</button>
       </div>
     </div>
     <div class="done">
       <div class="num" id="doneNum">0</div>
-      <div class="msg" id="doneMsg">Reps completed.</div>
+      <div class="msg" id="doneMsg" data-i18n="repsCompleted">Reps completed.</div>
     </div>
     <div class="finishGame hidden" id="finishGame">
       <div class="fgBadges hidden" id="fgBadges"></div>
@@ -680,21 +703,21 @@
   <div id="curveOverlay" class="overlay hidden" aria-hidden="true">
     <div class="head">
       <div>
-        <h2 id="curveOverlayTitle">Probability curve</h2>
-        <div class="sub" id="curveOverlaySub">Draw with your finger or mouse. Higher = more likely.</div>
+        <h2 id="curveOverlayTitle" data-i18n="overlayCurveTitle">Probability curve</h2>
+        <div class="sub" id="curveOverlaySub" data-i18n="overlayCurveSub">Draw with your finger or mouse. Higher = more likely.</div>
       </div>
-      <button class="ghost" id="curveOverlayDone">Done</button>
+      <button class="ghost" id="curveOverlayDone" data-i18n="done">Done</button>
     </div>
     <div class="toolbar" role="group" aria-label="Curve mode">
-      <button type="button" id="modeRandom" data-mode="random" aria-pressed="true">Random</button>
-      <button type="button" id="modeTiming" data-mode="timing" aria-pressed="false">Timing</button>
+      <button type="button" id="modeRandom" data-mode="random" aria-pressed="true" data-i18n="curveModeRandom">Random</button>
+      <button type="button" id="modeTiming" data-mode="timing" aria-pressed="false" data-i18n="curveModeTiming">Timing</button>
     </div>
     <div class="toolbar" role="group" aria-label="Curve presets">
-      <button type="button" data-overlay-preset="uniform">Uniform</button>
-      <button type="button" data-overlay-preset="low">Skew low</button>
-      <button type="button" data-overlay-preset="middle">Middle</button>
-      <button type="button" data-overlay-preset="high">Skew high</button>
-      <button type="button" data-overlay-preset="clear">Clear</button>
+      <button type="button" data-overlay-preset="uniform" data-i18n="curveUniform">Uniform</button>
+      <button type="button" data-overlay-preset="low" data-i18n="curveLow">Skew low</button>
+      <button type="button" data-overlay-preset="middle" data-i18n="curveMiddle">Middle</button>
+      <button type="button" data-overlay-preset="high" data-i18n="curveHigh">Skew high</button>
+      <button type="button" data-overlay-preset="clear" data-i18n="curveClear">Clear</button>
     </div>
     <div class="stage">
       <canvas id="curveBig" class="big" aria-label="Draw probability curve"></canvas>
@@ -743,6 +766,68 @@
         paceLine:p=>`Tempo: <b>${p}</b> Reps/min`,
         paceActionLine:p=>`Action-Tempo: <b>${p}</b> Reps/min`,
         holdNow:"Jetzt halten",
+        uiGoalTitle:"Trainingsziel", goalReps:"Wdh.", goalTime:"Zeit", goalScenario:"Szenario",
+        labelReps:"Anzahl Wiederholungen (zufällig im Bereich)", hintReps:"Die App wählt eine Zufallszahl zwischen Min und Max.",
+        labelDuration:"Dauer der Sitzung (Minuten)",
+        labelScenario:"Szenario",
+        scenarioSdHold:"Sudden Death: Hold", scenarioSdSpeed:"Sudden Death: Speed", scenarioSdMixed:"Sudden Death: Mixed",
+        labelActionPause:"Länge Action / Pause (Sekunden)",
+        hintActionPause:"Links = Action-Phase, rechts = Pause. Jede Runde musst du die Reps der vorigen Action-Phase erreichen oder übertreffen.",
+        labelMixedStart:"Mixed — Startwerte (Runde 1)",
+        hintMixedStart:"Links: Reps in Runde 1 · rechts: Mindest-Hold (s) in Runde 1. Danach muss jede Runde beides steigern.",
+        uiTimingTitle:"Timing",
+        labelHoldPerRep:"Haltezeit pro Wiederholung (Sekunden)",
+        hintHoldPerRep:"Wie lange der Knopf gedrückt bleiben muss, damit die Wiederholung zählt. Werte unter 1 s sind erlaubt (z. B. 0,5).",
+        labelRest:"Pause zwischen Wiederholungen (Sekunden, zufällig im Bereich)", hintRest:"Min = Max → feste Pause.",
+        labelCurve:"Wahrscheinlichkeitskurve", btnEditCurve:"Kurve bearbeiten",
+        labelChance:"Chance auf langen Hold (%)", hintChance:"Manche Wiederholungen werden zufällig zu längeren Ausdauer-Holds.",
+        labelLongHold:"Dauer langer Hold (Sekunden, zufällig im Bereich)",
+        hintCurveDraw:"Höher auf der Kurve = wahrscheinlicher. Mit Finger oder Maus zeichnen. Keine Kurve = Gleichverteilung.",
+        uiAdvanced:"Erweiterte Einstellungen",
+        uiDifficultyTitle:"Schwierigkeit",
+        labelStrict:"Strenger Modus", hintStrict:"Lässt du zu früh los, startet die Wiederholung neu.",
+        labelPenalty:"Strafe für zu frühes Loslassen", hintPenalty:"Verlängert die Sitzung jedes Mal, wenn du vor Ablauf des Holds loslässt.",
+        penaltyReps:"Strafe (+Wdh.)", penaltySeconds:"Strafe (+Sekunden)",
+        sublblLateStart:"Erlaubter Spätstart (s)",
+        hintLateStart:"Startest du nach dem Startsignal nicht innerhalb dieser Zeit, gibt es eine Strafe — und erneut nach jeder weiteren Verzögerung.",
+        labelHideDur:"Benötigte Haltezeit ausblenden",
+        hintHideDur:"Die nötige Haltedauer wird nicht angezeigt. Sobald du hältst, sagt die Stimme das Halte-Signal und zählt die letzten Sekunden herunter.",
+        labelReleaseGrace:"Loslass-Toleranz (ms)",
+        hintReleaseGrace:"Hebst du kurz den Finger, zählt das noch nicht als Loslassen — der Hold läuft nahtlos weiter. 0 = sofortiges Loslassen.",
+        uiSignalsTitle:"Signale & Ansagen",
+        labelVoice:"Sprachansagen", hintVoice:"Spricht die Signale (Start / Loslassen) — je einmal.",
+        labelBeep:"Töne", hintBeep:"Kurze Töne als Signal (aufsteigend = halten, tief = loslassen).",
+        labelVibration:"Vibration", hintVibration:"Vibrationsmuster als Signal. Zum Testen auf den Schalter tippen.",
+        labelCueWords:"Eigene Signalwörter",
+        sublblStartHold:"Halten", sublblRelease:"Loslassen", sublblLongHold:"Langer Hold",
+        sublblPenaltyWord:"Strafe-Wort", sublblFinishWord:"Fertig-Wort", sublblRate:"Sprechtempo (0,5–2)",
+        uiFeedbackTitle:"Rückmeldung",
+        labelProgressTone:"Fortschrittston beim Hold", hintProgressTone:"Ein leiser, langsam ansteigender Ton während des Holds — ideal für den Augen-zu-Modus.",
+        labelPrAnnounce:"Bestwert-Ansage", hintPrAnnounce:"Wenn du deinen längsten Hold übertriffst, sagt es die App an.",
+        uiDisplayTitle:"Anzeige & Bedienung",
+        labelEyesClosed:"Augen-zu-Modus", hintEyesClosed:"Zum Halten irgendwo auf den Bildschirm tippen — Training rein per Ton oder Vibration. Am besten mit Tönen oder Vibration kombinieren.",
+        labelSwipeGuard:"Wischschutz", hintSwipeGuard:"Erschwert versehentliches Schließen (Zurück-Wischen, Neuladen) und versucht Vollbild. Beenden über die Stopp-Taste.",
+        uiPresetsTitle:"Presets & Statistik",
+        labelPresets:"Presets", phPresetName:"Name (z. B. Abend-Set)", optLoad:"– laden –",
+        btnSave:"Speichern", btnLoad:"Laden", btnDelete:"Löschen",
+        labelStats:"Statistik", btnClearHistory:"Verlauf löschen",
+        btnStartSession:"Sitzung starten",
+        hintStopwatch:"Freihändig: keine feste Halte- oder Pausenzeit. Drücken und halten, loslassen wann du willst, dann weiter. Die App misst jeden Hold und merkt sich deinen längsten Hold dieser Sitzung.",
+        hintSdHold:"Jeder Hold muss länger sein als der davor — sonst Game Over. Wie weit kletterst du?",
+        hintSdSpeed:"Feste Action-Phasen: so viele Reps wie möglich, mindestens so viele wie in der Phase davor, mit Pausen dazwischen.",
+        hintSdMixed:"Jede Runde: mehr Reps als zuletzt in der Action-Phase, dann länger halten als zuletzt — danach Pause. Verfehlst du eines, ist Schluss.",
+        overlayCurveTitle:"Wahrscheinlichkeitskurve", overlayCurveSub:"Mit Finger oder Maus zeichnen. Höher = wahrscheinlicher.",
+        curveModeRandom:"Zufall", curveModeTiming:"Timing",
+        curveUniform:"Gleich", curveLow:"Tief betont", curveMiddle:"Mitte", curveHigh:"Hoch betont", curveClear:"Leeren",
+        sumTapDraw:"Zum Zeichnen der Kurve tippen", sumDrawFinger:"Mit Finger oder Maus zeichnen",
+        sumMin:"Min", sumFreeform:"freihändig",
+        sumHoldWord:"Hold", sumRestWord:"Pause", sumLongWord:"lang",
+        sumStrict:"streng", sumHidden:"versteckt", sumRelaxed:"locker",
+        sumVoice:"Stimme", sumBeep:"Ton", sumVibrate:"Vibration", sumNoCues:"keine",
+        sumTone:"Ton", sumPB:"Bestwert", sumOff:"aus",
+        sumEyesClosed:"Augen zu", sumSwipeGuard:"Wischschutz", sumDefault:"Standard",
+        sumPenalty:x=>`Strafe +${x}`,
+        sumPresetsLine:(p,s)=>`${p} Presets · ${s} Sitzungen`,
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -771,6 +856,68 @@
         paceLine:p=>`Pace: <b>${p}</b> reps/min`,
         paceActionLine:p=>`Action pace: <b>${p}</b> reps/min`,
         holdNow:"Hold now",
+        uiGoalTitle:"Session goal", goalReps:"Reps", goalTime:"Time", goalScenario:"Scenario",
+        labelReps:"Number of reps (random in range)", hintReps:"The app picks a random number between min and max.",
+        labelDuration:"Session duration (minutes)",
+        labelScenario:"Scenario",
+        scenarioSdHold:"Sudden death: Hold", scenarioSdSpeed:"Sudden death: Speed", scenarioSdMixed:"Sudden death: Mixed",
+        labelActionPause:"Action / Pause length (seconds)",
+        hintActionPause:"Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.",
+        labelMixedStart:"Mixed — start values (round 1)",
+        hintMixedStart:"Left: reps in round 1 · right: minimum hold (s) in round 1. Each round must then raise both.",
+        uiTimingTitle:"Timing",
+        labelHoldPerRep:"Hold time per rep (seconds)",
+        hintHoldPerRep:"How long you must keep the button pressed for the rep to count. Values below 1 s are allowed (e.g. 0.5).",
+        labelRest:"Rest between reps (seconds, random in range)", hintRest:"Equal min and max = fixed rest.",
+        labelCurve:"Probability curve", btnEditCurve:"Edit curve",
+        labelChance:"Chance of a long hold (%)", hintChance:"Some reps randomly become longer endurance holds.",
+        labelLongHold:"Long hold duration (seconds, random in range)",
+        hintCurveDraw:"Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.",
+        uiAdvanced:"Advanced settings",
+        uiDifficultyTitle:"Difficulty",
+        labelStrict:"Strict mode", hintStrict:"If you release the button too early, the rep restarts.",
+        labelPenalty:"Penalty for early release", hintPenalty:"Extends the session every time you release before the hold is complete.",
+        penaltyReps:"Penalty amount (+reps)", penaltySeconds:"Penalty amount (+seconds)",
+        sublblLateStart:"Allowed late-start (s)",
+        hintLateStart:"If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.",
+        labelHideDur:"Hide required hold time",
+        hintHideDur:"The needed hold duration is not shown. Once you start holding, the voice says the hold cue and counts down the last few seconds.",
+        labelReleaseGrace:"Release tolerance (ms)",
+        hintReleaseGrace:"If you briefly lift your finger, it doesn't count as releasing yet — the hold continues seamlessly. 0 = release is immediate.",
+        uiSignalsTitle:"Cues & language",
+        labelVoice:"Voice cues", hintVoice:"Speaks the cues (start / release) — once each.",
+        labelBeep:"Beeps", hintBeep:"Short tones as cues (rising = start holding, low = release).",
+        labelVibration:"Vibration", hintVibration:"Vibration patterns as cues. Tap the switch to test.",
+        labelCueWords:"Custom cue words",
+        sublblStartHold:"Start hold", sublblRelease:"Release", sublblLongHold:"Long hold",
+        sublblPenaltyWord:"Penalty word", sublblFinishWord:"Finish word", sublblRate:"Speech rate (0.5–2)",
+        uiFeedbackTitle:"Feedback",
+        labelProgressTone:"Hold progress tone", hintProgressTone:"A quiet, slowly rising tone during the hold — great for the eyes-closed mode.",
+        labelPrAnnounce:"Personal-best announcement", hintPrAnnounce:"When you beat your longest recorded hold, the app announces it.",
+        uiDisplayTitle:"Display & handling",
+        labelEyesClosed:"Eyes-closed mode", hintEyesClosed:"Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.",
+        labelSwipeGuard:"Swipe guard", hintSwipeGuard:"Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.",
+        uiPresetsTitle:"Presets & stats",
+        labelPresets:"Presets", phPresetName:"Name (e.g. Evening set)", optLoad:"– load –",
+        btnSave:"Save", btnLoad:"Load", btnDelete:"Delete",
+        labelStats:"Stats", btnClearHistory:"Clear history",
+        btnStartSession:"Start session",
+        hintStopwatch:"Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold and remembers your longest hold this session.",
+        hintSdHold:"Each hold must be longer than the one before — or it's game over. How long can you keep climbing?",
+        hintSdSpeed:"Fixed action phases: pack in as many reps as possible, matching or beating the previous phase, with pauses in between.",
+        hintSdMixed:"Each round: do more reps than last time in the action phase, then hold longer than last time — then a pause. Miss either and it's game over.",
+        overlayCurveTitle:"Probability curve", overlayCurveSub:"Draw with your finger or mouse. Higher = more likely.",
+        curveModeRandom:"Random", curveModeTiming:"Timing",
+        curveUniform:"Uniform", curveLow:"Skew low", curveMiddle:"Middle", curveHigh:"Skew high", curveClear:"Clear",
+        sumTapDraw:"Tap to draw the probability curve", sumDrawFinger:"Draw with your finger or mouse",
+        sumMin:"min", sumFreeform:"freeform",
+        sumHoldWord:"Hold", sumRestWord:"Rest", sumLongWord:"long",
+        sumStrict:"strict", sumHidden:"hidden", sumRelaxed:"relaxed",
+        sumVoice:"Voice", sumBeep:"Beep", sumVibrate:"Vibrate", sumNoCues:"no cues",
+        sumTone:"Tone", sumPB:"PB", sumOff:"off",
+        sumEyesClosed:"Eyes closed", sumSwipeGuard:"Swipe guard", sumDefault:"default",
+        sumPenalty:x=>`penalty +${x}`,
+        sumPresetsLine:(p,s)=>`${p} presets · ${s} sessions`,
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -924,14 +1071,29 @@
   }
   function applyRuntimeI18n(){
     const t = T();
-    const stop = $("stopBtn"); if(stop) stop.textContent = t.stop;
-    const again = $("againBtn"); if(again) again.textContent = t.newSession;
+    // localize every element carrying a data-i18n / data-i18n-ph key
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const v = t[el.getAttribute('data-i18n')];
+      if(typeof v === "string") el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+      const v = t[el.getAttribute('data-i18n-ph')];
+      if(typeof v === "string") el.placeholder = v;
+    });
     const rl2 = $("repLabel"); if(rl2) rl2.textContent = t.rep;
-    const scBtn = document.querySelector('#goalSeg button[data-goal="scenario"]');
-    if(scBtn) scBtn.textContent = t.scenarioTitle;
-    const scOpt = document.querySelector('#scenarioSel option[value="stopwatch"]');
-    if(scOpt) scOpt.textContent = t.scenarioStopwatch;
+    updateScenarioHint();
+    applyGoalVisibility();      // refresh the dynamic penalty label for the language
+    if(typeof updateSummaries === "function") updateSummaries();
+    try{ drawCurve("hold"); drawCurve("rest"); }catch(e){}
     if($("appLang")) $("appLang").value = LANG;
+  }
+  // Scenario description under the picker — changes with the chosen scenario.
+  function updateScenarioHint(){
+    const el = $("scenarioHint"); if(!el) return;
+    const t = T();
+    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed };
+    const v = map[$("scenarioSel").value];
+    if(typeof v === "string") el.textContent = v;
   }
 
 
@@ -1002,7 +1164,7 @@
     if(isEmpty){
       ctx.fillStyle = "#5a6072"; ctx.font = `${12*dpr}px "Space Grotesk", sans-serif`;
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      const msg = targetCanvas ? "Draw with your finger or mouse" : "Tap to draw the probability curve";
+      const msg = targetCanvas ? (T().sumDrawFinger || "Draw with your finger or mouse") : (T().sumTapDraw || "Tap to draw the probability curve");
       ctx.fillText(msg, w/2, h/2);
     }
   }
@@ -1225,11 +1387,13 @@
 
   function updateSummaries(){
     const s = readAll();
-    const setTxt = (id, t) => { const e = $(id); if(e) e.textContent = t; };
+    const t = T();
+    const setTxt = (id, txt) => { const e = $(id); if(e) e.textContent = txt; };
+    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed };
     const goalTxt = {
-      reps: `Reps ${s.minReps}–${s.maxReps}`,
-      time: `Time ${s.totalMin} min`,
-      scenario: `${T().scenarioTitle} · ${s.scenarioSel === 'sd_hold' ? 'Sudden death (Hold)' : (s.scenarioSel === 'sd_speed' ? 'Sudden death (Speed)' : T().scenarioStopwatch.split(" — ")[0])}`,
+      reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
+      time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
+      scenario: `${t.goalScenario} · ${scName[s.scenarioSel] || ""}`,
       }[goal] || "";
     setTxt("sumGoal", goalTxt);
     const hasHoldCurve = curves.hold.some(v=>v>0.001);
@@ -1238,30 +1402,30 @@
     const restMark = hasRestCurve ? (curveMode.rest==="timing" ? " →" : " ~") : "";
     const restTxt = s.minRest===s.maxRest ? (s.minRest+"s") : (s.minRest+"–"+s.maxRest+"s"+restMark);
     const holdTxt = (s.minHold+"–"+s.maxHold+"s"+holdMark);
-    setTxt("sumTiming", (goal==="scenario") ? "freeform" : `Hold ${s.baseHold}s · Rest ${restTxt} · ${s.holdChance}% long (${holdTxt})`);
+    setTxt("sumTiming", (goal==="scenario") ? t.sumFreeform : `${t.sumHoldWord} ${s.baseHold}s · ${t.sumRestWord} ${restTxt} · ${s.holdChance}% ${t.sumLongWord} (${holdTxt})`);
     const ch = [];
     if(goal!=="scenario"){
-      if(s.strict) ch.push("strict");
-      if(s.penalty) ch.push(`penalty +${s.penaltyX}`);
-      if(s.hideDur) ch.push("hidden");
+      if(s.strict) ch.push(t.sumStrict);
+      if(s.penalty) ch.push(t.sumPenalty(s.penaltyX));
+      if(s.hideDur) ch.push(t.sumHidden);
     }
-    setTxt("sumChallenge", ch.length ? ch.join(" · ") : "relaxed");
+    setTxt("sumChallenge", ch.length ? ch.join(" · ") : t.sumRelaxed);
     const sig = [];
-    if(s.voice) sig.push("Voice");
-    if(s.beep) sig.push("Beep");
-    if(s.vibrate) sig.push("Vibrate");
-    setTxt("sumSignals", sig.length ? sig.join(" · ") : "no cues");
+    if(s.voice) sig.push(t.sumVoice);
+    if(s.beep) sig.push(t.sumBeep);
+    if(s.vibrate) sig.push(t.sumVibrate);
+    setTxt("sumSignals", sig.length ? sig.join(" · ") : t.sumNoCues);
     const co = [];
-    if(s.progressTone) co.push("Tone");
-    if(s.prAnnounce) co.push("PB");
-    setTxt("sumCoaching", co.length ? co.join(" · ") : "off");
+    if(s.progressTone) co.push(t.sumTone);
+    if(s.prAnnounce) co.push(t.sumPB);
+    setTxt("sumCoaching", co.length ? co.join(" · ") : t.sumOff);
     const dsp = [];
-    if(s.eyesClosed) dsp.push("Eyes closed");
-    if(s.guardExit) dsp.push("Swipe guard");
-    setTxt("sumDisplay", dsp.length ? dsp.join(" · ") : "default");
+    if(s.eyesClosed) dsp.push(t.sumEyesClosed);
+    if(s.guardExit) dsp.push(t.sumSwipeGuard);
+    setTxt("sumDisplay", dsp.length ? dsp.join(" · ") : t.sumDefault);
     const p = KV.get(K.presets, {});
     const h = KV.get(K.history, []);
-    setTxt("sumPresets", `${Object.keys(p).length} presets · ${h.length} sessions`);
+    setTxt("sumPresets", t.sumPresetsLine(Object.keys(p).length, h.length));
   }
 
   function getPR(){ return KV.get(K.pr, 0) || 0; }
@@ -1665,12 +1829,12 @@
     $("repsField").classList.toggle("hidden", goal!=="reps");
     $("timeField").classList.toggle("hidden", goal!=="time");
     $("scenarioField").classList.toggle("hidden", !isScenario);
+    $("secTiming").classList.toggle("hidden", isScenario);   // whole Timing panel is irrelevant for scenarios
     ["fBase","fChance","fHolds","fRest"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
     ["fStrict","fPenaltyToggle","penaltyValField","fHideDur"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
     applyScenarioVisibility();
-    $("penaltyLbl").textContent = goal==="time"
-      ? "Penalty amount (+seconds)"
-      : "Penalty amount (+reps)";
+    $("penaltyLbl").textContent = (goal==="time") ? (T().penaltySeconds || "Penalty amount (+seconds)")
+                                                  : (T().penaltyReps || "Penalty amount (+reps)");
   }
   function applyScenarioVisibility(){
     const sc = $("scenarioSel").value;
@@ -1678,7 +1842,21 @@
     $("sdSpeedField").classList.toggle("hidden", !needsPhases);
     $("sdMixedField").classList.toggle("hidden", !(goal==="scenario" && sc==="sd_mixed"));
   }
-  $("scenarioSel").addEventListener("change", applyScenarioVisibility);
+  $("scenarioSel").addEventListener("change", ()=>{ applyScenarioVisibility(); updateScenarioHint(); });
+
+  // advanced settings: collapsed by default, state remembered
+  (function initAdvanced(){
+    const btn = $("advToggle"), wrap = $("advancedWrap");
+    if(!btn || !wrap) return;
+    const setOpen = (open)=>{
+      wrap.classList.toggle("hidden", !open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.classList.toggle("open", open);
+      KV.set("lat.advOpen", !!open);
+    };
+    setOpen(!!KV.get("lat.advOpen", false));
+    btn.addEventListener("click", ()=> setOpen(wrap.classList.contains("hidden")));
+  })();
   $("goalSeg").addEventListener("click", e=>{
     const b = e.target.closest("button[data-goal]");
     if(!b) return;
