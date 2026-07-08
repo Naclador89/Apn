@@ -291,6 +291,29 @@
   .done .num{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:72px;color:var(--rise);line-height:1}
   .done .msg{color:var(--muted);font-size:15px}
 
+  /* ---------- gamification: finish-screen reward card ---------- */
+  .finishGame{width:100%;max-width:var(--maxw);margin:0 auto;
+    padding:0 18px calc(18px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:12px;align-items:center}
+  .fgBadge,.fgLevelUp{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;
+    padding:8px 16px;border-radius:999px;text-align:center;animation:fgPop .4s cubic-bezier(.2,1.3,.4,1) both}
+  .fgBadge{background:rgba(245,181,68,.14);border:1px solid var(--rise);color:var(--rise)}
+  .fgLevelUp{background:rgba(116,211,154,.14);border:1px solid var(--good);color:var(--good)}
+  @keyframes fgPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+  .fgCard{width:100%;background:var(--ink-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+  .fgTop{display:flex;justify-content:space-between;align-items:baseline;font-family:"Space Grotesk",sans-serif}
+  #fgRankName{font-weight:600;font-size:16px;color:var(--text)}
+  .fgXpGain{font-weight:600;font-size:14px;color:var(--rise)}
+  .fgBar{height:8px;border-radius:999px;background:#11131a;overflow:hidden}
+  .fgBarFill{height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--rise-deep),var(--rise));
+    transition:width .7s cubic-bezier(.2,.8,.2,1)}
+  .fgXpText{font-size:12px;color:var(--muted);text-align:right}
+  .fgStreak{font-size:14px;color:var(--muted)}
+  .fgStreak b{color:var(--text)}
+  #confettiCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60;display:none}
+
   kbd{background:#11131a;border:1px solid var(--line);border-radius:6px;padding:1px 6px;
     font-family:"Space Grotesk";font-size:11px;color:var(--text)}
 
@@ -618,6 +641,19 @@
       <div class="num" id="doneNum">0</div>
       <div class="msg" id="doneMsg">Reps completed.</div>
     </div>
+    <div class="finishGame hidden" id="finishGame">
+      <div class="fgBadge hidden" id="fgBadge">🏆 <span id="fgBadgeTxt"></span></div>
+      <div class="fgLevelUp hidden" id="fgLevelUp">⬆️ <span id="fgLevelUpTxt"></span></div>
+      <div class="fgCard">
+        <div class="fgTop">
+          <span id="fgRankName">–</span>
+          <span class="fgXpGain" id="fgXpGain"></span>
+        </div>
+        <div class="fgBar"><div class="fgBarFill" id="fgBarFill"></div></div>
+        <div class="fgXpText" id="fgXpText"></div>
+      </div>
+      <div class="fgStreak hidden" id="fgStreak"></div>
+    </div>
   </section>
 
   <div id="curveOverlay" class="overlay hidden" aria-hidden="true">
@@ -657,7 +693,7 @@
     set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
     del(k){ try{ localStorage.removeItem(k); }catch(e){} },
   };
-  const K = { settings:"lat.settings", presets:"lat.presets", history:"lat.history", pr:"lat.pr", curves:"lat.curves" };
+  const K = { settings:"lat.settings", presets:"lat.presets", history:"lat.history", pr:"lat.pr", curves:"lat.curves", game:"lat.game" };
 
   // ---------- i18n: top-10 most-spoken languages ----------
   const I18N = {
@@ -675,7 +711,14 @@
         done:"Fertig", newSession:"Neue Sitzung", repsCompleted:"Wiederholungen abgeschlossen.",
         newRecord:s=>`Neuer Rekord! ${s} Sekunden.`, holdForN:n=>`Halte für ${n} Sekunden`,
         andHold:"— und halten", continueWord:"Weiter",
-        tooLate:"Zu spät gestartet", tooEarly:"Zu früh losgelassen", tooEarlyLab:"Zu früh — nochmal"
+        tooLate:"Zu spät gestartet", tooEarly:"Zu früh losgelassen", tooEarlyLab:"Zu früh — nochmal",
+        rankNames:["Schnorchler","Apnoe-Neuling","Freitaucher","Tieftaucher","Abgrund","Meister","Legende"],
+        xpGained:n=>`+${n} XP`,
+        levelUp:name=>`Rang aufgestiegen: ${name}!`,
+        streakLine:n=>`🔥 <b>${n}</b> Tage in Folge`,
+        newBest:"Neuer Bestwert!",
+        recStopwatch:"Längster Hold", recSdHold:"Sudden-Death-Runden", recSdSpeed:"Beste Rep-Phase",
+        statsRank:"Rang", statsStreak:"Streak"
       }
     },
     en: { name:"English", speech:"en-US",
@@ -693,6 +736,13 @@
         newRecord:s=>`New record! ${s} seconds.`, holdForN:n=>`Hold for ${n} seconds`,
         andHold:"— and hold", continueWord:"Continue",
         tooLate:"Started too late", tooEarly:"Released too early", tooEarlyLab:"Too early — retry",
+        rankNames:["Snorkeler","Apnist","Free Diver","Deep Diver","Abyss","Master","Legend"],
+        xpGained:n=>`+${n} XP`,
+        levelUp:name=>`Rank up: ${name}!`,
+        streakLine:n=>`🔥 <b>${n}</b> day streak`,
+        newBest:"New best!",
+        recStopwatch:"Longest hold", recSdHold:"Sudden-death rounds", recSdSpeed:"Best rep phase",
+        statsRank:"Rank", statsStreak:"Streak",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1187,6 +1237,158 @@
   function getPR(){ return KV.get(K.pr, 0) || 0; }
   function setPR(v){ KV.set(K.pr, v); }
 
+  // ---------- gamification: XP, ranks, streak, per-scenario records ----------
+  const RANK_XP = [0, 100, 300, 700, 1500, 3000, 6000];
+  function loadGame(){
+    const g = KV.get(K.game, null) || {};
+    return {
+      xp: g.xp || 0,
+      streakCount: g.streakCount || 0,
+      streakLast: (g.streakLast == null ? null : g.streakLast),
+      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0 }, g.rec || {})
+    };
+  }
+  function saveGame(g){ KV.set(K.game, g); }
+  function localDay(ts){
+    const d = new Date(ts);
+    return Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
+  }
+  function rankInfo(xp){
+    let idx = 0;
+    for(let i=0;i<RANK_XP.length;i++){ if(xp >= RANK_XP[i]) idx = i; }
+    const names = T().rankNames || [];
+    const curMin = RANK_XP[idx];
+    const nextMin = (idx+1 < RANK_XP.length) ? RANK_XP[idx+1] : null;
+    return {
+      idx, name: names[idx] || ("Rank " + (idx+1)),
+      into: xp - curMin,
+      span: (nextMin != null) ? (nextMin - curMin) : null
+    };
+  }
+  // Apply one finished session to the persistent game state; returns a summary
+  // for the finish screen. Rewards total hold time, reps, streak & records —
+  // deliberately NOT raw max hold time alone (safety-conscious design).
+  function commitGameSession(snap){
+    const g = loadGame();
+    const beforeIdx = rankInfo(g.xp).idx;
+
+    let xp = Math.round((snap.holdSec || 0) / 3) + (snap.reps || 0);
+
+    // daily streak (1 grace day: a single missed day does not break it)
+    const today = localDay(Date.now());
+    let streakEvent = "same";
+    if(g.streakLast == null){ g.streakCount = 1; streakEvent = "start"; }
+    else {
+      const diff = today - g.streakLast;
+      if(diff <= 0){ streakEvent = "same"; }
+      else if(diff === 1 || diff === 2){ g.streakCount++; streakEvent = "inc"; }
+      else { g.streakCount = 1; streakEvent = "reset"; }
+    }
+    g.streakLast = today;
+    const streakBonus = Math.min(g.streakCount, 10) * 2;
+    xp += streakBonus;
+
+    // per-scenario personal best
+    let recKey = null, recVal = 0, newRecord = false;
+    if(snap.goal === "scenario"){
+      if(snap.scenario === "stopwatch"){ recKey = "stopwatch"; recVal = Math.round((snap.swLongest || 0) * 10) / 10; }
+      else if(snap.scenario === "sd_hold"){ recKey = "sd_hold"; recVal = snap.sdRounds || 0; }
+      else if(snap.scenario === "sd_speed"){ recKey = "sd_speed"; recVal = snap.sdSpeedBest || 0; }
+      if(recKey && recVal > (g.rec[recKey] || 0)){ g.rec[recKey] = recVal; newRecord = true; }
+    }
+    if(newRecord) xp += 25;
+
+    xp = Math.max(xp, 1);
+    g.xp += xp;
+    saveGame(g);
+
+    const rank = rankInfo(g.xp);
+    return {
+      xpGained: xp, streakBonus, streakCount: g.streakCount, streakEvent,
+      newRecord, recKey, recVal, rank, leveledUp: rank.idx > beforeIdx, totalXp: g.xp
+    };
+  }
+
+  function recordText(t, r){
+    const map = { stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed };
+    const label = map[r.recKey] || "";
+    const val = (r.recKey === "stopwatch") ? fmtSW(r.recVal) : r.recVal;
+    return (t.newBest || "New best!") + " · " + label + " " + val;
+  }
+
+  function renderFinishGame(r){
+    const box = $("finishGame"); if(!box) return;
+    if(!r){ box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    const t = T();
+
+    $("fgRankName").textContent = r.rank.name;
+    $("fgXpGain").textContent = t.xpGained ? t.xpGained(r.xpGained) : ("+" + r.xpGained + " XP");
+    const pct = (r.rank.span == null) ? 100 : Math.max(4, Math.min(100, Math.round(100 * r.rank.into / r.rank.span)));
+    const fill = $("fgBarFill");
+    fill.style.width = "0%";
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ fill.style.width = pct + "%"; }));
+    $("fgXpText").textContent = (r.rank.span == null)
+      ? (r.totalXp + " XP · MAX")
+      : (r.rank.into + " / " + r.rank.span + " XP");
+
+    const badge = $("fgBadge");
+    if(r.newRecord){ badge.classList.remove("hidden"); $("fgBadgeTxt").textContent = recordText(t, r); }
+    else badge.classList.add("hidden");
+
+    const lu = $("fgLevelUp");
+    if(r.leveledUp){ lu.classList.remove("hidden"); $("fgLevelUpTxt").textContent = t.levelUp ? t.levelUp(r.rank.name) : ("Rank up: " + r.rank.name); }
+    else lu.classList.add("hidden");
+
+    const st = $("fgStreak");
+    if(r.streakCount > 1){ st.classList.remove("hidden"); st.innerHTML = t.streakLine ? t.streakLine(r.streakCount) : ("🔥 " + r.streakCount); }
+    else st.classList.add("hidden");
+
+    if(r.newRecord || r.leveledUp){ confettiBurst(); vibrate([0,40,60,40]); }
+  }
+
+  function confettiBurst(){
+    try{
+      let cv = $("confettiCanvas");
+      if(!cv){ cv = document.createElement("canvas"); cv.id = "confettiCanvas"; document.body.appendChild(cv); }
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = cv.width = Math.floor(innerWidth * dpr);
+      const H = cv.height = Math.floor(innerHeight * dpr);
+      cv.style.display = "block";
+      const ctx = cv.getContext("2d");
+      const colors = ["#F5B544","#74d39a","#e8736b","#ECEAE3","#e89a25"];
+      const P = [];
+      for(let i=0;i<130;i++){
+        P.push({
+          x: W/2 + (Math.random()-0.5)*W*0.3, y: H*0.34,
+          vx: (Math.random()-0.5)*14*dpr, vy: (Math.random()*-13-6)*dpr,
+          g: 0.35*dpr, r: (3+Math.random()*4)*dpr,
+          rot: Math.random()*6.28, vr: (Math.random()-0.5)*0.3,
+          c: colors[i % colors.length], life: 1
+        });
+      }
+      let last = performance.now();
+      function frame(now){
+        const dt = Math.min(32, now - last) / 16.7; last = now;
+        ctx.clearRect(0,0,W,H);
+        let alive = false;
+        for(const p of P){
+          p.vy += p.g*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.rot += p.vr*dt; p.life -= 0.006*dt;
+          if(p.y < H+20 && p.life > 0){
+            alive = true;
+            ctx.save(); ctx.globalAlpha = Math.max(0,p.life);
+            ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+            ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r*0.6, p.r*2, p.r*1.2);
+            ctx.restore();
+          }
+        }
+        if(alive) requestAnimationFrame(frame);
+        else { ctx.clearRect(0,0,W,H); cv.style.display = "none"; }
+      }
+      requestAnimationFrame(frame);
+    }catch(e){}
+  }
+
   function addHistory(entry){
     const h = KV.get(K.history, []);
     h.push(entry);
@@ -1204,7 +1406,13 @@
     const sumHold = h.reduce((a,x)=>a + (x.holdSec||0), 0);
     const bestRep = Math.max(0, ...h.map(x=>x.longestHold||0));
     const fmt = s=>{ s=Math.round(s); const m=Math.floor(s/60); return m? (m+":"+String(s%60).padStart(2,"0")) : (s+" s"); };
+    const t = T();
+    const g = loadGame();
+    const ri = rankInfo(g.xp);
+    let gameLine = `${t.statsRank || "Rank"}: <b>${ri.name}</b> · <b>${g.xp}</b> XP`;
+    if(g.streakCount > 1) gameLine += ` · 🔥 <b>${g.streakCount}</b>`;
     box.innerHTML =
+      gameLine + `<br>` +
       `Total sessions: <b>${total}</b> · last 7 days: <b>${recent.length}</b><br>` +
       `Longest hold (record): <b>${bestRep} s</b><br>` +
       `Total time held: <b>${fmt(sumHold)}</b><br>` +
@@ -2039,6 +2247,7 @@
     }
     
     cmdFinish();
+    let gameResult = null;
     if(S && S.startTime){
       addHistory({
         at: Date.now(),
@@ -2049,8 +2258,16 @@
         longestHold: S.longestHold || 0,
       });
       if((S.longestHold||0) > getPR()) setPR(S.longestHold);
+      gameResult = commitGameSession({
+        goal: S.goal, scenario: S.scenario,
+        holdSec: S.holdSec || 0, reps: total,
+        swLongest: S.swLongest || 0,
+        sdRounds: (S.scenario === "sd_hold") ? (S.done || 0) : 0,
+        sdSpeedBest: S.sd_prevPhaseReps || 0
+      });
       renderStats();
     }
+    renderFinishGame(gameResult);
     releaseWake(); disableGuard(); setTapSurface(false);
     show("finish");
     S = null;
@@ -2122,7 +2339,7 @@
   $("presetDel").addEventListener("click", ()=>{ presetDel(); updateSummaries(); });
   $("statsClear").addEventListener("click", ()=>{
     if(confirm("Clear the whole history and personal best?")){
-      KV.del(K.history); KV.del(K.pr); renderStats();
+      KV.del(K.history); KV.del(K.pr); KV.del(K.game); renderStats();
     }
   });
 
