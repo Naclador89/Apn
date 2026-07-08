@@ -370,6 +370,7 @@
             <option value="stopwatch" selected>Stopwatch — hold as long as you can</option>
             <option value="sd_hold">Sudden death: Hold — Jeder Hold länger als der davor</option>
             <option value="sd_speed">Sudden death: Speed — Action / Pause (einstellbar)</option>
+            <option value="sd_mixed">Sudden death: Mixed — Action + Hold + Pause</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
           <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
@@ -727,7 +728,7 @@
         levelUp:name=>`Rang aufgestiegen: ${name}!`,
         streakLine:n=>`🔥 <b>${n}</b> Tage in Folge`,
         newBest:"Neuer Bestwert!",
-        recStopwatch:"Längster Hold", recSdHold:"Sudden-Death-Runden", recSdSpeed:"Beste Rep-Phase",
+        recStopwatch:"Längster Hold", recSdHold:"Sudden-Death-Runden", recSdSpeed:"Beste Rep-Phase", recSdMixed:"Mixed-Runden",
         recReps:"Meiste Reps", recTime:"Meiste Reps (Zeit)", recPace:"Bestes Tempo", recSpeedPace:"Bestes Action-Tempo",
         paceLine:p=>`Tempo: <b>${p}</b> Reps/min`,
         paceActionLine:p=>`Action-Tempo: <b>${p}</b> Reps/min`,
@@ -754,7 +755,7 @@
         levelUp:name=>`Rank up: ${name}!`,
         streakLine:n=>`🔥 <b>${n}</b> day streak`,
         newBest:"New best!",
-        recStopwatch:"Longest hold", recSdHold:"Sudden-death rounds", recSdSpeed:"Best rep phase",
+        recStopwatch:"Longest hold", recSdHold:"Sudden-death rounds", recSdSpeed:"Best rep phase", recSdMixed:"Mixed rounds",
         recReps:"Most reps", recTime:"Most reps (timed)", recPace:"Best pace", recSpeedPace:"Best action pace",
         paceLine:p=>`Pace: <b>${p}</b> reps/min`,
         paceActionLine:p=>`Action pace: <b>${p}</b> reps/min`,
@@ -1262,7 +1263,7 @@
       xp: g.xp || 0,
       streakCount: g.streakCount || 0,
       streakLast: (g.streakLast == null ? null : g.streakLast),
-      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, reps:0, time:0, pace:0, speedPace:0 }, g.rec || {})
+      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, sd_mixed:0, reps:0, time:0, pace:0, speedPace:0 }, g.rec || {})
     };
   }
   function saveGame(g){ KV.set(K.game, g); }
@@ -1317,6 +1318,7 @@
       if(snap.scenario === "stopwatch") tryRecord("stopwatch", Math.round((snap.swLongest || 0) * 10) / 10);
       else if(snap.scenario === "sd_hold") tryRecord("sd_hold", snap.sdRounds || 0);
       else if(snap.scenario === "sd_speed") tryRecord("sd_speed", snap.sdSpeedBest || 0);
+      else if(snap.scenario === "sd_mixed") tryRecord("sd_mixed", snap.mixedRounds || 0);
     } else if(snap.goal === "reps"){
       tryRecord("reps", reps);
     } else if(snap.goal === "time"){
@@ -1357,7 +1359,7 @@
 
   function recordText(t, rec){
     const map = {
-      stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed,
+      stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed, sd_mixed: t.recSdMixed,
       reps: t.recReps, time: t.recTime, pace: t.recPace, speedPace: t.recSpeedPace
     };
     const label = map[rec.key] || "";
@@ -1633,8 +1635,9 @@
       : "Penalty amount (+reps)";
   }
   function applyScenarioVisibility(){
-    const isSpeed = goal==="scenario" && $("scenarioSel").value==="sd_speed";
-    $("sdSpeedField").classList.toggle("hidden", !isSpeed);
+    const sc = $("scenarioSel").value;
+    const needsPhases = goal==="scenario" && (sc==="sd_speed" || sc==="sd_mixed");
+    $("sdSpeedField").classList.toggle("hidden", !needsPhases);
   }
   $("scenarioSel").addEventListener("change", applyScenarioVisibility);
   $("goalSeg").addEventListener("click", e=>{
@@ -1874,6 +1877,16 @@
       $("swLongest").textContent = "0";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
       document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Reps (Ziel: 0)";
+    } else if (S.scenario === "sd_mixed") {
+      S.sd_phase = "action";
+      S.sd_repsThisPhase = 0;
+      S.sd_prevActionReps = 0;
+      S.sd_prevHold = 0;
+      S.sd_mixedRounds = 0;
+      $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
+      $("swLongest").textContent = "0";
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Reps (Ziel: >0)";
     }
   }
 
@@ -1926,6 +1939,63 @@
        }, 100);
     }
 
+    if(S.scenario==="sd_mixed") {
+       const actionMs = S.sd_actionMs || 60000;
+       S.sd_phaseEndTs = S.startTime + actionMs;
+       S.sd_timer = setInterval(()=>{
+           if(!S || S.scenario !== "sd_mixed") { clearInterval(S.sd_timer); return; }
+           // hold phase is freeform (no countdown) — driven by press/release
+           if (S.sd_phase === "hold"){
+               if(!holding) $("subcue").textContent = S.sd_prevHold>0
+                   ? `Halten — länger als ${S.sd_prevHold.toFixed(1)}s`
+                   : "Halten — so lange du kannst";
+               return;
+           }
+           const now = Date.now();
+           const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
+           $("swRest").textContent = fmtSW(remain);
+
+           if (S.sd_phase === "action" && !holding) {
+               $("subcue").textContent = `Action-Phase endet in ${Math.ceil(remain)}s`;
+           } else if (S.sd_phase === "pause") {
+               $("subcue").textContent = `Pause... nächste Action in ${Math.ceil(remain)}s`;
+           }
+
+           if (remain <= 0) {
+               if (S.sd_phase === "action") {
+                   flushPendingRelease();   // count any in-progress tap synchronously
+                   // must do MORE reps than the previous action phase
+                   if (S.sd_repsThisPhase <= S.sd_prevActionReps) {
+                       S.sd_failMsg = `Game Over. ${S.sd_repsThisPhase} Reps (nötig: >${S.sd_prevActionReps}).`;
+                       finish();
+                       return;
+                   }
+                   S.sd_prevActionReps = S.sd_repsThisPhase;
+                   // -> HOLD phase (must beat the previous hold to continue)
+                   S.sd_phase = "hold";
+                   $("swRest").textContent = fmtSW(0);
+                   $("timer").textContent = fmtSW(0);
+                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Hold";
+                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent =
+                       S.sd_prevHold>0 ? `Ziel: >${S.sd_prevHold.toFixed(1)}s` : "Ziel: halten";
+                   $("swLongest").textContent = S.sd_prevHold>0 ? `>${S.sd_prevHold.toFixed(1)}s` : "–";
+                   setCue("up", "HALTEN", S.sd_prevHold>0 ? `Länger als ${S.sd_prevHold.toFixed(1)}s` : "So lange du kannst");
+                   cmd("hold");
+               } else if (S.sd_phase === "pause") {
+                   S.sd_phase = "action";
+                   S.sd_phaseEndTs = now + actionMs;
+                   S.sd_repsThisPhase = 0;
+                   $("repNow").textContent = 0;
+                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
+                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
+                   $("swLongest").textContent = "0";
+                   setCue("up", T().ready, "Action Phase!");
+                   cmd("down");
+               }
+           }
+       }, 100);
+    }
+
     startClock();
     acquireWake();
     const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
@@ -1935,6 +2005,7 @@
   let swRestTimer = 0;
   function pressStartStopwatch(){
     if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
+    if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
 
     if(pendingRelease){
       clearTimeout(releaseTimer); releaseTimer = 0;
@@ -1960,8 +2031,24 @@
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(stopwatchHoldLoop);
   }
+  // Finalize an in-progress or grace-pending release right now (no defer).
+  // Used at the Mixed action->hold boundary so a lingering tap is counted as a
+  // rep instead of being mis-evaluated as the (short) hold after the phase flips.
+  function flushPendingRelease(){
+    if(!S) return;
+    if(holding){
+      holding = false;
+      cancelAnimationFrame(raf);
+      S.swReleaseTs = Date.now();
+    } else if(!pendingRelease){
+      return;
+    }
+    clearTimeout(releaseTimer); releaseTimer = 0;
+    pendingRelease = false;
+    finalizeStopwatchRelease();
+  }
   function stopwatchHoldLoop(){
-    if(!holding || !S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold" && S.scenario !== "sd_speed")) return;
+    if(!holding || !S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold" && S.scenario !== "sd_speed" && S.scenario !== "sd_mixed")) return;
     const elapsed = (Date.now() - S.swHoldStartTs)/1000;
     $("timer").textContent = fmtSW(elapsed);
     progressUpdate(Math.min(1, elapsed/30));   
@@ -1996,7 +2083,31 @@
         $("swLongest").textContent = fmtSW(S.sd_prevHold);
     }
 
-    if (S.scenario === "sd_speed") {
+    if (S.scenario === "sd_mixed") {
+        if (S.sd_phase === "action") {
+            S.sd_repsThisPhase++;
+            S.done = (S.done || 0) + 1;
+            $("swLongest").textContent = S.sd_repsThisPhase;
+            $("repNow").textContent = S.sd_repsThisPhase;
+        } else if (S.sd_phase === "hold") {
+            if (heldSec <= S.sd_prevHold) {
+                S.sd_failMsg = `Game Over. Hold ${heldSec.toFixed(1)}s (nötig: >${S.sd_prevHold.toFixed(1)}s).`;
+                S.holdSec = (S.holdSec||0) + heldSec;
+                if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;
+                finish();
+                return;
+            }
+            // hold beaten -> round complete -> pause, then next action phase
+            S.sd_prevHold = heldSec;
+            S.done = (S.done || 0) + 1;
+            S.sd_mixedRounds = (S.sd_mixedRounds || 0) + 1;
+            S.sd_phase = "pause";
+            S.sd_phaseEndTs = Date.now() + (S.sd_pauseMs || 20000);
+            document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Pause";
+            document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Runde ${S.sd_mixedRounds} ✓`;
+            $("swLongest").textContent = fmtSW(S.sd_prevHold);
+        }
+    } else if (S.scenario === "sd_speed") {
         if (S.sd_phase === "action") {
             S.sd_repsThisPhase++;
             S.done = (S.done || 0) + 1;
@@ -2022,8 +2133,12 @@
     }
     cmd("up");
 
-    if (S.scenario === "sd_speed") {
-        setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
+    if (S.scenario === "sd_speed" || S.scenario === "sd_mixed") {
+        if (S.scenario === "sd_mixed" && S.sd_phase === "pause") {
+            setCue("rest", "Pause", "Atme durch");
+        } else {
+            setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
+        }
         $("btnLab").textContent = T().pressToStart;
         $("timer").textContent = fmtSW(0);
     } else {
@@ -2352,7 +2467,8 @@
         actionSec: sdActionSec,
         swLongest: S.swLongest || 0,
         sdRounds: (S.scenario === "sd_hold") ? (S.done || 0) : 0,
-        sdSpeedBest: S.sd_prevPhaseReps || 0
+        sdSpeedBest: S.sd_prevPhaseReps || 0,
+        mixedRounds: S.sd_mixedRounds || 0
       });
       renderStats();
     }
