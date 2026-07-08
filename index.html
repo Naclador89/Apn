@@ -381,6 +381,14 @@
             </div>
             <div class="hint" id="sdSpeedHint">Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.</div>
           </div>
+          <div class="field hidden" id="sdMixedField" style="margin:12px 0 0">
+            <label class="lbl">Mixed — Startwerte (Runde 1)</label>
+            <div class="row">
+              <input id="sdStartReps" type="number" min="1" max="50" step="1" value="1" aria-label="Start rep target for round 1">
+              <input id="sdStartHold" type="number" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1">
+            </div>
+            <div class="hint">Links: Reps in Runde 1 · rechts: Mindest-Hold (s) in Runde 1. Danach muss jede Runde beides steigern.</div>
+          </div>
         </div>
       </div>
     </details>
@@ -732,6 +740,7 @@
         recReps:"Meiste Reps", recTime:"Meiste Reps (Zeit)", recPace:"Bestes Tempo", recSpeedPace:"Bestes Action-Tempo",
         paceLine:p=>`Tempo: <b>${p}</b> Reps/min`,
         paceActionLine:p=>`Action-Tempo: <b>${p}</b> Reps/min`,
+        holdNow:"Jetzt halten",
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -759,6 +768,7 @@
         recReps:"Most reps", recTime:"Most reps (timed)", recPace:"Best pace", recSpeedPace:"Best action pace",
         paceLine:p=>`Pace: <b>${p}</b> reps/min`,
         paceActionLine:p=>`Action pace: <b>${p}</b> reps/min`,
+        holdNow:"Hold now",
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -1168,7 +1178,7 @@
 
 
   const SETTING_IDS = [
-    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec",
+    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "voice","beep","vibrate","eyesClosed","guardExit",
@@ -1582,7 +1592,21 @@
   }
   function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 
-  function cmd(kind){            
+  // Distinct cue for the Mixed action->hold transition ("now HOLD").
+  function mixedHoldCue(){
+    if(!S || !S.sig) return;
+    if(S.sig.speech) say(T().holdNow || "Hold");
+    if(S.sig.beep){ beep(680,140,0); beep(920,200,150); }
+    if(S.sig.vibrate) vibrate([0,90,60,90]);
+  }
+  // Fired once when a Mixed hold passes the previous round's hold time.
+  function mixedHoldTargetCue(){
+    if(!S || !S.sig) return;
+    if(S.sig.beep){ beep(880,120,0); beep(1175,170,110); }
+    if(S.sig.vibrate) vibrate([0,60,40,60]);
+  }
+
+  function cmd(kind){
     if(!S) return;
     if(S.sig.speech) say(S.words[kind]);
     if(S.sig.beep){
@@ -1638,6 +1662,7 @@
     const sc = $("scenarioSel").value;
     const needsPhases = goal==="scenario" && (sc==="sd_speed" || sc==="sd_mixed");
     $("sdSpeedField").classList.toggle("hidden", !needsPhases);
+    $("sdMixedField").classList.toggle("hidden", !(goal==="scenario" && sc==="sd_mixed"));
   }
   $("scenarioSel").addEventListener("change", applyScenarioVisibility);
   $("goalSeg").addEventListener("click", e=>{
@@ -1770,6 +1795,8 @@
       const pauSec = Math.min(300, Math.max(3, Math.round(parseFloat($("sdPauseSec").value) || 20)));
       cfg.sd_actionMs = actSec * 1000;
       cfg.sd_pauseMs  = pauSec * 1000;
+      cfg.sd_startReps = Math.min(50, Math.max(1, Math.round(parseFloat($("sdStartReps").value) || 1)));
+      cfg.sd_startHold = Math.min(120, Math.max(0, parseFloat($("sdStartHold").value) || 0));
       reps = null;
     } else if(goal==="time"){
       reps = null; 
@@ -1880,13 +1907,15 @@
     } else if (S.scenario === "sd_mixed") {
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
-      S.sd_prevActionReps = 0;
-      S.sd_prevHold = 0;
+      // start values (round 1): need > (startReps-1) reps and > startHold seconds
+      S.sd_prevActionReps = Math.max(0, (S.sd_startReps || 1) - 1);
+      S.sd_prevHold = S.sd_startHold || 0;
       S.sd_mixedRounds = 0;
+      S.sd_holdTargetHit = false;
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Reps (Ziel: >0)";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
     }
   }
 
@@ -1973,6 +2002,8 @@
                    S.sd_prevActionReps = S.sd_repsThisPhase;
                    // -> HOLD phase (must beat the previous hold to continue)
                    S.sd_phase = "hold";
+                   S.sd_holdTargetHit = false;
+                   setFill(0);
                    $("swRest").textContent = fmtSW(0);
                    $("timer").textContent = fmtSW(0);
                    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Hold";
@@ -1980,11 +2011,12 @@
                        S.sd_prevHold>0 ? `Ziel: >${S.sd_prevHold.toFixed(1)}s` : "Ziel: halten";
                    $("swLongest").textContent = S.sd_prevHold>0 ? `>${S.sd_prevHold.toFixed(1)}s` : "–";
                    setCue("up", "HALTEN", S.sd_prevHold>0 ? `Länger als ${S.sd_prevHold.toFixed(1)}s` : "So lange du kannst");
-                   cmd("hold");
+                   mixedHoldCue();
                } else if (S.sd_phase === "pause") {
                    S.sd_phase = "action";
                    S.sd_phaseEndTs = now + actionMs;
                    S.sd_repsThisPhase = 0;
+                   setFill(0);
                    $("repNow").textContent = 0;
                    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
                    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
@@ -2051,7 +2083,21 @@
     if(!holding || !S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold" && S.scenario !== "sd_speed" && S.scenario !== "sd_mixed")) return;
     const elapsed = (Date.now() - S.swHoldStartTs)/1000;
     $("timer").textContent = fmtSW(elapsed);
-    progressUpdate(Math.min(1, elapsed/30));   
+    // Mixed hold phase: fill the button up to the target (previous round's hold)
+    if(S.scenario === "sd_mixed" && S.sd_phase === "hold" && (S.sd_prevHold || 0) > 0){
+      const target = S.sd_prevHold;
+      const p = Math.min(1, elapsed / target);
+      setFill(p);
+      progressUpdate(p);
+      if(elapsed >= target && !S.sd_holdTargetHit){
+        S.sd_holdTargetHit = true;
+        setFill(1);
+        setCue("up", "GESCHAFFT", "Loslassen wenn du willst");
+        mixedHoldTargetCue();
+      }
+    } else {
+      progressUpdate(Math.min(1, elapsed/30));
+    }
     raf = requestAnimationFrame(stopwatchHoldLoop);
   }
   function pressEndStopwatch(){
@@ -2103,6 +2149,7 @@
             S.sd_mixedRounds = (S.sd_mixedRounds || 0) + 1;
             S.sd_phase = "pause";
             S.sd_phaseEndTs = Date.now() + (S.sd_pauseMs || 20000);
+            setFill(0);
             document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Pause";
             document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Runde ${S.sd_mixedRounds} ✓`;
             $("swLongest").textContent = fmtSW(S.sd_prevHold);
