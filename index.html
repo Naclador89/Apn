@@ -284,6 +284,8 @@
     font-family:"Space Grotesk",sans-serif;font-weight:700;
     font-size:clamp(54px,18vw,92px);line-height:1;font-variant-numeric:tabular-nums;
   }
+  .holdBtn .big.counting{color:var(--rise);animation:countPulse .5s ease-out}
+  @keyframes countPulse{from{transform:scale(1.25);opacity:.5}to{transform:scale(1);opacity:1}}
   .holdBtn .lab{font-size:14px;color:var(--muted);letter-spacing:.02em}
   .holdBtn.holding .lab{color:var(--rise)}
 
@@ -1924,6 +1926,7 @@
       S.sd_prevHold = S.sd_startHold || 0;
       S.sd_mixedRounds = 0;
       S.sd_holdTargetHit = false;
+      S.sd_lastCountSec = 0;
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
@@ -1996,8 +1999,20 @@
            const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
            $("swRest").textContent = fmtSW(remain);
 
-           if (S.sd_phase === "action" && !holding) {
-               $("subcue").textContent = `Action-Phase endet in ${Math.ceil(remain)}s`;
+           if (S.sd_phase === "action") {
+               const secs = Math.ceil(remain);
+               if(!holding) $("subcue").textContent = `Halten in ${secs}s`;
+               // prominent 3-2-1 countdown into the hold phase
+               if(secs>=1 && secs<=3 && !holding){
+                   $("timer").textContent = String(secs);
+                   if(secs !== S.sd_lastCountSec){
+                       S.sd_lastCountSec = secs;
+                       const el = $("timer");                         // re-trigger the pulse each second
+                       el.classList.remove("counting"); void el.offsetWidth; el.classList.add("counting");
+                       if(S.sig.beep) beep(500 + (4-secs)*130, 90, 0);   // 3->620, 2->750, 1->880
+                       if(S.sig.vibrate) vibrate(20);
+                   }
+               }
            } else if (S.sd_phase === "pause") {
                $("subcue").textContent = `Pause... nächste Action in ${Math.ceil(remain)}s`;
            }
@@ -2016,6 +2031,7 @@
                    S.sd_phase = "hold";
                    S.sd_holdTargetHit = false;
                    setFill(0);
+                   $("timer").classList.remove("counting");
                    $("swRest").textContent = fmtSW(0);
                    $("timer").textContent = fmtSW(0);
                    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Hold";
@@ -2028,6 +2044,7 @@
                    S.sd_phase = "action";
                    S.sd_phaseEndTs = now + actionMs;
                    S.sd_repsThisPhase = 0;
+                   S.sd_lastCountSec = 0;
                    setFill(0);
                    $("repNow").textContent = 0;
                    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
@@ -2068,6 +2085,7 @@
     $("holdBtn").classList.add("holding");
     setCue("up", S.words.down, "");
     $("btnLab").textContent = T().holding;
+    $("timer").classList.remove("counting");
     $("timer").textContent = fmtSW(0);
     if(isActionTap()){
       tick("down");           // short blip, no speech, for rapid action reps
