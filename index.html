@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Breath-hold trainer</title>
+<title>Breathless — Gasping for More</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#14161d">
-<link rel="manifest" href='data:application/manifest+json,{"name":"Breath-hold trainer","short_name":"Apnea","display":"standalone","orientation":"any","background_color":"%2314161d","theme_color":"%2314161d","start_url":"."}'>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Breathless","short_name":"Breathless","display":"standalone","orientation":"any","background_color":"%2314161d","theme_color":"%2314161d","start_url":"."}'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -44,18 +44,18 @@
   .wrap{width:100%;max-width:var(--maxw);flex:1;display:flex;flex-direction:column}
 
   /* ---------- header ---------- */
-  header{display:flex;align-items:baseline;gap:10px;margin-bottom:22px}
-  header .langSel{margin-left:auto;background:#11131a;border:1px solid var(--line);color:var(--muted);
+  header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+  header .langSel{margin-left:auto;align-self:flex-start;background:#11131a;border:1px solid var(--line);color:var(--muted);
     font-family:"Inter";font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;appearance:none;-webkit-appearance:none}
   header .langSel:hover{color:var(--text);border-color:var(--rise)}
+  .brand{display:flex;flex-direction:column;gap:3px;min-width:0}
   .mark{
-    font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:13px;
-    letter-spacing:.32em;text-transform:uppercase;color:var(--rise);
+    font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:24px;line-height:1;
+    letter-spacing:-.01em;text-transform:none;color:var(--rise);
   }
-  .mark::before{content:"";}
-  h1{
-    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;
-    letter-spacing:.02em;color:var(--muted);
+  .tagline{
+    font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:11px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;
   }
 
   /* ---------- panels ---------- */
@@ -349,8 +349,10 @@
 <body>
 <div class="wrap">
   <header>
-    <span class="mark" data-i18n="mark">Apnea</span>
-    <h1 id="appTitle" data-i18n="title">Breath-hold trainer</h1>
+    <div class="brand">
+      <h1 class="mark" id="appTitle" data-i18n="mark">Breathless</h1>
+      <span class="tagline" data-i18n="title">Gasping for More</span>
+    </div>
     <select id="appLang" class="langSel" aria-label="App language"></select>
   </header>
 
@@ -747,7 +749,7 @@
         release:"Loslassen", startWithin:s=>`Drücke in ${s}s`,
         swRestLabel:"Pause seit letztem Hold", swLongestLabel:"Längster Hold",
         scenarioTitle:"Szenario", scenarioStopwatch:"Stoppuhr — Halte so lange du kannst",
-        title:"Breath-hold trainer", mark:"Apnea",
+        title:"Gasping for More", mark:"Breathless",
         ready:"Bereit", pressToStart:"Drücken zum Starten", tapToStart:"Tippen zum Starten",
         subCue:"Beim Startsignal gedrückt halten, beim Loslass-Signal loslassen.",
         pressHold:"Gedrückt halten", holding:"Halte...", stop:"Stopp", rep:"Wdh",
@@ -837,7 +839,7 @@
         release:"Release", startWithin:s=>`Press within ${s}s`,
         swRestLabel:"Rest since last hold", swLongestLabel:"Longest hold",
         scenarioTitle:"Scenario", scenarioStopwatch:"Stopwatch — hold as long as you can",
-        title:"Breath-hold trainer", mark:"Apnea",
+        title:"Gasping for More", mark:"Breathless",
         ready:"Ready", pressToStart:"Press to start", tapToStart:"Tap anywhere to start",
         subCue:"Press & hold on the start cue, release on the release cue.",
         pressHold:"Press & hold", holding:"Holding…", stop:"Stop", rep:"Rep",
