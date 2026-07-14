@@ -397,6 +397,19 @@
   kbd{background:#11131a;border:1px solid var(--line);border-radius:6px;padding:1px 6px;
     font-family:"Space Grotesk";font-size:11px;color:var(--text)}
 
+  /* ---------- lives system ---------- */
+  .livesRow{display:flex;gap:7px;justify-content:center;margin:-4px 0 12px;font-size:19px;line-height:1}
+  .livesRow .heart{color:var(--bad);transition:transform .25s, opacity .25s, color .25s}
+  .livesRow .heart.lost{color:var(--line);opacity:.55;transform:scale(.82)}
+  .livesRow .heart.justLost{animation:heartPop .45s ease-out}
+  @keyframes heartPop{0%{transform:scale(1.5);color:#fff}60%{transform:scale(.7)}100%{transform:scale(.82)}}
+  .holdBtn.lifeLost{animation:lifeLostFlash .4s ease-out}
+  @keyframes lifeLostFlash{
+    0%{box-shadow:inset 0 0 0 3px var(--bad), 0 0 44px -6px var(--bad)}
+    100%{box-shadow:inset 0 0 0 1px var(--line)}
+  }
+  #livesCountField{margin-top:10px}
+
   /* keep everything usable on short / landscape screens */
   @media (max-height:560px){
     .cue{font-size:clamp(20px,7vh,32px);margin:2px 0 1px}
@@ -484,6 +497,19 @@
               <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level">
             </div>
             <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
+          </div>
+          <div class="field hidden" id="livesField" style="margin:12px 0 0">
+            <div class="toggle" style="margin-bottom:0">
+              <div>
+                <label class="lbl" for="livesOn" data-i18n="labelLives">Lives</label>
+                <div class="hint" style="margin-top:2px" data-i18n="hintLives">Survive a mistake instead of instant game over — retry the same target using one of your lives.</div>
+              </div>
+              <label class="switch"><input id="livesOn" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+            </div>
+            <div class="field hidden" id="livesCountField">
+              <label class="lbl" data-i18n="labelLivesCount">Number of lives</label>
+              <input id="livesCount" type="number" min="1" max="9" step="1" value="3" aria-label="Number of lives">
+            </div>
           </div>
         </div>
       </div>
@@ -748,6 +774,7 @@
       </div>
       <div class="cue" id="cue" data-i18n="ready">Ready?</div>
       <div class="subcue" id="subcue" data-i18n="subCue">Press &amp; hold on the start cue, release on the release cue.</div>
+      <div id="livesRow" class="livesRow hidden" aria-label="Lives remaining"></div>
       <div id="swStats" class="swStats hidden">
         <div class="swStat"><span class="swLbl">Rest since last hold</span><span class="swVal" id="swRest">0.0s</span></div>
         <div class="swStat"><span class="swLbl">Longest hold</span><span class="swVal" id="swLongest">0.0s</span></div>
@@ -1012,6 +1039,8 @@
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} Treffer · ${bpm} BPM`,
         rhythmGetReady:"Achtung…", rhythmGo:"Tippen!", rhythmTapBeat:"Auf jeden Beat tippen", rhythmTap:"Tippen",
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
+        labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
+        labelLivesCount:"Anzahl Leben",
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -1134,6 +1163,8 @@
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} hits · ${bpm} BPM`,
         rhythmGetReady:"Get ready…", rhythmGo:"Tap!", rhythmTapBeat:"Tap on every beat", rhythmTap:"Tap",
         recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
+        labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
+        labelLivesCount:"Number of lives",
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -1560,7 +1591,7 @@
 
 
   const SETTING_IDS = [
-    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep",
+    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "voice","beep","vibrate","eyesClosed","guardExit","cameraControl",
@@ -2059,6 +2090,10 @@
     $("penaltyLbl").textContent = (goal==="time") ? (T().penaltySeconds || "Penalty amount (+seconds)")
                                                   : (T().penaltyReps || "Penalty amount (+reps)");
   }
+  // scenarios that have a "fail" concept the lives system can apply to
+  function scenarioSupportsLives(scn){
+    return scn==="sd_hold" || scn==="sd_speed" || scn==="sd_mixed" || scn==="rhythm";
+  }
   function applyScenarioVisibility(){
     const sc = $("scenarioSel").value;
     const isScen = goal==="scenario";
@@ -2066,8 +2101,11 @@
     $("sdMixedField").classList.toggle("hidden", !(isScen && sc==="sd_mixed"));
     $("taField").classList.toggle("hidden", !(isScen && sc==="timeattack"));
     $("rrField").classList.toggle("hidden", !(isScen && sc==="rhythm"));
+    $("livesField").classList.toggle("hidden", !(isScen && scenarioSupportsLives(sc)));
+    $("livesCountField").classList.toggle("hidden", !$("livesOn").checked);
   }
   $("scenarioSel").addEventListener("change", ()=>{ applyScenarioVisibility(); updateScenarioHint(); });
+  $("livesOn").addEventListener("change", applyScenarioVisibility);
 
   // advanced settings: collapsed by default, state remembered
   (function initAdvanced(){
@@ -2094,8 +2132,8 @@
   const fnum = id => parseFloat($(id).value);
   const rand = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
 
-  let S = null;          
-  let holding = false;   
+  let S = null;
+  let holding = false;
   let raf = 0;           
   let restTimer = 0;     
   let reactTimer = 0;    
@@ -2217,6 +2255,8 @@
       cfg.ta_target = Math.min(900, Math.max(10, Math.round(parseFloat($("taTarget").value) || 60)));
       cfg.rr_bpm = Math.min(200, Math.max(20, Math.round(parseFloat($("rrBpm").value) || 45)));
       cfg.rr_step = Math.min(40, Math.max(1, Math.round(parseFloat($("rrStep").value) || 8)));
+      cfg.livesOn = $("livesOn").checked;
+      cfg.livesCount = Math.min(9, Math.max(1, Math.round(parseFloat($("livesCount").value) || 3)));
       reps = null;
     } else if(goal==="time"){
       reps = null; 
@@ -2289,6 +2329,37 @@
     $("clock").textContent = (S.goal==="time") ? ("0:00 / " + fmtTime(S.totalMin*60)) : "0:00";
   }
 
+  // ---------- lives system: survive a fail instead of instant game over ----------
+  function renderLives(justLostIdx){
+    const el = $("livesRow"); if(!el) return;
+    if(!S || S.livesLeft == null){ el.classList.add("hidden"); el.innerHTML = ""; return; }
+    el.classList.remove("hidden");
+    let html = "";
+    for(let i=0;i<S.livesMax;i++){
+      const lost = i >= S.livesLeft;
+      const cls = "heart" + (lost ? " lost" : "") + (lost && i===justLostIdx ? " justLost" : "");
+      html += `<span class="${cls}">♥</span>`;
+    }
+    el.innerHTML = html;
+  }
+  function cueLifeLost(){
+    if(!S) return;
+    if(S.sig && S.sig.vibrate) vibrate([0,70,60,70]);
+    if(S.sig && S.sig.beep){ beep(300,100,0); beep(220,150,120); }
+    const btn = $("holdBtn");
+    if(btn){ btn.classList.add("lifeLost"); setTimeout(()=>btn.classList.remove("lifeLost"), 380); }
+  }
+  // Call at a fail point. Returns true if a life absorbed the failure (caller
+  // should reset to a retry state instead of finishing); false = truly over
+  // (either lives are off, or the last one is spent) — caller should finish().
+  function tryLoseLife(){
+    if(!S || S.livesLeft == null) return false;
+    S.livesLeft = Math.max(0, S.livesLeft - 1);
+    renderLives(S.livesLeft);
+    cueLifeLost();
+    return S.livesLeft > 0;
+  }
+
   function armReadyScenario(){
     holding = false;
     pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
@@ -2298,11 +2369,20 @@
     $("timer").textContent = "–";
     setCue("up", T().ready, S.eyesClosed ? T().tapToStart : T().pressToStart);
     $("btnLab").textContent = T().pressToStart;
-    S.armed = true;          
-    S.waitingStart = true;   
+    S.armed = true;
+    S.waitingStart = true;
     setTapSurface(S.eyesClosed);
     $("clock").textContent = "0:00";
-    
+
+    if(S.livesOn && scenarioSupportsLives(S.scenario)){
+      S.livesMax = S.livesCount || 3;
+      S.livesLeft = S.livesMax;
+    } else {
+      S.livesMax = 0;
+      S.livesLeft = null;
+    }
+    renderLives();
+
     $("swStats").classList.remove("hidden");
     if(S.scenario === "stopwatch"){
       S.swLongest = 0;
@@ -2382,6 +2462,16 @@
                if (S.sd_phase === "action") {
                    if (holding) pressEndStopwatch(); 
                    if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
+                       if(tryLoseLife()){
+                           // retry: redo the same action phase from scratch, target unchanged
+                           S.sd_phaseEndTs = now + actionMs;
+                           S.sd_repsThisPhase = 0;
+                           $("repNow").textContent = 0;
+                           $("swLongest").textContent = "0";
+                           setCue("up", T().ready, "Action Phase!");
+                           cmd("down");
+                           return;
+                       }
                        S.sd_failMsg = `Game Over. ${S.sd_repsThisPhase} Reps (Ziel war ${S.sd_prevPhaseReps}).`;
                        finish();
                        return;
@@ -2445,6 +2535,20 @@
                    flushPendingRelease();   // count any in-progress tap synchronously
                    // must do MORE reps than the previous action phase
                    if (S.sd_repsThisPhase <= S.sd_prevActionReps) {
+                       if(tryLoseLife()){
+                           // retry: redo the same action phase from scratch, target unchanged
+                           S.sd_phaseEndTs = now + actionMs;
+                           S.sd_repsThisPhase = 0;
+                           S.sd_lastCountSec = 0;
+                           setFill(0);
+                           $("timer").classList.remove("counting");
+                           $("repNow").textContent = 0;
+                           document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
+                           $("swLongest").textContent = "0";
+                           setCue("up", T().ready, "Action Phase!");
+                           cmd("down");
+                           return;
+                       }
                        S.sd_failMsg = `Game Over. ${S.sd_repsThisPhase} Reps (nötig: >${S.sd_prevActionReps}).`;
                        finish();
                        return;
@@ -2590,6 +2694,22 @@
 
     if (S.scenario === "sd_hold") {
         if (S.sd_prevHold > 0 && heldSec < S.sd_prevHold) {
+            if(tryLoseLife()){
+                // retry: same target, arm for the next hold attempt
+                S.swLastReleaseTs = S.swReleaseTs || Date.now();
+                $("swRest").textContent = fmtSW(0);
+                setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
+                $("btnLab").textContent = T().pressToStart;
+                $("timer").textContent = fmtSW(0);
+                clearInterval(swRestTimer);
+                swRestTimer = setInterval(()=>{
+                  if(!S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold")) { clearInterval(swRestTimer); return; }
+                  const rs = (Date.now() - S.swLastReleaseTs)/1000;
+                  $("timer").textContent = fmtSW(rs);
+                  $("swRest").textContent = fmtSW(rs);
+                }, 100);
+                return;
+            }
             S.sd_failMsg = `Game Over. ${heldSec.toFixed(1)}s war kürzer als dein vorheriger Hold (${S.sd_prevHold.toFixed(1)}s).`;
             finish();
             return;
@@ -2606,6 +2726,17 @@
             $("repNow").textContent = S.sd_repsThisPhase;
         } else if (S.sd_phase === "hold") {
             if (heldSec <= S.sd_prevHold) {
+                if(tryLoseLife()){
+                    // retry: same hold target, re-arm the hold
+                    setFill(0);
+                    $("timer").classList.remove("counting");
+                    $("swRest").textContent = fmtSW(0);
+                    $("timer").textContent = fmtSW(0);
+                    S.sd_holdTargetHit = false;
+                    setCue("up", "HALTEN", S.sd_prevHold>0 ? `Länger als ${S.sd_prevHold.toFixed(1)}s` : "So lange du kannst");
+                    mixedHoldCue();
+                    return;
+                }
                 S.sd_failMsg = `Game Over. Hold ${heldSec.toFixed(1)}s (nötig: >${S.sd_prevHold.toFixed(1)}s).`;
                 S.holdSec = (S.holdSec||0) + heldSec;
                 if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;
@@ -2751,8 +2882,15 @@
     rhythmUpdateStats();
   }
   function rhythmMiss(reason){
-    if(S && S.rr_timer) clearInterval(S.rr_timer);
-    if(S) S.sd_failMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
+    if(!S) return;
+    if(tryLoseLife()){
+        // survive: this beat is spent (no hit, no level change), the tick loop
+        // advances to the next beat at the same tempo on its next pass
+        S.rr_tapped = true;
+        return;
+    }
+    if(S.rr_timer) clearInterval(S.rr_timer);
+    S.sd_failMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
     finish();
   }
 
@@ -3030,6 +3168,7 @@
     
     progressStop();
     $("swStats").classList.add("hidden");
+    $("livesRow").classList.add("hidden");
     const total = S ? S.done : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
     $("doneNum").textContent = total;
@@ -3092,6 +3231,7 @@
     
     progressStop();
     $("swStats").classList.add("hidden");
+    $("livesRow").classList.add("hidden");
     if(synth){ try{ synth.cancel(); }catch(e){} }
     releaseWake(); disableGuard(); setTapSurface(false);
     camDetach();
