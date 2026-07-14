@@ -447,6 +447,8 @@
             <option value="sd_hold" data-i18n="scenarioSdHold">Sudden death: Hold</option>
             <option value="sd_speed" data-i18n="scenarioSdSpeed">Sudden death: Speed</option>
             <option value="sd_mixed" data-i18n="scenarioSdMixed">Sudden death: Mixed</option>
+            <option value="timeattack" data-i18n="scenarioTimeAttack">Time Attack</option>
+            <option value="rhythm" data-i18n="scenarioRhythm">Rhythm Rush</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
           <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
@@ -464,6 +466,19 @@
               <input id="sdStartHold" type="number" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1">
             </div>
             <div class="hint" data-i18n="hintMixedStart">Left: reps in round 1 · right: minimum hold (s) in round 1. Each round must then raise both.</div>
+          </div>
+          <div class="field hidden" id="taField" style="margin:12px 0 0">
+            <label class="lbl" data-i18n="labelTaTarget">Target total hold (seconds)</label>
+            <input id="taTarget" type="number" min="10" max="900" step="5" value="60" aria-label="Target total hold seconds">
+            <div class="hint" data-i18n="hintTa">Reach this much accumulated hold time as fast as you can — score = target ÷ your time.</div>
+          </div>
+          <div class="field hidden" id="rrField" style="margin:12px 0 0">
+            <label class="lbl" data-i18n="labelRr">Start tempo (BPM) / speed-up per level</label>
+            <div class="row">
+              <input id="rrBpm" type="number" min="20" max="200" step="5" value="45" aria-label="Start BPM">
+              <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level">
+            </div>
+            <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
           </div>
         </div>
       </div>
@@ -980,6 +995,18 @@
         camIntroStep2:"Kalibriere den Ruhezustand — oder tippe Auto, das die Schwellen für dich setzt.",
         camIntroStep3:"Feinjustiere Drücken/Loslassen-%, dann starten. Bei Lichtwechsel jederzeit neu kalibrieren.",
         camIntroOk:"Verstanden",
+        scenarioTimeAttack:"Time Attack", scenarioRhythm:"Rhythm Rush",
+        labelTaTarget:"Ziel-Gesamt-Hold (Sekunden)",
+        hintTa:"Erreiche diese Gesamt-Haltezeit so schnell wie möglich — Score = Ziel ÷ deine Zeit.",
+        labelRr:"Start-Tempo (BPM) / Steigerung pro Level",
+        hintRr:"Tippe den Knopf auf jeden Beat. Alle 8 Treffer wird es schneller. Ein Fehler beendet den Lauf.",
+        hintTimeAttack:"Sammle eine Ziel-Gesamthaltezeit so schnell wie möglich — zwischen den Holds atmen, die Uhr läuft weiter.",
+        hintRhythm:"Tippe im Takt des Metronoms. Alle paar Treffer wird es schneller. Ein verpasster oder falsch getimter Beat beendet den Lauf — wie schnell schaffst du es?",
+        taDone:(tgt,timeStr,score)=>`${tgt}s Hold erreicht in ${timeStr} · Score ${score}`,
+        rrMiss:"Beat verpasst", rrEarly:"zu früh", rrLate:"zu spät",
+        rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} Treffer · ${bpm} BPM`,
+        rhythmGetReady:"Achtung…", rhythmGo:"Tippen!", rhythmTapBeat:"Auf jeden Beat tippen", rhythmTap:"Tippen",
+        recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         statsRank:"Rang", statsStreak:"Streak"
       }
     },
@@ -1090,6 +1117,18 @@
         camIntroStep2:"Calibrate the resting state — or tap Auto to set thresholds for you.",
         camIntroStep3:"Fine-tune press/release %, then start. Recalibrate anytime if lighting changes.",
         camIntroOk:"Got it",
+        scenarioTimeAttack:"Time Attack", scenarioRhythm:"Rhythm Rush",
+        labelTaTarget:"Target total hold (seconds)",
+        hintTa:"Reach this much accumulated hold time as fast as you can — score = target ÷ your time.",
+        labelRr:"Start tempo (BPM) / speed-up per level",
+        hintRr:"Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.",
+        hintTimeAttack:"Rack up a target amount of total breath-hold time as fast as possible — breathe between holds, the clock keeps running.",
+        hintRhythm:"Tap in time with the metronome. Every few hits it gets faster. One mistimed or missed beat ends the run — how fast can you go?",
+        taDone:(tgt,timeStr,score)=>`Reached ${tgt}s hold in ${timeStr} · Score ${score}`,
+        rrMiss:"missed beat", rrEarly:"too early", rrLate:"too late",
+        rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} hits · ${bpm} BPM`,
+        rhythmGetReady:"Get ready…", rhythmGo:"Tap!", rhythmTapBeat:"Tap on every beat", rhythmTap:"Tap",
+        recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
         statsRank:"Rank", statsStreak:"Streak",
       }
     },
@@ -1263,7 +1302,7 @@
   function updateScenarioHint(){
     const el = $("scenarioHint"); if(!el) return;
     const t = T();
-    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed };
+    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm };
     const v = map[$("scenarioSel").value];
     if(typeof v === "string") el.textContent = v;
   }
@@ -1514,7 +1553,7 @@
 
 
   const SETTING_IDS = [
-    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold",
+    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "voice","beep","vibrate","eyesClosed","guardExit","cameraControl",
@@ -1612,7 +1651,7 @@
       xp: g.xp || 0,
       streakCount: g.streakCount || 0,
       streakLast: (g.streakLast == null ? null : g.streakLast),
-      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, sd_mixed:0, reps:0, time:0, pace:0, speedPace:0 }, g.rec || {})
+      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, sd_mixed:0, reps:0, time:0, pace:0, speedPace:0, timeattack:0, rhythm:0 }, g.rec || {})
     };
   }
   function saveGame(g){ KV.set(K.game, g); }
@@ -1668,6 +1707,8 @@
       else if(snap.scenario === "sd_hold") tryRecord("sd_hold", snap.sdRounds || 0);
       else if(snap.scenario === "sd_speed") tryRecord("sd_speed", snap.sdSpeedBest || 0);
       else if(snap.scenario === "sd_mixed") tryRecord("sd_mixed", snap.mixedRounds || 0);
+      else if(snap.scenario === "timeattack") tryRecord("timeattack", snap.taScore || 0);
+      else if(snap.scenario === "rhythm") tryRecord("rhythm", snap.rrBpm || 0);
     } else if(snap.goal === "reps"){
       tryRecord("reps", reps);
     } else if(snap.goal === "time"){
@@ -1709,12 +1750,14 @@
   function recordText(t, rec){
     const map = {
       stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed, sd_mixed: t.recSdMixed,
-      reps: t.recReps, time: t.recTime, pace: t.recPace, speedPace: t.recSpeedPace
+      reps: t.recReps, time: t.recTime, pace: t.recPace, speedPace: t.recSpeedPace,
+      timeattack: t.recTimeAttack, rhythm: t.recRhythm
     };
     const label = map[rec.key] || "";
     let val;
     if(rec.key === "stopwatch") val = fmtSW(rec.val);
     else if(rec.key === "pace" || rec.key === "speedPace") val = rec.val + "/min";
+    else if(rec.key === "rhythm") val = rec.val + " BPM";
     else val = rec.val;
     return (t.newBest || "New best!") + " · " + label + " " + val;
   }
@@ -2011,9 +2054,11 @@
   }
   function applyScenarioVisibility(){
     const sc = $("scenarioSel").value;
-    const needsPhases = goal==="scenario" && (sc==="sd_speed" || sc==="sd_mixed");
-    $("sdSpeedField").classList.toggle("hidden", !needsPhases);
-    $("sdMixedField").classList.toggle("hidden", !(goal==="scenario" && sc==="sd_mixed"));
+    const isScen = goal==="scenario";
+    $("sdSpeedField").classList.toggle("hidden", !(isScen && (sc==="sd_speed" || sc==="sd_mixed")));
+    $("sdMixedField").classList.toggle("hidden", !(isScen && sc==="sd_mixed"));
+    $("taField").classList.toggle("hidden", !(isScen && sc==="timeattack"));
+    $("rrField").classList.toggle("hidden", !(isScen && sc==="rhythm"));
   }
   $("scenarioSel").addEventListener("change", ()=>{ applyScenarioVisibility(); updateScenarioHint(); });
 
@@ -2162,6 +2207,9 @@
       cfg.sd_pauseMs  = pauSec * 1000;
       cfg.sd_startReps = Math.min(50, Math.max(1, Math.round(parseFloat($("sdStartReps").value) || 1)));
       cfg.sd_startHold = Math.min(120, Math.max(0, parseFloat($("sdStartHold").value) || 0));
+      cfg.ta_target = Math.min(900, Math.max(10, Math.round(parseFloat($("taTarget").value) || 60)));
+      cfg.rr_bpm = Math.min(200, Math.max(20, Math.round(parseFloat($("rrBpm").value) || 45)));
+      cfg.rr_step = Math.min(40, Math.max(1, Math.round(parseFloat($("rrStep").value) || 8)));
       reps = null;
     } else if(goal==="time"){
       reps = null; 
@@ -2285,6 +2333,20 @@
       $("swLongest").textContent = "0";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
       document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
+    } else if (S.scenario === "timeattack") {
+      S.swLongest = 0;
+      const tgt = (S.ta_target||60);
+      $("swRest").textContent = fmtSW(0);
+      $("swLongest").textContent = fmtSW(tgt);
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Gesamt-Hold";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Ziel";
+    } else if (S.scenario === "rhythm") {
+      // rhythm auto-starts with a count-in; no press needed to boot
+      $("swRest").textContent = "0";
+      $("swLongest").textContent = fmtSW(0);
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Level (BPM)";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Treffer";
+      rhythmStart();
     }
   }
 
@@ -2419,6 +2481,7 @@
 
   let swRestTimer = 0;
   function pressStartStopwatch(){
+    if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
     if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
     if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
 
@@ -2468,9 +2531,20 @@
     finalizeStopwatchRelease();
   }
   function stopwatchHoldLoop(){
-    if(!holding || !S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold" && S.scenario !== "sd_speed" && S.scenario !== "sd_mixed")) return;
+    if(!holding || !S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold" && S.scenario !== "sd_speed" && S.scenario !== "sd_mixed" && S.scenario !== "timeattack")) return;
     const elapsed = (Date.now() - S.swHoldStartTs)/1000;
     $("timer").textContent = fmtSW(elapsed);
+    // Time Attack: accumulate toward the target total; auto-finish when reached
+    if(S.scenario === "timeattack"){
+      const target = S.ta_target || 60;
+      const total = (S.holdSec || 0) + elapsed;
+      $("swRest").textContent = fmtSW(total);
+      const p = Math.min(1, total/target);
+      setFill(p); progressUpdate(p);
+      if(total >= target){ taComplete(target); return; }
+      raf = requestAnimationFrame(stopwatchHoldLoop);
+      return;
+    }
     // Mixed hold phase: fill the button up to the target (previous round's hold)
     if(S.scenario === "sd_mixed" && S.sd_phase === "hold" && (S.sd_prevHold || 0) > 0){
       const target = S.sd_prevHold;
@@ -2568,9 +2642,12 @@
     }
     if(isActionTap()) tick("up"); else cmd("up");
 
-    if (S.scenario === "sd_speed" || S.scenario === "sd_mixed") {
+    if (S.scenario === "sd_speed" || S.scenario === "sd_mixed" || S.scenario === "timeattack") {
         if (S.scenario === "sd_mixed" && S.sd_phase === "pause") {
             setCue("rest", "Pause", "Atme durch");
+        } else if (S.scenario === "timeattack") {
+            $("swRest").textContent = fmtSW(S.holdSec || 0);
+            setCue("rest", T().breathe, T().pressToStart);
         } else {
             setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
         }
@@ -2590,6 +2667,86 @@
           $("swRest").textContent = fmtSW(rs);
         }, 100);
     }
+  }
+
+  // ---------- Time Attack: reach a target total hold as fast as possible ----------
+  function taComplete(target){
+    holding = false; cancelAnimationFrame(raf); progressStop();
+    $("holdBtn").classList.remove("holding");
+    clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
+    S.holdSec = target;
+    const wall = Math.max(0.1, (Date.now() - S.startTime)/1000);
+    const score = Math.round(target / wall * 100);
+    S.taScore = score;
+    S.done = (S.done || 0) + 1;
+    S.sd_failMsg = T().taDone(Math.round(target), fmtTime(Math.round(wall)), score);
+    finish();
+  }
+
+  // ---------- Rhythm Rush: tap on every beat of an accelerating metronome ----------
+  function rhythmBeep(count){
+    const ctx = ensureAudio(); if(ctx && ctx.state==="suspended"){ try{ ctx.resume(); }catch(e){} }
+    beep(count ? 620 : 780, 45, 0);   // metronome always audible (it's the mechanic)
+  }
+  function rhythmPulse(){
+    const b=$("holdBtn"); if(!b) return;
+    b.classList.add("holding");
+    setTimeout(()=>{ if(!holding) b.classList.remove("holding"); }, 110);
+  }
+  function rhythmUpdateStats(){
+    $("swRest").textContent = "L" + (S.rr_level||1) + " · " + Math.round(S.rr_bpm) + " BPM";
+    $("swLongest").textContent = S.rr_hits || 0;
+    $("timer").textContent = S.rr_hits || 0;
+  }
+  function rhythmStart(){
+    S.waitingStart = false;
+    S.startTime = Date.now();
+    S.rr_interval = 60000 / S.rr_bpm;
+    S.rr_window = 260; S.rr_beatsPerLevel = 8;
+    S.rr_hits = 0; S.rr_level = 1; S.rr_countIn = 4;
+    S.rr_beatTime = Date.now() + 1200;   // lead-in before the first beat
+    S.rr_ticked = false; S.rr_tapped = false;
+    startClock(); acquireWake();
+    const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
+    if(S.guardExit) enableGuard();
+    rhythmUpdateStats();
+    setCue("up", T().rhythmGetReady, T().rhythmTapBeat);
+    $("btnLab").textContent = T().rhythmTap;
+    S.rr_timer = setInterval(rhythmTick, 20);
+  }
+  function rhythmTick(){
+    if(!S || S.scenario !== "rhythm"){ clearInterval(S.rr_timer); return; }
+    const now = Date.now(), bt = S.rr_beatTime, W = S.rr_window;
+    if(now >= bt && !S.rr_ticked){ S.rr_ticked = true; rhythmBeep(S.rr_countIn > 0); rhythmPulse(); }
+    if(now > bt + W){
+      if(S.rr_countIn > 0){
+        S.rr_countIn--;
+        S.rr_beatTime = bt + S.rr_interval; S.rr_ticked = false; S.rr_tapped = false;
+        if(S.rr_countIn === 0) setCue("up", T().rhythmGo, T().rhythmTapBeat);
+      } else if(!S.rr_tapped){
+        rhythmMiss(T().rrMiss);
+      } else {
+        S.rr_beatTime = bt + S.rr_interval; S.rr_ticked = false; S.rr_tapped = false;
+      }
+    }
+  }
+  function rhythmTap(){
+    if(!S || S.scenario !== "rhythm") return;
+    if(S.rr_countIn > 0){ rhythmPulse(); return; }   // ignore taps during the count-in
+    const now = Date.now(), dt = now - S.rr_beatTime, W = S.rr_window;
+    if(dt < -W){ rhythmMiss(T().rrEarly); return; }
+    if(dt > W){ rhythmMiss(T().rrLate); return; }
+    if(S.rr_tapped) return;
+    S.rr_tapped = true; S.rr_hits++; S.done = S.rr_hits;
+    if(S.sig.beep) beep(1040, 40, 0);
+    if(S.sig.vibrate) vibrate(15);
+    if(S.rr_hits % S.rr_beatsPerLevel === 0){ S.rr_level++; S.rr_bpm += S.rr_step; S.rr_interval = 60000 / S.rr_bpm; }
+    rhythmUpdateStats();
+  }
+  function rhythmMiss(reason){
+    if(S && S.rr_timer) clearInterval(S.rr_timer);
+    if(S) S.sd_failMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
+    finish();
   }
 
   let clockTimer = 0;
@@ -2862,6 +3019,7 @@
     clearInterval(swRestTimer); swRestTimer = 0;
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
+    if (S && S.rr_timer) clearInterval(S.rr_timer);
     
     progressStop();
     $("swStats").classList.add("hidden");
@@ -2903,7 +3061,9 @@
         swLongest: S.swLongest || 0,
         sdRounds: (S.scenario === "sd_hold") ? (S.done || 0) : 0,
         sdSpeedBest: S.sd_prevPhaseReps || 0,
-        mixedRounds: S.sd_mixedRounds || 0
+        mixedRounds: S.sd_mixedRounds || 0,
+        taScore: S.taScore || 0,
+        rrBpm: Math.round(S.rr_bpm || 0)
       });
       renderStats();
     }
@@ -2921,6 +3081,7 @@
     clearInterval(swRestTimer); swRestTimer = 0;
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
+    if (S && S.rr_timer) clearInterval(S.rr_timer);
     
     progressStop();
     $("swStats").classList.add("hidden");
