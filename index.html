@@ -8,22 +8,25 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#14161d">
-<link rel="manifest" href='data:application/manifest+json,{"name":"Breathless","short_name":"Breathless","display":"standalone","orientation":"any","background_color":"%2314161d","theme_color":"%2314161d","start_url":"."}'>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22bg%22%20cx%3D%2250%25%22%20cy%3D%2228%25%22%20r%3D%2295%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23242b3b%22%2F%3E%3Cstop%20offset%3D%2258%25%22%20stop-color%3D%22%2314161d%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230d0e13%22%2F%3E%3C%2FradialGradient%3E%3ClinearGradient%20id%3D%22or%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23F8BF57%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23E89A25%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%2216%22%20y%3D%2216%22%20width%3D%22480%22%20height%3D%22480%22%20rx%3D%22116%22%20fill%3D%22url%28%23bg%29%22%2F%3E%3C%21--%20hold%20ring%20with%20a%20gap%20at%20the%20top%20%28echoes%20the%20app%27s%20hold%20button%3B%20%27gasping%20for%20more%27%20%3D%20not%20quite%20closed%29%20--%3E%3Cpath%20d%3D%22M340.9%20141.8%20A150%20150%200%201%201%20171.1%20141.8%22%0A%20%20%20%20%20%20%20%20fill%3D%22none%22%20stroke%3D%22url%28%23or%29%22%20stroke-width%3D%2248%22%20stroke-linecap%3D%22round%22%2F%3E%3C%21--%20breath%20waveform%20through%20the%20centre%20--%3E%3Cpath%20d%3D%22M182%20268%20q37%20-54%2074%200%20t74%200%22%0A%20%20%20%20%20%20%20%20fill%3D%22none%22%20stroke%3D%22%23F8BF57%22%20stroke-width%3D%2227%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#14161d;
-    --ink-2:#1c1f29;
+    --ink:#111319;
+    --ink-2:#191d27;
     --ink-3:#23273400;
-    --line:#2c303d;
-    --text:#ECEAE3;
-    --muted:#959aab;
+    --line:#2b3040;
+    --text:#EDEBE4;
+    --muted:#9aa0b0;
     --rise:#F5B544;
     --rise-deep:#e89a25;
-    --good:#74d39a;
-    --bad:#e8736b;
+    --rise-soft:rgba(245,181,68,.07);
+    --good:#72d2a1;
+    --bad:#ef7d70;
     --radius:18px;
     --maxw:520px;
   }
@@ -31,7 +34,8 @@
   html,body{height:100%;overscroll-behavior:none}
   body{
     background:
-      radial-gradient(120% 80% at 50% -10%, #1d212c 0%, var(--ink) 55%) fixed;
+      radial-gradient(85% 55% at 50% -18%, var(--rise-soft) 0%, transparent 60%),
+      radial-gradient(120% 82% at 50% -12%, #20242f 0%, var(--ink) 55%) fixed;
     color:var(--text);
     font-family:"Inter",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
@@ -111,7 +115,7 @@
   /* full-screen curve editor overlay */
   .overlay{
     position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;
-    background:radial-gradient(120% 80% at 50% -10%, #1d212c 0%, var(--ink) 55%);
+    background:radial-gradient(85% 55% at 50% -18%, var(--rise-soft) 0%, transparent 60%),radial-gradient(120% 82% at 50% -12%, #20242f 0%, var(--ink) 55%);
     padding:max(16px,env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
     touch-action:none;
   }
@@ -218,7 +222,7 @@
   .session{
     position:fixed;inset:0;z-index:5;
     display:flex;flex-direction:column;touch-action:none;
-    background:radial-gradient(120% 80% at 50% -10%, #1d212c 0%, var(--ink) 55%);
+    background:radial-gradient(85% 55% at 50% -18%, var(--rise-soft) 0%, transparent 60%),radial-gradient(120% 82% at 50% -12%, #20242f 0%, var(--ink) 55%);
   }
   .sessionTop{padding:max(16px,env(safe-area-inset-top)) 16px 0}
   /* full-screen tap surface for the eyes-closed mode.

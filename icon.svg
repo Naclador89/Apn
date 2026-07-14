@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="28%" r="95%">
+      <stop offset="0%" stop-color="#242b3b"/>
+      <stop offset="58%" stop-color="#14161d"/>
+      <stop offset="100%" stop-color="#0d0e13"/>
+    </radialGradient>
+    <linearGradient id="or" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8BF57"/>
+      <stop offset="100%" stop-color="#E89A25"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#bg)"/>
+  <!-- hold ring with a gap at the top (echoes the app's hold button; 'gasping for more' = not quite closed) -->
+  <path d="M340.9 141.8 A150 150 0 1 1 171.1 141.8"
+        fill="none" stroke="url(#or)" stroke-width="48" stroke-linecap="round"/>
+  <!-- breath waveform through the centre -->
+  <path d="M182 268 q37 -54 74 0 t74 0"
+        fill="none" stroke="#F8BF57" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
