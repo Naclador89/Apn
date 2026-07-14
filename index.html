@@ -49,8 +49,9 @@
 
   /* ---------- header ---------- */
   header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
-  header .langSel{margin-left:auto;align-self:flex-start;background:#11131a;border:1px solid var(--line);color:var(--muted);
-    font-family:"Inter";font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;appearance:none;-webkit-appearance:none}
+  header .langSel{margin-left:auto;align-self:flex-start;flex:0 0 auto;width:auto;max-width:42%;
+    background:#11131a;border:1px solid var(--line);color:var(--muted);
+    font-family:"Inter";font-size:12px;padding:6px 28px 6px 10px;border-radius:8px;cursor:pointer;appearance:none;-webkit-appearance:none}
   header .langSel:hover{color:var(--text);border-color:var(--rise)}
   .brand{display:flex;flex-direction:column;gap:3px;min-width:0}
   .mark{
@@ -1270,14 +1271,16 @@
   };
   const speechTag = () => (I18N[LANG] || I18N.en).speech;
 
+  // only fully-translated languages are offered; the rest fall back to English
+  const SUPPORTED_LANGS = ["de","en"];
   function populateLangSelect(){
     const sel = $("appLang"); if(!sel) return;
-    sel.innerHTML = Object.keys(I18N).map(code=>
+    sel.innerHTML = SUPPORTED_LANGS.map(code=>
       `<option value="${code}">${I18N[code].name}</option>`).join("");
     sel.value = LANG;
   }
   function setLang(code){
-    if(!I18N[code]) code = "en";
+    if(SUPPORTED_LANGS.indexOf(code) === -1) code = "en";
     LANG = code;
     KV.set("lat.lang", code);
     document.documentElement.setAttribute("lang", code);
