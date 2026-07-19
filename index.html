@@ -2694,6 +2694,27 @@
     if(S.guardExit) enableGuard();
   }
 
+  // Shared "resume a hold that was still inside its release-grace window"
+  // logic — was duplicated near-verbatim between pressStartStopwatch() and
+  // pressStart(). loopFn is the RAF loop to resume (stopwatchHoldLoop or loop).
+  function resumeHeldRelease(loopFn){
+    clearTimeout(releaseTimer); releaseTimer = 0;
+    pendingRelease = false;
+    holding = true;
+    applyScreenColor();
+    $("holdBtn").classList.add("holding");
+    progressStart();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loopFn);
+  }
+  // Shared "stop holding right now" triple, used by every path that ends an
+  // in-progress hold before its own follow-up logic (finalize, grace timer, etc).
+  function releaseHold(){
+    holding = false;
+    applyScreenColor();
+    cancelAnimationFrame(raf);
+  }
+
   let swRestTimer = 0;
   function pressStartStopwatch(){
     if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
@@ -2701,14 +2722,7 @@
     if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
 
     if(pendingRelease){
-      clearTimeout(releaseTimer); releaseTimer = 0;
-      pendingRelease = false;
-      holding = true;
-      applyScreenColor();
-      $("holdBtn").classList.add("holding");
-      progressStart();
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(stopwatchHoldLoop);
+      resumeHeldRelease(stopwatchHoldLoop);
       return;
     }
     if(S.waitingStart) bootFirstPress();
@@ -2737,9 +2751,7 @@
   function flushPendingRelease(){
     if(!S) return;
     if(holding){
-      holding = false;
-      applyScreenColor();
-      cancelAnimationFrame(raf);
+      releaseHold();
       S.swReleaseTs = Date.now();
     } else if(!pendingRelease){
       return;
@@ -2781,9 +2793,7 @@
     raf = requestAnimationFrame(stopwatchHoldLoop);
   }
   function pressEndStopwatch(){
-    holding = false;
-    applyScreenColor();
-    cancelAnimationFrame(raf);
+    releaseHold();
     S.swReleaseTs = Date.now();
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
     if(graceMs > 0){
@@ -2917,7 +2927,7 @@
 
   // ---------- Time Attack: reach a target total hold as fast as possible ----------
   function taComplete(target){
-    holding = false; applyScreenColor(); cancelAnimationFrame(raf); progressStop();
+    releaseHold(); progressStop();
     $("holdBtn").classList.remove("holding");
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     S.holdSec = target;
@@ -3174,15 +3184,8 @@
     }
     if(!S.cur) return;
     if(pendingRelease){
-      clearTimeout(releaseTimer); releaseTimer = 0;
-      pendingRelease = false;
-      holding = true;
-      applyScreenColor();
       lastTs = 0;
-      $("holdBtn").classList.add("holding");
-      progressStart();
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(loop);
+      resumeHeldRelease(loop);
       return;
     }
     if(S.waitingStart){
@@ -3209,9 +3212,7 @@
       pressEndStopwatch();
       return;
     }
-    holding = false;
-    applyScreenColor();
-    cancelAnimationFrame(raf);
+    releaseHold();
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
     if(graceMs > 0 && S && S.cur){
       pendingRelease = true;
