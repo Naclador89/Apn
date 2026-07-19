@@ -230,7 +230,9 @@
     opacity:0;background-color:transparent;
   }
   .screenColor.green{background-color:#123f2c;animation:scBreathe 8s ease-in-out infinite}
-  .screenColor.yellow{background-color:#4a3c10;animation:scRise 2.8s ease-out forwards}
+  .screenColor.yellow{background-color:#4a3c10;animation:scRise var(--scYellowDur,2.8s) ease-out forwards}
+  .screenColor.yellow.tolFlash{animation:scRise var(--scYellowDur,2.8s) ease-out forwards, scTolFlash .35s ease-out}
+  @keyframes scTolFlash{0%{filter:brightness(1)}30%{filter:brightness(2)}100%{filter:brightness(1)}}
   .screenColor.red{background-color:#3a1210;animation:scSettle 12s ease-in forwards}
   @keyframes scBreathe{ 0%,100%{opacity:.28} 50%{opacity:.55} }
   @keyframes scRise{ from{opacity:.10} to{opacity:.60} }
@@ -2388,7 +2390,7 @@
   }
 
   // ---------- screen color mode: green (may breathe) / yellow (about to hold) / red (holding) ----------
-  function applyScreenColor(){
+  function applyScreenColor(force){
     const el = $("screenColorLayer"); if(!el) return;
     if(!S || !S.screenColor){
       if(curScreenColorState !== null){
@@ -2397,7 +2399,7 @@
       }
       return;
     }
-    let state;
+    let state, yellowDur = null;
     if(S.scenario === "rhythm"){
       state = (Date.now() < (S.rr_flashUntil||0)) ? "red" : "yellow";
     } else if(holding){
@@ -2411,8 +2413,16 @@
       state = "green";
     } else {
       state = "yellow";
+      // A real late-start tolerance window is ticking (reps/time only, only
+      // when the penalty toggle + lateTol are active; reactTimer is 0
+      // whenever no such window is running) -> pace the rise to lateTol
+      // seconds instead of the generic cosmetic duration.
+      if(S.goal !== "scenario" && reactTimer && S.penalty && S.lateTol > 0){
+        yellowDur = S.lateTol;
+      }
     }
-    if(state === curScreenColorState) return;   // no change -> don't restart the animation
+    el.style.setProperty("--scYellowDur", (yellowDur != null ? yellowDur : 2.8) + "s");
+    if(state === curScreenColorState && !force) return;   // no change -> don't restart the animation
     curScreenColorState = state;
     el.classList.remove("hidden","green","yellow","red");
     void el.offsetWidth;                        // force reflow so the keyframe animation restarts cleanly
@@ -3054,9 +3064,18 @@
         S.subBase = penaltyNote(T().tooLate);
         S.reactLeft = S.lateTol;
         cmdPenaltyThenDown();
+        flashTolerancePenalty();      // brief flash at the penalty moment
+        applyScreenColor(true);       // restart the rise in sync with the reset countdown
       }
       renderReact();
     },1000);
+    applyScreenColor(true);           // start the rise now, paced to lateTol seconds (reactTimer is set above)
+  }
+  function flashTolerancePenalty(){
+    if(!S || !S.screenColor) return;
+    const el = $("screenColorLayer"); if(!el) return;
+    el.classList.add("tolFlash");
+    setTimeout(()=>el.classList.remove("tolFlash"), 350);
   }
   function renderReact(){
     if(!S) return;
