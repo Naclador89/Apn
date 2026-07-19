@@ -3292,7 +3292,10 @@
     setTimeout(()=>{ if(S) nextRep(false); }, 650);
   }
 
-  function finish(){
+  // Shared teardown for both finish() (natural session end — recorded) and
+  // stopSession() (manual Stop — never recorded, see § Known Issues history
+  // in ARCHITECTURE.md for why that distinction matters).
+  function teardownSessionTimers(){
     cancelAnimationFrame(raf);
     clearInterval(restTimer);
     clearInterval(reactTimer); reactTimer = 0;
@@ -3301,7 +3304,7 @@
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
     if (S && S.rr_timer) clearInterval(S.rr_timer);
-    
+
     progressStop();
     $("swStats").classList.add("hidden");
     $("livesRow").classList.add("hidden");
@@ -3310,6 +3313,10 @@
     $("screenColorBorderLayer").classList.add("hidden");
     $("screenColorBorderLayer").classList.remove("green","yellow","red");
     curScreenColorState = null;
+  }
+
+  function finish(){
+    teardownSessionTimers();
     const total = S ? S.done : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
     $("doneNum").textContent = total;
@@ -3360,24 +3367,12 @@
     S = null;
   }
 
+  // Manual Stop — for reps/time AND scenario sessions alike. Never records to
+  // history/gamification; a session only counts if it ends naturally via
+  // finish() (goal met / game over). See ARCHITECTURE.md § Known Issues for
+  // why this distinction was made explicit rather than left inconsistent.
   function stopSession(){
-    cancelAnimationFrame(raf);
-    clearInterval(restTimer);
-    clearInterval(reactTimer); reactTimer = 0;
-    clearInterval(clockTimer); clockTimer = 0;
-    clearInterval(swRestTimer); swRestTimer = 0;
-    clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
-    if (S && S.sd_timer) clearInterval(S.sd_timer);
-    if (S && S.rr_timer) clearInterval(S.rr_timer);
-    
-    progressStop();
-    $("swStats").classList.add("hidden");
-    $("livesRow").classList.add("hidden");
-    $("screenColorLayer").classList.add("hidden");
-    $("screenColorLayer").classList.remove("green","yellow","red");
-    $("screenColorBorderLayer").classList.add("hidden");
-    $("screenColorBorderLayer").classList.remove("green","yellow","red");
-    curScreenColorState = null;
+    teardownSessionTimers();
     if(synth){ try{ synth.cancel(); }catch(e){} }
     releaseWake(); disableGuard(); setTapSurface(false);
     camDetach();
@@ -3653,7 +3648,7 @@
 
   $("startBtn").addEventListener("click", startSession);
   $("stopBtn").addEventListener("click", ()=>{
-    if(S && S.goal==="scenario") finish(); else stopSession();
+    stopSession();   // manual stop never records — applies to reps/time and scenario alike
   });
   $("againBtn").addEventListener("click", ()=>{ show("setup"); });
 
