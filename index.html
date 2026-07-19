@@ -1744,6 +1744,9 @@
 
   function sessionProgress(){
     if(!S) return 0;
+    if(S.scenario === "interval" && S.iv_phaseMode === "time" && S.iv_phaseStartAt && S.endAt){
+      return Math.max(0, Math.min(1, (Date.now()-S.iv_phaseStartAt)/(S.endAt-S.iv_phaseStartAt)));
+    }
     if(S.goal==="time" && S.startTime && S.endAt){
       return Math.max(0, Math.min(1, (Date.now()-S.startTime)/(S.endAt-S.startTime)));
     }
@@ -2095,8 +2098,10 @@
     const prev = sel.value;
     const p = KV.get(K.presets, {});
     const names = Object.keys(p).sort();
-    sel.innerHTML = `<option value="">${T().optLoad}</option>` +
-      names.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${n}</option>`).join("");
+    const t = T();
+    const tag = n => p[n] && p[n].goal === "time" ? ` (${t.goalTime})` : p[n] && p[n].goal === "reps" ? ` (${t.goalReps})` : "";
+    sel.innerHTML = `<option value="">${t.optLoad}</option>` +
+      names.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${(n+tag(n)).replace(/</g,"&lt;")}</option>`).join("");
     if(names.includes(prev)) sel.value = prev;
   }
   function refreshPresetSelect(){
@@ -2419,11 +2424,18 @@
     return null;
   }
 
-  // Populates the Reps-mode difficulty fields (rep count, hold/rest ranges,
+  // Populates the Reps-mode difficulty fields (hold/rest ranges,
   // strict/penalty/lateTol/hideDur) on `cfg` from any object shaped like
   // readAll()'s output — which is exactly what a saved preset already is.
   // Shared by buildPlan()'s baseline and by Interval Sequence's per-phase
-  // preset application (ivAdvancePhase()).
+  // preset application (ivAdvancePhase()). `src.goal` decides whether the
+  // phase is rep-count-driven ("reps", or anything else — the pre-existing
+  // behavior) or duration-driven ("time"): `cfg.iv_phaseMode` records which,
+  // so Interval Sequence's own time-based-phase-end/penalty/progress logic
+  // (see nextRep()/applyPenalty()/sessionProgress()) knows which applies —
+  // `cfg.goal`/`S.goal` itself is never touched here, since it must stay
+  // "scenario" for the whole Interval Sequence session (see § in
+  // ARCHITECTURE.md on why: contaminating the per-goal PR record).
   function applyRepsConfig(cfg, src){
     const n  = id => parseInt(src[id], 10);
     const fn = id => parseFloat(src[id]);
@@ -2439,7 +2451,14 @@
     cfg.penaltyX     = n("penaltyX") || 0;
     cfg.lateTol      = n("lateTol") || 0;
     cfg.hide         = !!src.hideDur;
-    cfg.totalReps    = rand(n("minReps"), n("maxReps"));
+    if(src.goal === "time"){
+      cfg.iv_phaseMode = "time";
+      cfg.totalMin     = fn("totalMin");
+      cfg.totalReps    = null;
+    } else {
+      cfg.iv_phaseMode = "reps";
+      cfg.totalReps    = rand(n("minReps"), n("maxReps"));
+    }
     return cfg;
   }
 
@@ -2729,6 +2748,10 @@
     S.waitingStart = false;
     S.startTime = Date.now();
     if(S.goal==="time") S.endAt = S.startTime + S.totalMin*60*1000;
+    if(S.scenario === "interval"){
+      S.iv_phaseStartAt = S.startTime;
+      if(S.iv_phaseMode === "time") S.endAt = S.startTime + S.totalMin*60*1000;
+    }
 
     if(S.scenario==="sd_speed") {
        const actionMs = S.sd_actionMs || 60000;
@@ -3243,6 +3266,8 @@
     applyRepsConfig(S, p);
     applyIvPhaseCurve(p);
     S.done = 0;
+    S.iv_phaseStartAt = Date.now();
+    if(S.iv_phaseMode === "time") S.endAt = S.iv_phaseStartAt + S.totalMin*60*1000;
     $("repTotalWrap").style.display = S.totalReps ? "" : "none";
     $("repTotal").textContent = S.totalReps || "";
     $("repNow").textContent = 0;
@@ -3253,7 +3278,8 @@
   function nextRep(first){
     if(!S) return;
     S.armed = false;
-    if(S.totalReps && S.done >= S.totalReps){
+    const ivPhaseTimeUp = S.scenario === "interval" && S.iv_phaseMode === "time" && S.endAt && Date.now() >= S.endAt;
+    if((S.totalReps && S.done >= S.totalReps) || ivPhaseTimeUp){
       if(S.scenario === "interval" && ivAdvancePhase()){
         // fall through into the rest-countdown/beginRep() below, now using the new phase's freshly-applied config
       } else {
@@ -3469,7 +3495,7 @@
 
   function applyPenalty(){
     if(!S) return;
-    if(S.goal==="time"){
+    if(S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time")){
       S.endAt += S.penaltyX*1000;
     } else if(S.totalReps != null){
       S.totalReps += S.penaltyX;
@@ -3479,7 +3505,8 @@
 
   function penaltyNote(base){
     if(!S || !S.penalty) return base;
-    const unit = S.goal==="time" ? `+${S.penaltyX}s` : `+${S.penaltyX} reps`;
+    const isTimed = S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time");
+    const unit = isTimed ? `+${S.penaltyX}s` : `+${S.penaltyX} reps`;
     return base + " · " + unit;
   }
 

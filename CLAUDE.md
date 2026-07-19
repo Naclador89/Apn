@@ -61,11 +61,13 @@ based on `S.goal === "scenario" && S.scenario !== "interval"`:
   penalty / late-start-tolerance system (`S.strict`, `S.penalty`,
   `S.lateTol`, `startReactionWindow()`). **Interval Sequence deliberately
   keeps `S.goal === "scenario"`/`S.scenario === "interval"` for the whole
-  session** — it never masquerades as `S.goal === "reps"` — and instead
-  gets a `&& S.scenario !== "interval"` exception at the exact 3 dispatch
-  points above, so it rides the entire reps engine unmodified while still
-  being excluded from the Reps-mode personal-best record and correctly
-  tagged in history (see "Interval Sequence" below for how phases work).
+  session** — it never masquerades as `S.goal === "reps"` **or**
+  `S.goal === "time"`, even though individual phases can be either
+  rep-count-driven or duration-driven (see "Interval Sequence" below) — and
+  instead gets a `&& S.scenario !== "interval"` exception at the exact 3
+  dispatch points above, so it rides the entire reps engine unmodified while
+  still being excluded from both the Reps-mode and Time-mode personal-best
+  records and correctly tagged in history.
 - **Scenario** (`S.goal === "scenario"`, the other 6 sub-modes — see table
   below): `armReadyScenario()` → `bootFirstPress()` → `pressStartStopwatch()`
   / `pressEndStopwatch()` → `finalizeStopwatchRelease()`, driven by
@@ -99,29 +101,50 @@ prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
 field; check `ARCHITECTURE.md § Scenario engine` or grep.
 
 **Interval Sequence** (`S.scenario === "interval"`, 2–6 phases,
-`index.html:3228`-`3255`): each phase is configured by picking one of your
+`index.html:3251`-`3277`): each phase is configured by picking one of your
 saved **presets** from a dropdown (`ivPhasePreset1..6`), so running the
-sequence feels exactly like running several independent Reps sessions back
-to back — press-gated, with the same rep-count range, hold/rest probability
-curves, strict mode, penalty, and late-start tolerance as a standalone Reps
-session, phase by phase. Mechanically this works by reusing the entire Reps
-engine unmodified (see above) plus one hook: `nextRep()`'s end-of-session
-check calls `ivAdvancePhase()` (`index.html:3237`), which re-applies the
-next phase's preset onto the live `S` via `applyRepsConfig(S, presetObj)`
-(`index.html:2427`, the same helper `buildPlan()` uses for the baseline),
-resets `S.done` to 0 (per-phase, so `#repNow`/`#repTotal` behave exactly as
-a fresh Reps session would), and swaps in that phase's captured probability
-curve via `applyIvPhaseCurve()` (`index.html:1523`). The true cross-phase
-rep total is tracked separately in `S.iv_totalDone` (incremented in
-`completeRep()`), since `S.done` itself is per-phase; `finish()` reports
-`S.iv_totalDone` instead of `S.done` for interval sessions. Presets capture
-their probability-curve shape too (`presetSave()`/`presetLoad()`), and a
+sequence feels exactly like running several independent Reps *or Time*
+sessions back to back — press-gated, with the same hold/rest probability
+curves, strict mode, penalty, and late-start tolerance as the standalone
+mode the preset was saved from, phase by phase. **A phase can be either
+rep-count-driven or duration-driven**, decided by the assigned preset's own
+saved `goal` (`"reps"` vs `"time"`) — `applyRepsConfig(cfg, src)`
+(`index.html:2439`) sets `cfg.iv_phaseMode` accordingly (`S.iv_phaseMode` at
+runtime) and either rolls `cfg.totalReps` or carries over `cfg.totalMin`
+with `cfg.totalReps = null`. Preset-select dropdowns tag each option with
+its mode (`(Reps)`/`(Time)`, via `populatePresetOptions()`,
+`index.html:2096`) so it's clear which is which before assigning it to a
+phase. Mechanically this works by reusing the entire Reps engine unmodified
+(see above) plus one hook: `nextRep()`'s end-of-session check
+(`index.html:3278`) now fires on **either** `S.done >= S.totalReps` (a
+reps-mode phase) **or** the phase's own `S.endAt` timestamp elapsing
+(`S.iv_phaseMode === "time"` — `S.endAt`/`S.iv_phaseStartAt` are set in
+`bootFirstPress()` for phase 1 and in `ivAdvancePhase()` for every phase
+after, deliberately reusing the same fields standalone Time mode uses
+rather than inventing parallel `iv_`-prefixed ones, since they're
+per-phase-scoped for interval and never read by the `S.goal==="time"`-gated
+code that owns them normally — see `timeUp()`/`sessionProgress()`/
+`applyPenalty()`/`penaltyNote()`, all of which got a
+`S.scenario==="interval" && S.iv_phaseMode==="time"` sibling branch
+alongside their existing `S.goal==="time"` check, precisely because
+`S.goal` itself must never become `"time"` here — same PR-record-
+contamination reasoning as why it never becomes `"reps"`, see below).
+`ivAdvancePhase()` (`index.html:3260`) re-applies the next phase's preset
+onto the live `S` via `applyRepsConfig(S, presetObj)`, resets `S.done` to 0
+(per-phase, so `#repNow`/`#repTotal` behave exactly as a fresh Reps session
+would — hidden entirely for a time-based phase, same as standalone Time
+mode), and swaps in that phase's captured probability curve via
+`applyIvPhaseCurve()` (`index.html:1523`). The true cross-phase rep total is
+tracked separately in `S.iv_totalDone` (incremented in `completeRep()`),
+since `S.done` itself is per-phase; `finish()` reports `S.iv_totalDone`
+instead of `S.done` for interval sessions. Presets capture their
+probability-curve shape too (`presetSave()`/`presetLoad()`), and a
 mid-session curve swap is restored from `S.iv_savedCurves` (snapshotted at
 session start) in `teardownSessionTimers()` — purely in memory, **never**
 via `saveCurves()`, so the user's own hand-drawn curve shapes in
 `localStorage` are never touched by an Interval Sequence run, whether it
 ends naturally or via manual Stop. `ivUpdatePhaseIndicator()`
-(`index.html:3228`) reuses the `#swStats` slot (shared with the other
+(`index.html:3251`) reuses the `#swStats` slot (shared with the other
 scenarios) to show "Phase X/Y" and the active preset's name. An old preset
 saved before curve-capture existed (no `.curves` key) falls back to a
 blank/uniform-random curve rather than crashing.
@@ -157,8 +180,8 @@ setting (wire it into *both* `SETTING_IDS` and `buildPlan()`, and usually
 `ARCHITECTURE.md § Known Issues`. Presets (`presetSave()`/`presetLoad()`,
 `index.html:2106`/`2117`) capture the *entire* `readAll()` output plus the
 current probability-curve shape — this is what lets an Interval Sequence
-phase reproduce a full Reps-mode session exactly, including hold/rest
-timing curves, from a single dropdown pick.
+phase reproduce a full Reps- or Time-mode session exactly, including
+hold/rest timing curves, from a single dropdown pick.
 
 **i18n**: `I18N` object (`index.html:970`) defines 11 languages; only
 `de`/`en` are complete (fully in sync key-for-key) and exposed via
