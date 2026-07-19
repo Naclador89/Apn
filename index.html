@@ -94,20 +94,20 @@
   /* small primary summary variant */
   details.panel.primary > summary{background:linear-gradient(180deg,#1f2330,#1a1e28)}
 
-  /* probability curve editor */
-  .curveBox{margin-top:12px;padding:12px;background:#0f1118;border:1px solid var(--line);border-radius:12px}
-  .curveHeader{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  /* probability curve editor (small inline preview inside settings panels) */
+  .curveBox{margin-top:10px;padding:12px;background:#0f1118;border:1px solid var(--line);border-radius:12px}
+  .curveHeader{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap}
   .curveHeader .lbl{margin:0;color:var(--muted);font-size:12px;font-weight:500}
   .curveHeader button{background:transparent;border:1px solid var(--line);color:var(--muted);
-    font-family:"Inter";font-size:11px;padding:5px 9px;border-radius:8px;cursor:pointer}
+    font-family:"Inter";font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;cursor:pointer}
   .curveHeader button:hover{color:var(--text);border-color:var(--rise)}
   .curveHeader button:active{transform:translateY(1px)}
   canvas.curve{
-    display:block;width:100%;height:88px;background:#0b0d13;border:1px solid var(--line);
-    border-radius:8px;touch-action:none;-webkit-user-select:none;user-select:none;cursor:crosshair;
+    display:block;width:100%;height:88px;background:#11131a;border:1px solid var(--line);
+    border-radius:12px;touch-action:none;-webkit-user-select:none;user-select:none;cursor:crosshair;
   }
-  .curveAxis{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;
-    color:var(--muted);font-family:"Space Grotesk",sans-serif;letter-spacing:.05em}
+  .curveAxis{display:flex;justify-content:space-between;margin-top:4px;font-size:11px;
+    color:var(--muted);font-family:"Space Grotesk",sans-serif;letter-spacing:.05em;padding:0 2px}
 
   /* small inline preview */
   canvas.curvePreview{display:block;width:100%;height:56px;background:#0b0d13;
@@ -151,19 +151,6 @@
   select{font-size:15px;appearance:none;-webkit-appearance:none;cursor:pointer}
   input[type="number"]:focus,input[type="text"]:focus,select:focus{border-color:var(--rise)}
 
-  /* probability curve editor */
-  .curveBox{margin-top:10px}
-  .curveHeader{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
-  .curveHeader .lbl{margin:0}
-  .curveHeader button{background:transparent;border:1px solid var(--line);color:var(--muted);
-    font-family:"Inter";font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;cursor:pointer}
-  .curveHeader button:active{transform:translateY(1px)}
-  canvas.curve{
-    display:block;width:100%;height:88px;background:#11131a;
-    border:1px solid var(--line);border-radius:12px;touch-action:none;cursor:crosshair;
-  }
-  .curveAxis{display:flex;justify-content:space-between;font-family:"Space Grotesk";font-size:11px;
-    color:var(--muted);margin-top:4px;padding:0 2px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .sublbl{display:block;font-size:11px;color:var(--muted);margin:0 0 5px 2px}
@@ -1037,7 +1024,7 @@
         sumStrict:"streng", sumHidden:"versteckt", sumRelaxed:"locker",
         sumVoice:"Stimme", sumBeep:"Ton", sumVibrate:"Vibration", sumNoCues:"keine",
         sumTone:"Ton", sumPB:"Bestwert", sumOff:"aus",
-        sumEyesClosed:"Augen zu", sumSwipeGuard:"Wischschutz", sumDefault:"Standard",
+        sumEyesClosed:"Augen zu", sumSwipeGuard:"Wischschutz", sumScreenColor:"Screen-Farben", sumDefault:"Standard",
         sumPenalty:x=>`Strafe +${x}`,
         sumPresetsLine:(p,s)=>`${p} Presets · ${s} Sitzungen`,
         sumCamOn:"an",
@@ -1163,7 +1150,7 @@
         sumStrict:"strict", sumHidden:"hidden", sumRelaxed:"relaxed",
         sumVoice:"Voice", sumBeep:"Beep", sumVibrate:"Vibrate", sumNoCues:"no cues",
         sumTone:"Tone", sumPB:"PB", sumOff:"off",
-        sumEyesClosed:"Eyes closed", sumSwipeGuard:"Swipe guard", sumDefault:"default",
+        sumEyesClosed:"Eyes closed", sumSwipeGuard:"Swipe guard", sumScreenColor:"Screen colors", sumDefault:"default",
         sumPenalty:x=>`penalty +${x}`,
         sumPresetsLine:(p,s)=>`${p} presets · ${s} sessions`,
         sumCamOn:"on",
@@ -1367,6 +1354,7 @@
     const rl2 = $("repLabel"); if(rl2) rl2.textContent = t.rep;
     updateScenarioHint();
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
+    if(typeof refreshPresetSelect === "function") refreshPresetSelect();
     if(typeof updateSummaries === "function") updateSummaries();
     try{ drawCurve("hold"); drawCurve("rest"); }catch(e){}
     if($("appLang")) $("appLang").value = LANG;
@@ -1706,6 +1694,7 @@
     const dsp = [];
     if(s.eyesClosed) dsp.push(t.sumEyesClosed);
     if(s.guardExit) dsp.push(t.sumSwipeGuard);
+    if(s.screenColor) dsp.push(t.sumScreenColor);
     setTxt("sumDisplay", dsp.length ? dsp.join(" · ") : t.sumDefault);
     setTxt("sumCamera", s.cameraControl ? t.sumCamOn : t.sumOff);
     const p = KV.get(K.presets, {});
@@ -1954,7 +1943,7 @@
     const sel = $("presetSel"); if(!sel) return;
     const p = KV.get(K.presets, {});
     const names = Object.keys(p).sort();
-    sel.innerHTML = '<option value="">– laden –</option>' +
+    sel.innerHTML = `<option value="">${T().optLoad}</option>` +
       names.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${n}</option>`).join("");
   }
   function presetSave(){
