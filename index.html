@@ -237,6 +237,15 @@
   @keyframes scBreathe{ 0%,100%{opacity:.28} 50%{opacity:.55} }
   @keyframes scRise{ from{opacity:.10} to{opacity:.60} }
   @keyframes scSettle{ from{opacity:.45} to{opacity:.82} }
+  .screenColorBorder{
+    position:absolute;inset:0;z-index:2;pointer-events:none;
+    box-shadow:inset 0 0 0 0 transparent;
+    transition:box-shadow .15s ease-out;
+  }
+  .screenColorBorder.green{box-shadow:inset 0 0 0 10px var(--good)}
+  .screenColorBorder.yellow{box-shadow:inset 0 0 0 10px var(--rise)}
+  .screenColorBorder.red{box-shadow:inset 0 0 0 10px var(--bad)}
+  .screenColorBorder.tolFlash{animation:scTolFlash .35s ease-out}
 
   .sessionTop{padding:max(16px,env(safe-area-inset-top)) 16px 0}
   /* full-screen tap surface for the eyes-closed mode.
@@ -787,6 +796,7 @@
 
   <section id="session" class="session hidden" aria-live="polite">
     <div id="screenColorLayer" class="screenColor hidden" aria-hidden="true"></div>
+    <div id="screenColorBorderLayer" class="screenColorBorder hidden" aria-hidden="true"></div>
     <div class="sessionTop">
       <div class="meta">
         <span class="count"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
@@ -2392,9 +2402,11 @@
   // ---------- screen color mode: green (may breathe) / yellow (about to hold) / red (holding) ----------
   function applyScreenColor(force){
     const el = $("screenColorLayer"); if(!el) return;
+    const elBorder = $("screenColorBorderLayer");
     if(!S || !S.screenColor){
       if(curScreenColorState !== null){
         el.classList.add("hidden"); el.classList.remove("green","yellow","red");
+        if(elBorder){ elBorder.classList.add("hidden"); elBorder.classList.remove("green","yellow","red"); }
         curScreenColorState = null;
       }
       return;
@@ -2427,6 +2439,10 @@
     el.classList.remove("hidden","green","yellow","red");
     void el.offsetWidth;                        // force reflow so the keyframe animation restarts cleanly
     el.classList.add(state);
+    if(elBorder){
+      elBorder.classList.remove("hidden","green","yellow","red");
+      elBorder.classList.add(state);
+    }
   }
 
   function armReadyScenario(){
@@ -3074,8 +3090,13 @@
   function flashTolerancePenalty(){
     if(!S || !S.screenColor) return;
     const el = $("screenColorLayer"); if(!el) return;
+    const elBorder = $("screenColorBorderLayer");
     el.classList.add("tolFlash");
-    setTimeout(()=>el.classList.remove("tolFlash"), 350);
+    if(elBorder) elBorder.classList.add("tolFlash");
+    setTimeout(()=>{
+      el.classList.remove("tolFlash");
+      if(elBorder) elBorder.classList.remove("tolFlash");
+    }, 350);
   }
   function renderReact(){
     if(!S) return;
@@ -3268,6 +3289,8 @@
     $("livesRow").classList.add("hidden");
     $("screenColorLayer").classList.add("hidden");
     $("screenColorLayer").classList.remove("green","yellow","red");
+    $("screenColorBorderLayer").classList.add("hidden");
+    $("screenColorBorderLayer").classList.remove("green","yellow","red");
     curScreenColorState = null;
     const total = S ? S.done : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
@@ -3334,6 +3357,8 @@
     $("livesRow").classList.add("hidden");
     $("screenColorLayer").classList.add("hidden");
     $("screenColorLayer").classList.remove("green","yellow","red");
+    $("screenColorBorderLayer").classList.add("hidden");
+    $("screenColorBorderLayer").classList.remove("green","yellow","red");
     curScreenColorState = null;
     if(synth){ try{ synth.cancel(); }catch(e){} }
     releaseWake(); disableGuard(); setTapSurface(false);
