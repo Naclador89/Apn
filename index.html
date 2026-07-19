@@ -943,6 +943,22 @@
       strings:{
         release:"Loslassen", startWithin:s=>`Drücke in ${s}s`,
         swRestLabel:"Pause seit letztem Hold", swLongestLabel:"Längster Hold",
+        sdHoldLastLabel:"Letzter Hold", sdPhaseTimeLabel:"Phase Zeit",
+        sdSpeedRepsGoal:n=>`Reps (Ziel: ${n})`, sdMixedActionRepsGoal:n=>`Reps (Ziel: >${n})`,
+        sdHoldPhaseLabel:"Halten", sdHoldGoalLabel:prev=>prev>0?`Ziel: >${prev.toFixed(1)}s`:"Ziel: halten",
+        pauseLabel:"Pause", sdMixedRoundLabel:n=>`Runde ${n} ✓`,
+        taTotalLabel:"Gesamt-Hold", taTargetLabel:"Ziel",
+        rhythmLevelLabel:"Level (BPM)", rhythmHitsLabel:"Treffer",
+        sdActionEndsIn:s=>`Action-Phase endet in ${s}s`, sdRestNextIn:s=>`Erholung... nächste Action in ${s}s`,
+        sdMixedHoldSub:prev=>prev>0?`Halten — länger als ${prev.toFixed(1)}s`:"Halten — so lange du kannst",
+        sdMixedActionCountdown:s=>`Halten in ${s}s`, sdMixedPauseSub:s=>`Pause... nächste Action in ${s}s`,
+        actionPhaseCue:"Action Phase!", scenarioPauseBig:"Pause", scenarioPauseSub:"Atme durch",
+        holdBigCue:"HALTEN", sdMixedHoldTargetSub:prev=>prev>0?`Länger als ${prev.toFixed(1)}s`:"So lange du kannst",
+        holdTargetHitBig:"GESCHAFFT", holdTargetHitSub:"Loslassen wenn du willst",
+        sdSpeedFail:(reps,target)=>`Game Over. ${reps} Reps (Ziel war ${target}).`,
+        sdMixedActionFail:(reps,needed)=>`Game Over. ${reps} Reps (nötig: >${needed}).`,
+        sdHoldFail:(held,prev)=>`Game Over. ${held}s war kürzer als dein vorheriger Hold (${prev}s).`,
+        sdMixedHoldFail:(held,needed)=>`Game Over. Hold ${held}s (nötig: >${needed}s).`,
         scenarioTitle:"Szenario", scenarioStopwatch:"Stoppuhr — Halte so lange du kannst",
         title:"Gasping for More", mark:"Breathless",
         ready:"Bereit", pressToStart:"Drücken zum Starten", tapToStart:"Tippen zum Starten",
@@ -1069,6 +1085,22 @@
       strings:{
         release:"Release", startWithin:s=>`Press within ${s}s`,
         swRestLabel:"Rest since last hold", swLongestLabel:"Longest hold",
+        sdHoldLastLabel:"Last hold", sdPhaseTimeLabel:"Phase time",
+        sdSpeedRepsGoal:n=>`Reps (target: ${n})`, sdMixedActionRepsGoal:n=>`Reps (target: >${n})`,
+        sdHoldPhaseLabel:"Hold", sdHoldGoalLabel:prev=>prev>0?`Target: >${prev.toFixed(1)}s`:"Target: just hold",
+        pauseLabel:"Pause", sdMixedRoundLabel:n=>`Round ${n} ✓`,
+        taTotalLabel:"Total hold", taTargetLabel:"Target",
+        rhythmLevelLabel:"Level (BPM)", rhythmHitsLabel:"Hits",
+        sdActionEndsIn:s=>`Action phase ends in ${s}s`, sdRestNextIn:s=>`Recovery... next action in ${s}s`,
+        sdMixedHoldSub:prev=>prev>0?`Hold — longer than ${prev.toFixed(1)}s`:"Hold — as long as you can",
+        sdMixedActionCountdown:s=>`Hold in ${s}s`, sdMixedPauseSub:s=>`Pause... next action in ${s}s`,
+        actionPhaseCue:"Action phase!", scenarioPauseBig:"Pause", scenarioPauseSub:"Breathe through",
+        holdBigCue:"HOLD", sdMixedHoldTargetSub:prev=>prev>0?`Longer than ${prev.toFixed(1)}s`:"As long as you can",
+        holdTargetHitBig:"DONE!", holdTargetHitSub:"Release whenever you want",
+        sdSpeedFail:(reps,target)=>`Game over. ${reps} reps (target was ${target}).`,
+        sdMixedActionFail:(reps,needed)=>`Game over. ${reps} reps (needed: >${needed}).`,
+        sdHoldFail:(held,prev)=>`Game over. ${held}s was shorter than your previous hold (${prev}s).`,
+        sdMixedHoldFail:(held,needed)=>`Game over. Hold ${held}s (needed: >${needed}s).`,
         scenarioTitle:"Scenario", scenarioStopwatch:"Stopwatch — hold as long as you can",
         title:"Gasping for More", mark:"Breathless",
         ready:"Ready", pressToStart:"Press to start", tapToStart:"Tap anywhere to start",
@@ -2472,7 +2504,7 @@
       $("swRest").textContent = fmtSW(0);
       $("swLongest").textContent = "0.0s";
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().swRestLabel || "Rest since last hold";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Letzter Hold";
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdHoldLastLabel;
     } else if (S.scenario === "sd_speed") {
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
@@ -2480,8 +2512,8 @@
       S.sd_actionMsAcc = 0;   // total action-phase time (pauses excluded), for action pace
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Reps (Ziel: 0)";
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdPhaseTimeLabel;
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdSpeedRepsGoal(0);
     } else if (S.scenario === "sd_mixed") {
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
@@ -2493,21 +2525,21 @@
       S.sd_lastCountSec = 0;
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdPhaseTimeLabel;
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedActionRepsGoal(S.sd_prevActionReps);
     } else if (S.scenario === "timeattack") {
       S.swLongest = 0;
       const tgt = (S.ta_target||60);
       $("swRest").textContent = fmtSW(0);
       $("swLongest").textContent = fmtSW(tgt);
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Gesamt-Hold";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Ziel";
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().taTotalLabel;
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().taTargetLabel;
     } else if (S.scenario === "rhythm") {
       // rhythm auto-starts with a count-in; no press needed to boot
       $("swRest").textContent = "0";
       $("swLongest").textContent = fmtSW(0);
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Level (BPM)";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = "Treffer";
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().rhythmLevelLabel;
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().rhythmHitsLabel;
       rhythmStart();
     }
   }
@@ -2528,14 +2560,14 @@
            $("swRest").textContent = fmtSW(remain);
            
            if (S.sd_phase === "action" && !holding) {
-               $("subcue").textContent = `Action-Phase endet in ${Math.ceil(remain)}s`;
+               $("subcue").textContent = T().sdActionEndsIn(Math.ceil(remain));
            } else if (S.sd_phase === "rest") {
-               $("subcue").textContent = `Erholung... nächste Action in ${Math.ceil(remain)}s`;
+               $("subcue").textContent = T().sdRestNextIn(Math.ceil(remain));
            }
 
            if (remain <= 0) {
                if (S.sd_phase === "action") {
-                   if (holding) pressEndStopwatch(); 
+                   if (holding) pressEndStopwatch();
                    if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
                        if(tryLoseLife()){
                            // retry: redo the same action phase from scratch, target unchanged
@@ -2543,11 +2575,11 @@
                            S.sd_repsThisPhase = 0;
                            $("repNow").textContent = 0;
                            $("swLongest").textContent = "0";
-                           setCue("up", T().ready, "Action Phase!");
+                           setCue("up", T().ready, T().actionPhaseCue);
                            cmd("down");
                            return;
                        }
-                       S.sd_failMsg = `Game Over. ${S.sd_repsThisPhase} Reps (Ziel war ${S.sd_prevPhaseReps}).`;
+                       S.scenarioFailMsg = T().sdSpeedFail(S.sd_repsThisPhase, S.sd_prevPhaseReps);
                        finish();
                        return;
                    }
@@ -2557,14 +2589,14 @@
                    S.sd_prevPhaseReps = Math.max(S.sd_prevPhaseReps || 0, S.sd_repsThisPhase);
                    S.sd_repsThisPhase = 0;
                    $("repNow").textContent = 0;
-                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: ${S.sd_prevPhaseReps})`;
+                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdSpeedRepsGoal(S.sd_prevPhaseReps);
                    $("swLongest").textContent = "0";
-                   setCue("rest", "Pause", "Atme durch");
+                   setCue("rest", T().scenarioPauseBig, T().scenarioPauseSub);
                    cmd("up");
                } else {
                    S.sd_phase = "action";
                    S.sd_phaseEndTs = now + actionMs;
-                   setCue("up", T().ready, "Action Phase!");
+                   setCue("up", T().ready, T().actionPhaseCue);
                    cmd("down");
                }
            }
@@ -2578,9 +2610,7 @@
            if(!S || S.scenario !== "sd_mixed") { clearInterval(S.sd_timer); return; }
            // hold phase is freeform (no countdown) — driven by press/release
            if (S.sd_phase === "hold"){
-               if(!holding) $("subcue").textContent = S.sd_prevHold>0
-                   ? `Halten — länger als ${S.sd_prevHold.toFixed(1)}s`
-                   : "Halten — so lange du kannst";
+               if(!holding) $("subcue").textContent = T().sdMixedHoldSub(S.sd_prevHold);
                return;
            }
            const now = Date.now();
@@ -2589,7 +2619,7 @@
 
            if (S.sd_phase === "action") {
                const secs = Math.ceil(remain);
-               if(!holding) $("subcue").textContent = `Halten in ${secs}s`;
+               if(!holding) $("subcue").textContent = T().sdMixedActionCountdown(secs);
                // prominent 3-2-1 countdown into the hold phase
                if(secs>=1 && secs<=3 && !holding){
                    $("timer").textContent = String(secs);
@@ -2602,7 +2632,7 @@
                    }
                }
            } else if (S.sd_phase === "pause") {
-               $("subcue").textContent = `Pause... nächste Action in ${Math.ceil(remain)}s`;
+               $("subcue").textContent = T().sdMixedPauseSub(Math.ceil(remain));
            }
 
            if (remain <= 0) {
@@ -2618,13 +2648,13 @@
                            setFill(0);
                            $("timer").classList.remove("counting");
                            $("repNow").textContent = 0;
-                           document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
+                           document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedActionRepsGoal(S.sd_prevActionReps);
                            $("swLongest").textContent = "0";
-                           setCue("up", T().ready, "Action Phase!");
+                           setCue("up", T().ready, T().actionPhaseCue);
                            cmd("down");
                            return;
                        }
-                       S.sd_failMsg = `Game Over. ${S.sd_repsThisPhase} Reps (nötig: >${S.sd_prevActionReps}).`;
+                       S.scenarioFailMsg = T().sdMixedActionFail(S.sd_repsThisPhase, S.sd_prevActionReps);
                        finish();
                        return;
                    }
@@ -2636,11 +2666,10 @@
                    $("timer").classList.remove("counting");
                    $("swRest").textContent = fmtSW(0);
                    $("timer").textContent = fmtSW(0);
-                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Hold";
-                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent =
-                       S.sd_prevHold>0 ? `Ziel: >${S.sd_prevHold.toFixed(1)}s` : "Ziel: halten";
+                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdHoldPhaseLabel;
+                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdHoldGoalLabel(S.sd_prevHold);
                    $("swLongest").textContent = S.sd_prevHold>0 ? `>${S.sd_prevHold.toFixed(1)}s` : "–";
-                   setCue("up", "HALTEN", S.sd_prevHold>0 ? `Länger als ${S.sd_prevHold.toFixed(1)}s` : "So lange du kannst");
+                   setCue("up", T().holdBigCue, T().sdMixedHoldTargetSub(S.sd_prevHold));
                    mixedHoldCue();
                } else if (S.sd_phase === "pause") {
                    S.sd_phase = "action";
@@ -2649,10 +2678,10 @@
                    S.sd_lastCountSec = 0;
                    setFill(0);
                    $("repNow").textContent = 0;
-                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Phase Zeit";
-                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Reps (Ziel: >${S.sd_prevActionReps})`;
+                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdPhaseTimeLabel;
+                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedActionRepsGoal(S.sd_prevActionReps);
                    $("swLongest").textContent = "0";
-                   setCue("up", T().ready, "Action Phase!");
+                   setCue("up", T().ready, T().actionPhaseCue);
                    cmd("down");
                }
            }
@@ -2743,7 +2772,7 @@
       if(elapsed >= target && !S.sd_holdTargetHit){
         S.sd_holdTargetHit = true;
         setFill(1);
-        setCue("up", "GESCHAFFT", "Loslassen wenn du willst");
+        setCue("up", T().holdTargetHitBig, T().holdTargetHitSub);
         mixedHoldTargetCue();
       }
     } else {
@@ -2789,7 +2818,7 @@
                 }, 100);
                 return;
             }
-            S.sd_failMsg = `Game Over. ${heldSec.toFixed(1)}s war kürzer als dein vorheriger Hold (${S.sd_prevHold.toFixed(1)}s).`;
+            S.scenarioFailMsg = T().sdHoldFail(heldSec.toFixed(1), S.sd_prevHold.toFixed(1));
             finish();
             return;
         }
@@ -2812,11 +2841,11 @@
                     $("swRest").textContent = fmtSW(0);
                     $("timer").textContent = fmtSW(0);
                     S.sd_holdTargetHit = false;
-                    setCue("up", "HALTEN", S.sd_prevHold>0 ? `Länger als ${S.sd_prevHold.toFixed(1)}s` : "So lange du kannst");
+                    setCue("up", T().holdBigCue, T().sdMixedHoldTargetSub(S.sd_prevHold));
                     mixedHoldCue();
                     return;
                 }
-                S.sd_failMsg = `Game Over. Hold ${heldSec.toFixed(1)}s (nötig: >${S.sd_prevHold.toFixed(1)}s).`;
+                S.scenarioFailMsg = T().sdMixedHoldFail(heldSec.toFixed(1), S.sd_prevHold.toFixed(1));
                 S.holdSec = (S.holdSec||0) + heldSec;
                 if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;
                 finish();
@@ -2829,8 +2858,8 @@
             S.sd_phase = "pause";
             S.sd_phaseEndTs = Date.now() + (S.sd_pauseMs || 20000);
             setFill(0);
-            document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = "Pause";
-            document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = `Runde ${S.sd_mixedRounds} ✓`;
+            document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().pauseLabel;
+            document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedRoundLabel(S.sd_mixedRounds);
             $("swLongest").textContent = fmtSW(S.sd_prevHold);
         }
     } else if (S.scenario === "sd_speed") {
@@ -2861,7 +2890,7 @@
 
     if (S.scenario === "sd_speed" || S.scenario === "sd_mixed" || S.scenario === "timeattack") {
         if (S.scenario === "sd_mixed" && S.sd_phase === "pause") {
-            setCue("rest", "Pause", "Atme durch");
+            setCue("rest", T().scenarioPauseBig, T().scenarioPauseSub);
         } else if (S.scenario === "timeattack") {
             $("swRest").textContent = fmtSW(S.holdSec || 0);
             setCue("rest", T().breathe, T().pressToStart);
@@ -2896,7 +2925,7 @@
     const score = Math.round(target / wall * 100);
     S.taScore = score;
     S.done = (S.done || 0) + 1;
-    S.sd_failMsg = T().taDone(Math.round(target), fmtTime(Math.round(wall)), score);
+    S.scenarioFailMsg = T().taDone(Math.round(target), fmtTime(Math.round(wall)), score);
     finish();
   }
 
@@ -2976,7 +3005,7 @@
         return;
     }
     if(S.rr_timer) clearInterval(S.rr_timer);
-    S.sd_failMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
+    S.scenarioFailMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
     finish();
   }
 
@@ -3284,8 +3313,8 @@
     const total = S ? S.done : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
     $("doneNum").textContent = total;
-    if (S && S.sd_failMsg) {
-        $("doneMsg").textContent = S.sd_failMsg;
+    if (S && S.scenarioFailMsg) {
+        $("doneMsg").textContent = S.scenarioFailMsg;
     } else {
         $("doneMsg").textContent = (total===1 ? T().rep : (T().rep + "s")) + " · " + fmtTime(elapsedSec);
     }
