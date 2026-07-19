@@ -225,6 +225,17 @@
     display:flex;flex-direction:column;touch-action:none;
     background:radial-gradient(85% 55% at 50% -18%, var(--rise-soft) 0%, transparent 60%),radial-gradient(120% 82% at 50% -12%, #20242f 0%, var(--ink) 55%);
   }
+  .screenColor{
+    position:absolute;inset:0;z-index:2;pointer-events:none;
+    opacity:0;background-color:transparent;
+  }
+  .screenColor.green{background-color:#123f2c;animation:scBreathe 8s ease-in-out infinite}
+  .screenColor.yellow{background-color:#4a3c10;animation:scRise 2.8s ease-out forwards}
+  .screenColor.red{background-color:#3a1210;animation:scSettle 12s ease-in forwards}
+  @keyframes scBreathe{ 0%,100%{opacity:.28} 50%{opacity:.55} }
+  @keyframes scRise{ from{opacity:.10} to{opacity:.60} }
+  @keyframes scSettle{ from{opacity:.45} to{opacity:.82} }
+
   .sessionTop{padding:max(16px,env(safe-area-inset-top)) 16px 0}
   /* full-screen tap surface for the eyes-closed mode.
      Transparent so the whole screen accepts taps except the top meta bar. */
@@ -711,12 +722,19 @@
           </div>
           <label class="switch"><input id="eyesClosed" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
-        <div class="field toggle" style="margin-bottom:0">
+        <div class="field toggle">
           <div>
             <label class="lbl" for="guardExit" data-i18n="labelSwipeGuard">Swipe guard</label>
             <div class="hint" style="margin-top:2px" data-i18n="hintSwipeGuard">Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.</div>
           </div>
           <label class="switch"><input id="guardExit" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field toggle" style="margin-bottom:0">
+          <div>
+            <label class="lbl" for="screenColor" data-i18n="labelScreenColor">Screen color cues</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintScreenColor">The screen background pulses green when you may breathe, brightens yellow just before a hold, and deepens to dark red while holding.</div>
+          </div>
+          <label class="switch"><input id="screenColor" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
       </div>
     </details>
@@ -766,6 +784,7 @@
   </section>
 
   <section id="session" class="session hidden" aria-live="polite">
+    <div id="screenColorLayer" class="screenColor hidden" aria-hidden="true"></div>
     <div class="sessionTop">
       <div class="meta">
         <span class="count"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
@@ -986,6 +1005,8 @@
         uiDisplayTitle:"Anzeige & Bedienung",
         labelEyesClosed:"Augen-zu-Modus", hintEyesClosed:"Zum Halten irgendwo auf den Bildschirm tippen — Training rein per Ton oder Vibration. Am besten mit Tönen oder Vibration kombinieren.",
         labelSwipeGuard:"Wischschutz", hintSwipeGuard:"Erschwert versehentliches Schließen (Zurück-Wischen, Neuladen) und versucht Vollbild. Beenden über die Stopp-Taste.",
+        labelScreenColor:"Bildschirmfarbe als Signal",
+        hintScreenColor:"Der Bildschirm pulsiert grün, wenn du atmen darfst, hellt sich gelb auf kurz vor dem Halten, und vertieft sich dunkelrot während du die Luft anhältst.",
         uiPresetsTitle:"Presets & Statistik",
         labelPresets:"Presets", phPresetName:"Name (z. B. Abend-Set)", optLoad:"– laden –",
         btnSave:"Speichern", btnLoad:"Laden", btnDelete:"Löschen",
@@ -1110,6 +1131,8 @@
         uiDisplayTitle:"Display & handling",
         labelEyesClosed:"Eyes-closed mode", hintEyesClosed:"Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.",
         labelSwipeGuard:"Swipe guard", hintSwipeGuard:"Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.",
+        labelScreenColor:"Screen color cues",
+        hintScreenColor:"The screen background pulses green when you may breathe, brightens yellow just before a hold, and deepens to dark red while holding.",
         uiPresetsTitle:"Presets & stats",
         labelPresets:"Presets", phPresetName:"Name (e.g. Evening set)", optLoad:"– load –",
         btnSave:"Save", btnLoad:"Load", btnDelete:"Delete",
@@ -1594,7 +1617,7 @@
     "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
-    "voice","beep","vibrate","eyesClosed","guardExit","cameraControl",
+    "voice","beep","vibrate","eyesClosed","guardExit","screenColor","cameraControl",
     "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdFinishWord","cmdRate",
     "appLang",
     "progressTone","prAnnounce",
@@ -2134,7 +2157,9 @@
 
   let S = null;
   let holding = false;
-  let raf = 0;           
+  let lastCueKind = "up";
+  let curScreenColorState = null;
+  let raf = 0;
   let restTimer = 0;     
   let reactTimer = 0;    
   let pendingRelease = false; 
@@ -2242,6 +2267,7 @@
       rate: Math.min(2, Math.max(0.5, parseFloat($("cmdRate").value) || 1)),
       eyesClosed: $("eyesClosed").checked,
       guardExit: $("guardExit").checked,
+      screenColor: $("screenColor").checked,
     };
     let reps;
     if(goal==="scenario"){
@@ -2317,6 +2343,7 @@
     S.spokeHold = false;
     S.lastSpokenSec = null;
     holding = false;
+    applyScreenColor();
     setFill(0);
     $("repNow").textContent = 1;
     S.subBase = (!S.hide && S.cur.long) ? T().holdForN(S.cur.secs) : T().pressAndHold;
@@ -2360,8 +2387,41 @@
     return S.livesLeft > 0;
   }
 
+  // ---------- screen color mode: green (may breathe) / yellow (about to hold) / red (holding) ----------
+  function applyScreenColor(){
+    const el = $("screenColorLayer"); if(!el) return;
+    if(!S || !S.screenColor){
+      if(curScreenColorState !== null){
+        el.classList.add("hidden"); el.classList.remove("green","yellow","red");
+        curScreenColorState = null;
+      }
+      return;
+    }
+    let state;
+    if(S.scenario === "rhythm"){
+      state = (Date.now() < (S.rr_flashUntil||0)) ? "red" : "yellow";
+    } else if(holding){
+      state = "red";
+    } else if(isActionTap()){
+      // sd_speed/sd_mixed action phase: setCue("rest",...) fires here between
+      // taps (existing "brief relax" behavior), but that's not a real
+      // breathe-now moment mid-action -> stay yellow.
+      state = "yellow";
+    } else if(lastCueKind === "rest" || lastCueKind === "down"){
+      state = "green";
+    } else {
+      state = "yellow";
+    }
+    if(state === curScreenColorState) return;   // no change -> don't restart the animation
+    curScreenColorState = state;
+    el.classList.remove("hidden","green","yellow","red");
+    void el.offsetWidth;                        // force reflow so the keyframe animation restarts cleanly
+    el.classList.add(state);
+  }
+
   function armReadyScenario(){
     holding = false;
+    applyScreenColor();
     pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
     setFill(0);
     $("repNow").textContent = 0;
@@ -2600,6 +2660,7 @@
       clearTimeout(releaseTimer); releaseTimer = 0;
       pendingRelease = false;
       holding = true;
+      applyScreenColor();
       $("holdBtn").classList.add("holding");
       progressStart();
       cancelAnimationFrame(raf);
@@ -2610,6 +2671,7 @@
     clearInterval(swRestTimer); swRestTimer = 0;
     S.swHoldStartTs = Date.now();
     holding = true;
+    applyScreenColor();
     $("holdBtn").classList.add("holding");
     setCue("up", S.words.down, "");
     $("btnLab").textContent = T().holding;
@@ -2632,6 +2694,7 @@
     if(!S) return;
     if(holding){
       holding = false;
+      applyScreenColor();
       cancelAnimationFrame(raf);
       S.swReleaseTs = Date.now();
     } else if(!pendingRelease){
@@ -2675,8 +2738,9 @@
   }
   function pressEndStopwatch(){
     holding = false;
+    applyScreenColor();
     cancelAnimationFrame(raf);
-    S.swReleaseTs = Date.now();   
+    S.swReleaseTs = Date.now();
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
     if(graceMs > 0){
       pendingRelease = true;
@@ -2809,7 +2873,7 @@
 
   // ---------- Time Attack: reach a target total hold as fast as possible ----------
   function taComplete(target){
-    holding = false; cancelAnimationFrame(raf); progressStop();
+    holding = false; applyScreenColor(); cancelAnimationFrame(raf); progressStop();
     $("holdBtn").classList.remove("holding");
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     S.holdSec = target;
@@ -2870,8 +2934,15 @@
   }
   function rhythmTap(){
     if(!S || S.scenario !== "rhythm") return;
+    const now = Date.now();
+    if(now - (S.rr_lastFlashAt||0) >= 330){          // safety throttle: cap at ~3 flashes/sec (WCAG 2.3.1)
+      S.rr_lastFlashAt = now;
+      S.rr_flashUntil = now + 140;
+      applyScreenColor();
+      setTimeout(applyScreenColor, 140);              // reverts to yellow; self-correcting if a newer tap extended the flash
+    }
     if(S.rr_countIn > 0){ rhythmPulse(); return; }   // ignore taps during the count-in
-    const now = Date.now(), dt = now - S.rr_beatTime, W = S.rr_window;
+    const dt = now - S.rr_beatTime, W = S.rr_window;
     if(dt < -W){ rhythmMiss(T().rrEarly); return; }
     if(dt > W){ rhythmMiss(T().rrLate); return; }
     if(S.rr_tapped) return;
@@ -2946,9 +3017,10 @@
     pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
-    S.spokeHold = false;      
-    S.lastSpokenSec = null;   
+    S.spokeHold = false;
+    S.lastSpokenSec = null;
     holding = false;
+    applyScreenColor();
     setFill(0);
     const n = S.done + 1;
     $("repNow").textContent = n;
@@ -2992,10 +3064,12 @@
   }
 
   function setCue(kind, big, sub){
+    lastCueKind = kind;
     const c = $("cue");
     c.className = "cue " + kind;
     c.textContent = big;
     $("subcue").textContent = sub || "";
+    applyScreenColor();
   }
   function setFill(p){ $("fill").style.height = Math.max(0,Math.min(100,p*100)) + "%"; }
 
@@ -3045,6 +3119,7 @@
       clearTimeout(releaseTimer); releaseTimer = 0;
       pendingRelease = false;
       holding = true;
+      applyScreenColor();
       lastTs = 0;
       $("holdBtn").classList.add("holding");
       progressStart();
@@ -3056,9 +3131,10 @@
       bootFirstPress();
       setCue("up", S.cur.long ? (S.words.down + " " + T().andHold) : S.words.down, S.subBase);
     }
-    clearInterval(reactTimer); reactTimer = 0;     
+    clearInterval(reactTimer); reactTimer = 0;
     if(S.subBase) $("subcue").textContent = S.subBase;
     holding = true;
+    applyScreenColor();
     lastTs = 0;
     $("holdBtn").classList.add("holding");
     $("btnLab").textContent = T().holding;
@@ -3076,6 +3152,7 @@
       return;
     }
     holding = false;
+    applyScreenColor();
     cancelAnimationFrame(raf);
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
     if(graceMs > 0 && S && S.cur){
@@ -3135,8 +3212,9 @@
 
   function completeRep(){
     holding = false;
+    applyScreenColor();
     pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
-    S.armed = false;   
+    S.armed = false;
     cancelAnimationFrame(raf);
     clearInterval(reactTimer); reactTimer = 0;
     progressStop();
@@ -3169,6 +3247,9 @@
     progressStop();
     $("swStats").classList.add("hidden");
     $("livesRow").classList.add("hidden");
+    $("screenColorLayer").classList.add("hidden");
+    $("screenColorLayer").classList.remove("green","yellow","red");
+    curScreenColorState = null;
     const total = S ? S.done : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
     $("doneNum").textContent = total;
@@ -3232,6 +3313,9 @@
     progressStop();
     $("swStats").classList.add("hidden");
     $("livesRow").classList.add("hidden");
+    $("screenColorLayer").classList.add("hidden");
+    $("screenColorLayer").classList.remove("green","yellow","red");
+    curScreenColorState = null;
     if(synth){ try{ synth.cancel(); }catch(e){} }
     releaseWake(); disableGuard(); setTapSurface(false);
     camDetach();
