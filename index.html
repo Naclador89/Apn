@@ -476,6 +476,7 @@
             <option value="sd_mixed" data-i18n="scenarioSdMixed">Sudden death: Mixed</option>
             <option value="timeattack" data-i18n="scenarioTimeAttack">Time Attack</option>
             <option value="rhythm" data-i18n="scenarioRhythm">Rhythm Rush</option>
+            <option value="interval" data-i18n="scenarioInterval">Interval Sequence</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
           <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
@@ -506,6 +507,59 @@
               <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level" data-i18n-aria="ariaRrStep">
             </div>
             <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
+          </div>
+          <div class="field hidden" id="ivField" style="margin:12px 0 0">
+            <label class="lbl" data-i18n="labelIvPhaseCount">Number of phases</label>
+            <input id="ivPhaseCount" type="number" min="2" max="6" step="1" value="3" aria-label="Number of phases" data-i18n-aria="ariaIvPhaseCount">
+            <div class="hint" data-i18n="hintIvPhaseCount">How many phases the sequence runs through (2–6), each with its own duration, hold, and rest length.</div>
+            <div class="field" id="ivPhaseRow1" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead1">Phase 1</span>
+              <div class="row3">
+                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur1" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold1" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest1" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
+              </div>
+            </div>
+            <div class="field" id="ivPhaseRow2" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead2">Phase 2</span>
+              <div class="row3">
+                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur2" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold2" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest2" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
+              </div>
+            </div>
+            <div class="field" id="ivPhaseRow3" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead3">Phase 3</span>
+              <div class="row3">
+                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur3" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold3" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest3" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
+              </div>
+            </div>
+            <div class="field hidden" id="ivPhaseRow4" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead4">Phase 4</span>
+              <div class="row3">
+                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur4" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold4" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest4" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
+              </div>
+            </div>
+            <div class="field hidden" id="ivPhaseRow5" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead5">Phase 5</span>
+              <div class="row3">
+                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur5" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold5" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest5" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
+              </div>
+            </div>
+            <div class="field hidden" id="ivPhaseRow6" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead6">Phase 6</span>
+              <div class="row3">
+                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur6" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold6" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
+                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest6" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
+              </div>
+            </div>
           </div>
           <div class="field hidden" id="livesField" style="margin:12px 0 0">
             <div class="toggle" style="margin-bottom:0">
@@ -1101,6 +1155,15 @@
         rrMiss:"Beat verpasst", rrEarly:"zu früh", rrLate:"zu spät",
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} Treffer · ${bpm} BPM`,
         rhythmGetReady:"Achtung…", rhythmGo:"Tippen!", rhythmTapBeat:"Auf jeden Beat tippen", rhythmTap:"Tippen",
+        scenarioInterval:"Intervall-Sequenz", hintInterval:"Durchläuft mehrere Phasen mit je eigener Halte-/Pausenzeit, die App gibt Halten/Loslassen automatisch im Takt vor. Endet automatisch nach der letzten Phase.",
+        labelIvPhaseCount:"Anzahl Phasen", hintIvPhaseCount:"Wie viele Phasen die Sequenz durchläuft (2–6), jeweils mit eigener Dauer, Halte- und Pausenzeit.",
+        sublblIvDur:"Dauer (s)", sublblIvHold:"Halten (s)", sublblIvRest:"Pause (s)",
+        ariaIvPhaseCount:"Anzahl Phasen",
+        ariaIvDur:n=>`Phase ${n} Dauer in Sekunden`, ariaIvHold:n=>`Phase ${n} Haltezeit in Sekunden`, ariaIvRest:n=>`Phase ${n} Pausenzeit in Sekunden`,
+        ivPhaseHeading:n=>`Phase ${n}`,
+        ivPhaseTimeLabel:"Phasen-Zeit", ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
+        ivHoldingSub:s=>`Halten · ${s}s`, ivRestingSub:s=>`Loslassen · ${s}s`,
+        ivComplete:total=>`Sequenz abgeschlossen (${total} Phasen).`,
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
         labelLivesCount:"Anzahl Leben",
@@ -1270,6 +1333,15 @@
         rrMiss:"missed beat", rrEarly:"too early", rrLate:"too late",
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} hits · ${bpm} BPM`,
         rhythmGetReady:"Get ready…", rhythmGo:"Tap!", rhythmTapBeat:"Tap on every beat", rhythmTap:"Tap",
+        scenarioInterval:"Interval Sequence", hintInterval:"Runs through several phases, each with its own hold/rest length — the app cues hold/release automatically on the beat. Ends automatically after the last phase.",
+        labelIvPhaseCount:"Number of phases", hintIvPhaseCount:"How many phases the sequence runs through (2–6), each with its own duration, hold, and rest length.",
+        sublblIvDur:"Duration (s)", sublblIvHold:"Hold (s)", sublblIvRest:"Rest (s)",
+        ariaIvPhaseCount:"Number of phases",
+        ariaIvDur:n=>`Phase ${n} duration in seconds`, ariaIvHold:n=>`Phase ${n} hold length in seconds`, ariaIvRest:n=>`Phase ${n} rest length in seconds`,
+        ivPhaseHeading:n=>`Phase ${n}`,
+        ivPhaseTimeLabel:"Phase time", ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
+        ivHoldingSub:s=>`Hold · ${s}s`, ivRestingSub:s=>`Release · ${s}s`,
+        ivComplete:total=>`Sequence complete (${total} phases).`,
         recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
         labelLivesCount:"Number of lives",
@@ -1443,6 +1515,7 @@
     });
     const rl2 = $("repLabel"); if(rl2) rl2.textContent = t.rep;
     updateScenarioHint();
+    ivLabelPhases();
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
     if(typeof refreshPresetSelect === "function") refreshPresetSelect();
     if(typeof updateSummaries === "function") updateSummaries();
@@ -1453,7 +1526,7 @@
   function updateScenarioHint(){
     const el = $("scenarioHint"); if(!el) return;
     const t = T();
-    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm };
+    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm, interval:t.hintInterval };
     const v = map[$("scenarioSel").value];
     if(typeof v === "string") el.textContent = v;
   }
@@ -1705,6 +1778,10 @@
 
   const SETTING_IDS = [
     "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
+    "ivPhaseCount",
+    "ivDur1","ivDur2","ivDur3","ivDur4","ivDur5","ivDur6",
+    "ivHold1","ivHold2","ivHold3","ivHold4","ivHold5","ivHold6",
+    "ivRest1","ivRest2","ivRest3","ivRest4","ivRest5","ivRest6",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "voice","beep","vibrate","eyesClosed","guardExit","screenColor","cameraControl",
@@ -1751,7 +1828,7 @@
     const s = readAll();
     const t = T();
     const setTxt = (id, txt) => { const e = $(id); if(e) e.textContent = txt; };
-    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed };
+    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, interval: t.scenarioInterval };
     const goalTxt = {
       reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
@@ -2215,11 +2292,29 @@
     $("sdMixedField").classList.toggle("hidden", !(isScen && sc==="sd_mixed"));
     $("taField").classList.toggle("hidden", !(isScen && sc==="timeattack"));
     $("rrField").classList.toggle("hidden", !(isScen && sc==="rhythm"));
+    $("ivField").classList.toggle("hidden", !(isScen && sc==="interval"));
+    ivApplyPhaseVisibility();
     $("livesField").classList.toggle("hidden", !(isScen && scenarioSupportsLives(sc)));
     $("livesCountField").classList.toggle("hidden", !$("livesOn").checked);
   }
+  function ivApplyPhaseVisibility(){
+    const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
+    for(let i=1;i<=6;i++){
+      const row = $("ivPhaseRow"+i); if(row) row.classList.toggle("hidden", i>n);
+    }
+  }
+  function ivLabelPhases(){
+    const t = T();
+    for(let i=1;i<=6;i++){
+      const head = $("ivPhaseHead"+i); if(head) head.textContent = t.ivPhaseHeading(i);
+      const dur = $("ivDur"+i); if(dur) dur.setAttribute("aria-label", t.ariaIvDur(i));
+      const hold = $("ivHold"+i); if(hold) hold.setAttribute("aria-label", t.ariaIvHold(i));
+      const rest = $("ivRest"+i); if(rest) rest.setAttribute("aria-label", t.ariaIvRest(i));
+    }
+  }
   $("scenarioSel").addEventListener("change", ()=>{ applyScenarioVisibility(); updateScenarioHint(); });
   $("livesOn").addEventListener("change", applyScenarioVisibility);
+  $("ivPhaseCount").addEventListener("input", ivApplyPhaseVisibility);
 
   // advanced settings: collapsed by default, state remembered
   (function initAdvanced(){
@@ -2375,6 +2470,16 @@
       cfg.rr_step = Math.min(40, Math.max(1, Math.round(parseFloat($("rrStep").value) || 8)));
       cfg.livesOn = $("livesOn").checked;
       cfg.livesCount = Math.min(9, Math.max(1, Math.round(parseFloat($("livesCount").value) || 3)));
+      cfg.iv_phaseCount = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
+      cfg.iv_phases = [];
+      for(let i=1;i<=6;i++){
+        cfg.iv_phases.push({
+          durMs:  Math.min(1800000, Math.max(5000, Math.round((parseFloat($("ivDur"+i).value)  || 60) * 1000))),
+          holdMs: Math.min(120000,  Math.max(1000, Math.round((parseFloat($("ivHold"+i).value) || 4)  * 1000))),
+          restMs: Math.min(120000,  Math.max(1000, Math.round((parseFloat($("ivRest"+i).value) || 4)  * 1000))),
+        });
+      }
+      cfg.iv_phases.length = cfg.iv_phaseCount;
       reps = null;
     } else if(goal==="time"){
       reps = null; 
@@ -2600,6 +2705,10 @@
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().rhythmLevelLabel;
       document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().rhythmHitsLabel;
       rhythmStart();
+    } else if (S.scenario === "interval") {
+      $("swRest").textContent = fmtSW(S.iv_phases[0].durMs/1000);
+      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().ivPhaseTimeLabel;
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().ivPhaseOfLabel(1, S.iv_phases.length);
     }
   }
 
@@ -2747,6 +2856,13 @@
        }, 100);
     }
 
+    if(S.scenario==="interval") {
+      S.iv_phaseIdx = 0;
+      S.iv_phaseEndTs = S.startTime + S.iv_phases[0].durMs;
+      ivStartCycle("hold");
+      S.iv_timer = setInterval(ivTick, 100);
+    }
+
     startClock();
     acquireWake();
     const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
@@ -2777,6 +2893,7 @@
   let swRestTimer = 0;
   function pressStartStopwatch(){
     if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
+    if(S && S.scenario === "interval"){ ivPressStart(); return; }
     if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
     if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
 
@@ -2852,6 +2969,7 @@
     raf = requestAnimationFrame(stopwatchHoldLoop);
   }
   function pressEndStopwatch(){
+    if(S && S.scenario === "interval"){ ivPressEnd(); return; }
     releaseHold();
     S.swReleaseTs = Date.now();
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
@@ -3077,6 +3195,74 @@
     if(S.rr_timer) clearInterval(S.rr_timer);
     S.scenarioFailMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
     finish();
+  }
+
+  // ---------- Interval Sequence: cycles through user-configured phases,
+  // each with its own hold/rest length; cueing is timer-driven and fully
+  // automatic (not press-gated) so the app always keeps the beat regardless
+  // of what the user does — the press/release is tracked passively for
+  // feedback and stats only (see ivPressStart/ivPressEnd). ----------
+  function ivStartCycle(state){
+    const phase = S.iv_phases[S.iv_phaseIdx];
+    S.iv_cycleState = state;
+    S.iv_cycleEndTs = Date.now() + (state==="hold" ? phase.holdMs : phase.restMs);
+    if(state==="hold"){
+      setCue("up", S.words.down, "");
+      cmd("down");
+    } else {
+      setCue("rest", S.words.up, "");
+      cmd("up");
+    }
+  }
+  function ivTick(){
+    if(!S || S.scenario !== "interval"){ clearInterval(S.iv_timer); return; }
+    const now = Date.now();
+    const phaseRemain = Math.max(0, (S.iv_phaseEndTs - now) / 1000);
+    $("swRest").textContent = fmtSW(phaseRemain);
+    const cycleRemain = Math.max(0, (S.iv_cycleEndTs - now) / 1000);
+    $("timer").textContent = fmtSW(cycleRemain);
+    $("subcue").textContent = S.iv_cycleState === "hold"
+      ? T().ivHoldingSub(Math.ceil(cycleRemain))
+      : T().ivRestingSub(Math.ceil(cycleRemain));
+
+    if(cycleRemain <= 0){
+      ivStartCycle(S.iv_cycleState === "hold" ? "rest" : "hold");
+    }
+
+    if(phaseRemain <= 0){
+      S.iv_phaseIdx++;
+      if(S.iv_phaseIdx >= S.iv_phases.length){
+        S.scenarioFailMsg = T().ivComplete(S.iv_phases.length);
+        finish();
+        return;
+      }
+      S.iv_phaseEndTs = now + S.iv_phases[S.iv_phaseIdx].durMs;
+      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().ivPhaseOfLabel(S.iv_phaseIdx+1, S.iv_phases.length);
+      ivStartCycle("hold");
+    }
+  }
+  function ivPressStart(){
+    if(S.waitingStart) bootFirstPress();
+    S.swHoldStartTs = Date.now();
+    holding = true;
+    applyScreenColor();
+    $("holdBtn").classList.add("holding");
+    $("btnLab").textContent = T().holding;
+  }
+  function ivPressEnd(){
+    const heldSec = Math.max(0, (Date.now() - S.swHoldStartTs)/1000);
+    releaseHold();
+    $("holdBtn").classList.remove("holding");
+    $("btnLab").textContent = T().pressToStart;
+    S.done = (S.done||0) + 1;
+    $("repNow").textContent = S.done;
+    S.holdSec = (S.holdSec||0) + heldSec;
+    if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;
+    const heldSecRounded = Math.round(heldSec);
+    if(heldSecRounded > (S.pr||0) && !S.prBeaten && S.prAnnounce){
+      S.prBeaten = true;
+      say(T().newRecord(heldSecRounded));
+    }
   }
 
   let clockTimer = 0;
@@ -3365,6 +3551,7 @@
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
     if (S && S.rr_timer) clearInterval(S.rr_timer);
+    if (S && S.iv_timer) clearInterval(S.iv_timer);
 
     progressStop();
     $("swStats").classList.add("hidden");

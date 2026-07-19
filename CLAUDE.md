@@ -34,8 +34,8 @@ top of that block.
 ## Core architecture at a glance
 
 **Global session state**: a single object `S` (declared `let S = null;` at
-`index.html:2249`) holds everything about the in-flight session. It's built
-by `buildPlan()` (`index.html:2326`) at session start and set back to `null`
+`index.html:2344`) holds everything about the in-flight session. It's built
+by `buildPlan()` (`index.html:2421`) at session start and set back to `null`
 at the end of `finish()`/`stopSession()`. Many fields are *not* set in
 `buildPlan()` — they're added ad hoc by whichever function first needs them
 (rep counters, scenario phase fields, timer handles). See
@@ -51,7 +51,7 @@ centralized behind `resumeHeldRelease(loopFn)` and `releaseHold()` — see
 same helpers.
 
 **Two parallel session paths**, forking at the shared entry points
-`pressStart()`/`pressEnd()` (`index.html:3238`/`3269`) based on
+`pressStart()`/`pressEnd()` (`index.html:3424`/`3455`) based on
 `S.goal === "scenario"`:
 
 - **Reps / Time** (`S.goal` = `"reps"` or `"time"`): `armReady()` →
@@ -59,19 +59,27 @@ same helpers.
   → back to `beginRep()`. This is the only path with the strict-mode /
   penalty / late-start-tolerance system (`S.strict`, `S.penalty`,
   `S.lateTol`, `startReactionWindow()`).
-- **Scenario** (`S.goal === "scenario"`, 6 sub-modes — see table below):
+- **Scenario** (`S.goal === "scenario"`, 7 sub-modes — see table below):
   `armReadyScenario()` → `bootFirstPress()` → `pressStartStopwatch()` /
   `pressEndStopwatch()` → `finalizeStopwatchRelease()`, driven by
   `stopwatchHoldLoop()` (timestamp-based, not delta-integrated) plus
-  per-scenario timers (`S.sd_timer`, `S.rr_timer`).
+  per-scenario timers (`S.sd_timer`, `S.rr_timer`, `S.iv_timer`).
+  `interval` is architecturally the odd one out: it bypasses
+  `finalizeStopwatchRelease()`/`stopwatchHoldLoop()` entirely (own
+  `ivPressStart()`/`ivPressEnd()`/`ivTick()`, `index.html:3244`/`3252`/
+  `3217`) because its cueing is fully automatic and timer-driven —
+  hold/rest cues advance on the app's own clock regardless of whether the
+  user is actually pressing; the physical press is tracked passively
+  (`holding`-driven screen-color feedback + stats only), it never gates
+  cue timing. Every other scenario in the table below *is* press-gated.
 
-Both paths funnel into `finish()` (`index.html:3379`) on success/game-over —
+Both paths funnel into `finish()` (`index.html:3566`) on success/game-over —
 this is what records history/gamification. Manually hitting Stop always
-calls `stopSession()` (`index.html:3435`) instead, for both session types:
+calls `stopSession()` (`index.html:3622`) instead, for both session types:
 an aborted session is never recorded, only a natural end is.
 
 **Scenario engine** (dispatch table, all set up in `armReadyScenario()`,
-`index.html:2528`):
+`index.html:2633`):
 
 | Scenario | Phase concept | Timer |
 |---|---|---|
@@ -81,6 +89,7 @@ an aborted session is never recorded, only a natural end is.
 | `sd_mixed` | `S.sd_phase`: action → hold → pause | own `S.sd_timer` |
 | `timeattack` | none — accumulate hold time to a target | none (RAF-driven) |
 | `rhythm` | implicit, via `S.rr_level`/`S.rr_countIn` | own `S.rr_timer` |
+| `interval` | `S.iv_phaseIdx` (0..N-1) × `S.iv_cycleState` (hold/rest) — user-configured 2–6 phases, each with its own duration/hold/rest length | own `S.iv_timer`, fully automatic cueing (not press-gated, see above) |
 
 Naming is **not** consistent across scenarios (`sd_`/`sw`/`ta_`/`rr_`
 prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
@@ -88,14 +97,14 @@ prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
 field; check `ARCHITECTURE.md § Scenario engine` or grep.
 
 **Cue/feedback layer**: three *different*, overlapping small dispatchers —
-`setCue(kind,...)` (`index.html:3194`, `kind` ∈ `"up"/"down"/"rest"`, also
-always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2155`, `kind` ∈
+`setCue(kind,...)` (`index.html:3380`, `kind` ∈ `"up"/"down"/"rest"`, also
+always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2232`, `kind` ∈
 `"down"/"up"/"hold"`, drives speech+beep+vibrate), and `tick(kind)`
-(`index.html:2135`, lighter beep+vibrate only, for rapid action-phase taps).
+(`index.html:2212`, lighter beep+vibrate only, for rapid action-phase taps).
 Don't confuse `setCue`'s and `cmd`'s `kind` — they share two string values
 but are different enumerations for different purposes.
 
-**Screen-color mode** (`applyScreenColor()`, `index.html:2483`): two overlay
+**Screen-color mode** (`applyScreenColor()`, `index.html:2588`): two overlay
 layers, `#screenColorLayer` (slow ambient fill) and
 `#screenColorBorderLayer` (instant, fully-opaque 10px border using the
 theme's `--good`/`--rise`/`--bad` vars) — both driven by the same 3-state
@@ -105,8 +114,10 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1706`, 41 element
-IDs) + `KV`/`readAll()`/`writeAll()` (`index.html:932`/`1715`) round-trip
+**Settings / persistence**: `SETTING_IDS` (`index.html:1779`, 60 element
+IDs — 19 of them are the Interval Sequence scenario's per-phase fields,
+`ivPhaseCount` + `ivDur1..6`/`ivHold1..6`/`ivRest1..6`) +
+`KV`/`readAll()`/`writeAll()` (`index.html:986`/`1792`) round-trip
 the whole settings form through `localStorage` key `lat.settings`.
 `buildPlan()` independently re-reads the same DOM elements (with its own
 clamping) rather than reusing `readAll()`'s output — a dual-source-of-truth
@@ -114,9 +125,9 @@ pattern to keep in mind if you add a new setting (wire it into *both*
 `SETTING_IDS` and `buildPlan()`, and usually `updateSummaries()` too). This
 one is still open — see `ARCHITECTURE.md § Known Issues`.
 
-**i18n**: `I18N` object (`index.html:940`) defines 11 languages; only
+**i18n**: `I18N` object (`index.html:994`) defines 11 languages; only
 `de`/`en` are complete (fully in sync key-for-key) and exposed via
-`SUPPORTED_LANGS = ["de","en"]` (`index.html:1414`) — the other 9 are
+`SUPPORTED_LANGS = ["de","en"]` (`index.html:1486`) — the other 9 are
 intentional stubs, not dead code, not reachable. `T()` merges `en.strings`
 (fallback) with the active language. All six scenarios (including the
 Sudden Death family and Time Attack, which used to bypass this) now route
@@ -146,16 +157,16 @@ Still open, deliberately left as documented rather than fixed:
 
 ## Camera control & Lives system (one-liners — see `ARCHITECTURE.md` for detail)
 
-- Camera control (`index.html:3446` on) drives the exact same
+- Camera control (`index.html:3633` on) drives the exact same
   `pressStart()`/`pressEnd()` as touch/keyboard via `camOnPress()`/
   `camOnRelease()` — it's a genuine drop-in input source, works in every
   session type. Mid-session stream loss (permission revoked, device
   unplugged) is now detected (`camWatchStreamTracks()`) and surfaced with a
   `camStreamLost` message instead of silently freezing.
-- Lives system (`tryLoseLife()`, `index.html:2474`) is wired into exactly
-  `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack` have
-  no fail condition, so lives are structurally inapplicable there
-  (`scenarioSupportsLives()`, `index.html:2208`).
+- Lives system (`tryLoseLife()`, `index.html:2579`) is wired into exactly
+  `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack`/
+  `interval` have no fail condition, so lives are structurally inapplicable
+  there (`scenarioSupportsLives()`, `index.html:2285`).
 
 ## Workflow notes for this repo
 
