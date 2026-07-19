@@ -514,51 +514,27 @@
             <div class="hint" data-i18n="hintIvPhaseCount">How many phases the sequence runs through (2–6), each with its own duration, hold, and rest length.</div>
             <div class="field" id="ivPhaseRow1" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead1">Phase 1</span>
-              <div class="row3">
-                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur1" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold1" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest1" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
-              </div>
+              <select id="ivPhasePreset1" aria-label="Phase 1 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
             <div class="field" id="ivPhaseRow2" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead2">Phase 2</span>
-              <div class="row3">
-                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur2" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold2" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest2" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
-              </div>
+              <select id="ivPhasePreset2" aria-label="Phase 2 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
             <div class="field" id="ivPhaseRow3" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead3">Phase 3</span>
-              <div class="row3">
-                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur3" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold3" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest3" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
-              </div>
+              <select id="ivPhasePreset3" aria-label="Phase 3 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
             <div class="field hidden" id="ivPhaseRow4" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead4">Phase 4</span>
-              <div class="row3">
-                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur4" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold4" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest4" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
-              </div>
+              <select id="ivPhasePreset4" aria-label="Phase 4 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
             <div class="field hidden" id="ivPhaseRow5" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead5">Phase 5</span>
-              <div class="row3">
-                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur5" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold5" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest5" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
-              </div>
+              <select id="ivPhasePreset5" aria-label="Phase 5 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
             <div class="field hidden" id="ivPhaseRow6" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead6">Phase 6</span>
-              <div class="row3">
-                <div><span class="sublbl" data-i18n="sublblIvDur">Duration (s)</span><input id="ivDur6" type="number" min="5" max="1800" step="1" value="60" aria-label="Phase duration in seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvHold">Hold (s)</span><input id="ivHold6" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase hold seconds"></div>
-                <div><span class="sublbl" data-i18n="sublblIvRest">Rest (s)</span><input id="ivRest6" type="number" min="1" max="120" step="0.5" value="4" aria-label="Phase rest seconds"></div>
-              </div>
+              <select id="ivPhasePreset6" aria-label="Phase 6 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
           </div>
           <div class="field hidden" id="livesField" style="margin:12px 0 0">
@@ -1155,14 +1131,13 @@
         rrMiss:"Beat verpasst", rrEarly:"zu früh", rrLate:"zu spät",
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} Treffer · ${bpm} BPM`,
         rhythmGetReady:"Achtung…", rhythmGo:"Tippen!", rhythmTapBeat:"Auf jeden Beat tippen", rhythmTap:"Tippen",
-        scenarioInterval:"Intervall-Sequenz", hintInterval:"Durchläuft mehrere Phasen mit je eigener Halte-/Pausenzeit, die App gibt Halten/Loslassen automatisch im Takt vor. Endet automatisch nach der letzten Phase.",
-        labelIvPhaseCount:"Anzahl Phasen", hintIvPhaseCount:"Wie viele Phasen die Sequenz durchläuft (2–6), jeweils mit eigener Dauer, Halte- und Pausenzeit.",
-        sublblIvDur:"Dauer (s)", sublblIvHold:"Halten (s)", sublblIvRest:"Pause (s)",
+        scenarioInterval:"Intervall-Sequenz", hintInterval:"Durchläuft mehrere Phasen hintereinander, jede mit den Einstellungen eines gespeicherten Presets, das du zuweist — drücken, halten und loslassen genau wie im Rep-Modus, Phase für Phase.",
+        labelIvPhaseCount:"Anzahl Phasen", hintIvPhaseCount:"Wie viele Phasen die Sequenz durchläuft (2–6), jede mit dem Preset, das du ihr zuweist.",
         ariaIvPhaseCount:"Anzahl Phasen",
-        ariaIvDur:n=>`Phase ${n} Dauer in Sekunden`, ariaIvHold:n=>`Phase ${n} Haltezeit in Sekunden`, ariaIvRest:n=>`Phase ${n} Pausenzeit in Sekunden`,
+        ariaIvPhasePreset:n=>`Phase ${n} Preset`, errIvPhasePreset:n=>`Phase ${n} braucht ein gespeichertes Preset`,
         ivPhaseHeading:n=>`Phase ${n}`,
-        ivPhaseTimeLabel:"Phasen-Zeit", ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
-        ivHoldingSub:s=>`Halten · ${s}s`, ivRestingSub:s=>`Loslassen · ${s}s`,
+        ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
+        ivPhaseLabel:"Phase", ivPresetLabel:"Preset",
         ivComplete:total=>`Sequenz abgeschlossen (${total} Phasen).`,
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
@@ -1333,14 +1308,13 @@
         rrMiss:"missed beat", rrEarly:"too early", rrLate:"too late",
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} hits · ${bpm} BPM`,
         rhythmGetReady:"Get ready…", rhythmGo:"Tap!", rhythmTapBeat:"Tap on every beat", rhythmTap:"Tap",
-        scenarioInterval:"Interval Sequence", hintInterval:"Runs through several phases, each with its own hold/rest length — the app cues hold/release automatically on the beat. Ends automatically after the last phase.",
-        labelIvPhaseCount:"Number of phases", hintIvPhaseCount:"How many phases the sequence runs through (2–6), each with its own duration, hold, and rest length.",
-        sublblIvDur:"Duration (s)", sublblIvHold:"Hold (s)", sublblIvRest:"Rest (s)",
+        scenarioInterval:"Interval Sequence", hintInterval:"Runs through several phases back-to-back, each using the settings of a saved preset you assign — press, hold, and release exactly like Reps mode, phase by phase.",
+        labelIvPhaseCount:"Number of phases", hintIvPhaseCount:"How many phases the sequence runs through (2–6), each using the preset you assign it.",
         ariaIvPhaseCount:"Number of phases",
-        ariaIvDur:n=>`Phase ${n} duration in seconds`, ariaIvHold:n=>`Phase ${n} hold length in seconds`, ariaIvRest:n=>`Phase ${n} rest length in seconds`,
+        ariaIvPhasePreset:n=>`Phase ${n} preset`, errIvPhasePreset:n=>`Phase ${n} needs a saved preset selected`,
         ivPhaseHeading:n=>`Phase ${n}`,
-        ivPhaseTimeLabel:"Phase time", ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
-        ivHoldingSub:s=>`Hold · ${s}s`, ivRestingSub:s=>`Release · ${s}s`,
+        ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
+        ivPhaseLabel:"Phase", ivPresetLabel:"Preset",
         ivComplete:total=>`Sequence complete (${total} phases).`,
         recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
@@ -1545,6 +1519,18 @@
     if(stored && stored.modeRest==="timing") curveMode.rest = "timing";
   }
   function saveCurves(){ KV.set(K.curves, {hold:curves.hold, rest:curves.rest, modeHold:curveMode.hold, modeRest:curveMode.rest}); }
+
+  function applyIvPhaseCurve(presetObj){
+    const c = presetObj && presetObj.curves;
+    if(c && Array.isArray(c.hold) && c.hold.length===CURVE_N && Array.isArray(c.rest) && c.rest.length===CURVE_N){
+      curves.hold = c.hold.slice(); curves.rest = c.rest.slice();
+      curveMode.hold = c.modeHold==="timing" ? "timing" : "random";
+      curveMode.rest = c.modeRest==="timing" ? "timing" : "random";
+    } else {
+      curves.hold = new Array(CURVE_N).fill(0); curves.rest = new Array(CURVE_N).fill(0);
+      curveMode.hold = "random"; curveMode.rest = "random";
+    }
+  }
 
   const CURVE_PRESETS = {
     uniform: i => 0.6,
@@ -1779,9 +1765,7 @@
   const SETTING_IDS = [
     "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
     "ivPhaseCount",
-    "ivDur1","ivDur2","ivDur3","ivDur4","ivDur5","ivDur6",
-    "ivHold1","ivHold2","ivHold3","ivHold4","ivHold5","ivHold6",
-    "ivRest1","ivRest2","ivRest3","ivRest4","ivRest5","ivRest6",
+    "ivPhasePreset1","ivPhasePreset2","ivPhasePreset3","ivPhasePreset4","ivPhasePreset5","ivPhasePreset6",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "voice","beep","vibrate","eyesClosed","guardExit","screenColor","cameraControl",
@@ -2106,18 +2090,26 @@
       `Last session: <b>${new Date(last.at).toLocaleString()}</b> · ${last.reps} reps · ${fmt(last.elapsed)}`;
   }
 
-  function refreshPresetSelect(){
-    const sel = $("presetSel"); if(!sel) return;
+  function populatePresetOptions(sel){
+    if(!sel) return;
+    const prev = sel.value;
     const p = KV.get(K.presets, {});
     const names = Object.keys(p).sort();
     sel.innerHTML = `<option value="">${T().optLoad}</option>` +
       names.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${n}</option>`).join("");
+    if(names.includes(prev)) sel.value = prev;
+  }
+  function refreshPresetSelect(){
+    populatePresetOptions($("presetSel"));
+    for(let i=1;i<=6;i++) populatePresetOptions($("ivPhasePreset"+i));
   }
   function presetSave(){
     const name = ($("presetName").value || "").trim();
     if(!name){ alert(T().errNoPresetName); return; }
     const p = KV.get(K.presets, {});
-    p[name] = readAll();
+    const snap = readAll();
+    snap.curves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
+    p[name] = snap;
     KV.set(K.presets, p);
     refreshPresetSelect();
     $("presetSel").value = name;
@@ -2128,6 +2120,9 @@
     const p = KV.get(K.presets, {});
     if(!p[name]) return;
     writeAll(p[name]);
+    applyIvPhaseCurve(p[name]);
+    saveCurves();
+    drawCurve("hold"); drawCurve("rest");
     $("presetName").value = name;
     saveSettingsNow();
   }
@@ -2307,9 +2302,7 @@
     const t = T();
     for(let i=1;i<=6;i++){
       const head = $("ivPhaseHead"+i); if(head) head.textContent = t.ivPhaseHeading(i);
-      const dur = $("ivDur"+i); if(dur) dur.setAttribute("aria-label", t.ariaIvDur(i));
-      const hold = $("ivHold"+i); if(hold) hold.setAttribute("aria-label", t.ariaIvHold(i));
-      const rest = $("ivRest"+i); if(rest) rest.setAttribute("aria-label", t.ariaIvRest(i));
+      const sel = $("ivPhasePreset"+i); if(sel) sel.setAttribute("aria-label", t.ariaIvPhasePreset(i));
     }
   }
   $("scenarioSel").addEventListener("change", ()=>{ applyScenarioVisibility(); updateScenarioHint(); });
@@ -2415,24 +2408,44 @@
       if($("penalty").checked && !(num("penaltyX")>=1)) return t.errPenaltyAmount;
       if($("penalty").checked && !(num("lateTol")>=1)) return t.errLateTolMin;
     }
+    if(goal==="scenario" && $("scenarioSel").value === "interval"){
+      const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
+      const presets = KV.get(K.presets, {});
+      for(let i=1;i<=n;i++){
+        const name = $("ivPhasePreset"+i).value;
+        if(!name || !presets[name]) return t.errIvPhasePreset(i);
+      }
+    }
     return null;
+  }
+
+  // Populates the Reps-mode difficulty fields (rep count, hold/rest ranges,
+  // strict/penalty/lateTol/hideDur) on `cfg` from any object shaped like
+  // readAll()'s output — which is exactly what a saved preset already is.
+  // Shared by buildPlan()'s baseline and by Interval Sequence's per-phase
+  // preset application (ivAdvancePhase()).
+  function applyRepsConfig(cfg, src){
+    const n  = id => parseInt(src[id], 10);
+    const fn = id => parseFloat(src[id]);
+    cfg.base         = fn("baseHold");
+    cfg.chance       = n("holdChance");
+    cfg.minHold      = n("minHold");
+    cfg.maxHold      = n("maxHold");
+    cfg.minRest      = n("minRest");
+    cfg.maxRest      = n("maxRest");
+    cfg.releaseGrace = Math.max(0, n("releaseGrace") || 0);
+    cfg.strict       = !!src.strict;
+    cfg.penalty      = !!src.penalty;
+    cfg.penaltyX     = n("penaltyX") || 0;
+    cfg.lateTol      = n("lateTol") || 0;
+    cfg.hide         = !!src.hideDur;
+    cfg.totalReps    = rand(n("minReps"), n("maxReps"));
+    return cfg;
   }
 
   function buildPlan(){
     const cfg = {
       goal,
-      base: fnum("baseHold"),
-      chance: num("holdChance"),
-      minHold: num("minHold"),
-      maxHold: num("maxHold"),
-      minRest: num("minRest"),
-      maxRest: num("maxRest"),
-      releaseGrace: Math.max(0, num("releaseGrace") || 0),
-      strict: $("strict").checked,
-      penalty: $("penalty").checked,
-      penaltyX: num("penaltyX") || 0,
-      lateTol: num("lateTol") || 0,
-      hide: $("hideDur").checked,
       armed: false,
       progressTone: $("progressTone").checked,
       prAnnounce: $("prAnnounce").checked,
@@ -2456,7 +2469,7 @@
       guardExit: $("guardExit").checked,
       screenColor: $("screenColor").checked,
     };
-    let reps;
+    applyRepsConfig(cfg, readAll());   // baseline reps-shaped fields; overridden per phase for Interval Sequence, nulled below for time/other-scenario goals
     if(goal==="scenario"){
       cfg.scenario = $("scenarioSel").value || "stopwatch";
       const actSec = Math.min(600, Math.max(5, Math.round(parseFloat($("sdActionSec").value) || 60)));
@@ -2470,24 +2483,24 @@
       cfg.rr_step = Math.min(40, Math.max(1, Math.round(parseFloat($("rrStep").value) || 8)));
       cfg.livesOn = $("livesOn").checked;
       cfg.livesCount = Math.min(9, Math.max(1, Math.round(parseFloat($("livesCount").value) || 3)));
-      cfg.iv_phaseCount = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
-      cfg.iv_phases = [];
-      for(let i=1;i<=6;i++){
-        cfg.iv_phases.push({
-          durMs:  Math.min(1800000, Math.max(5000, Math.round((parseFloat($("ivDur"+i).value)  || 60) * 1000))),
-          holdMs: Math.min(120000,  Math.max(1000, Math.round((parseFloat($("ivHold"+i).value) || 4)  * 1000))),
-          restMs: Math.min(120000,  Math.max(1000, Math.round((parseFloat($("ivRest"+i).value) || 4)  * 1000))),
-        });
+      if(cfg.scenario === "interval"){
+        const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
+        cfg.iv_phasePresets = [1,2,3,4,5,6].map(i => $("ivPhasePreset"+i).value || "").slice(0, n);
+        cfg.iv_phaseIdx = 0;
+        cfg.iv_totalDone = 0;
+        const presets = KV.get(K.presets, {});
+        const p0 = presets[cfg.iv_phasePresets[0]] || {};
+        applyRepsConfig(cfg, p0);       // phase 1's own preset overrides the baseline
+        cfg.iv_savedCurves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
+        applyIvPhaseCurve(p0);
+      } else {
+        cfg.totalReps = null;
       }
-      cfg.iv_phases.length = cfg.iv_phaseCount;
-      reps = null;
     } else if(goal==="time"){
-      reps = null; 
-      cfg.totalMin = num("totalMin"); 
-    } else {
-      reps = rand(num("minReps"), num("maxReps"));
+      cfg.totalMin = num("totalMin");
+      cfg.totalReps = null;
     }
-    cfg.totalReps = reps;
+    // goal==="reps": cfg.totalReps is already correctly rolled by applyRepsConfig(cfg, readAll()) above
     return cfg;
   }
 
@@ -2534,7 +2547,7 @@
 
   function armReady(){
     if(!S) return;
-    if(S.goal === "scenario") return armReadyScenario();
+    if(S.goal === "scenario" && S.scenario !== "interval") return armReadyScenario();
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
     S.spokeHold = false;
@@ -2551,6 +2564,10 @@
     S.waitingStart = true;   
     setTapSurface(S.eyesClosed);
     $("clock").textContent = (S.goal==="time") ? ("0:00 / " + fmtTime(S.totalMin*60)) : "0:00";
+    if(S.scenario === "interval"){
+      $("swStats").classList.remove("hidden");
+      ivUpdatePhaseIndicator();
+    }
   }
 
   // ---------- lives system: survive a fail instead of instant game over ----------
@@ -2705,10 +2722,6 @@
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().rhythmLevelLabel;
       document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().rhythmHitsLabel;
       rhythmStart();
-    } else if (S.scenario === "interval") {
-      $("swRest").textContent = fmtSW(S.iv_phases[0].durMs/1000);
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().ivPhaseTimeLabel;
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().ivPhaseOfLabel(1, S.iv_phases.length);
     }
   }
 
@@ -2856,13 +2869,6 @@
        }, 100);
     }
 
-    if(S.scenario==="interval") {
-      S.iv_phaseIdx = 0;
-      S.iv_phaseEndTs = S.startTime + S.iv_phases[0].durMs;
-      ivStartCycle("hold");
-      S.iv_timer = setInterval(ivTick, 100);
-    }
-
     startClock();
     acquireWake();
     const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
@@ -2893,7 +2899,6 @@
   let swRestTimer = 0;
   function pressStartStopwatch(){
     if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
-    if(S && S.scenario === "interval"){ ivPressStart(); return; }
     if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
     if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
 
@@ -2969,7 +2974,6 @@
     raf = requestAnimationFrame(stopwatchHoldLoop);
   }
   function pressEndStopwatch(){
-    if(S && S.scenario === "interval"){ ivPressEnd(); return; }
     releaseHold();
     S.swReleaseTs = Date.now();
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
@@ -3197,74 +3201,6 @@
     finish();
   }
 
-  // ---------- Interval Sequence: cycles through user-configured phases,
-  // each with its own hold/rest length; cueing is timer-driven and fully
-  // automatic (not press-gated) so the app always keeps the beat regardless
-  // of what the user does — the press/release is tracked passively for
-  // feedback and stats only (see ivPressStart/ivPressEnd). ----------
-  function ivStartCycle(state){
-    const phase = S.iv_phases[S.iv_phaseIdx];
-    S.iv_cycleState = state;
-    S.iv_cycleEndTs = Date.now() + (state==="hold" ? phase.holdMs : phase.restMs);
-    if(state==="hold"){
-      setCue("up", S.words.down, "");
-      cmd("down");
-    } else {
-      setCue("rest", S.words.up, "");
-      cmd("up");
-    }
-  }
-  function ivTick(){
-    if(!S || S.scenario !== "interval"){ clearInterval(S.iv_timer); return; }
-    const now = Date.now();
-    const phaseRemain = Math.max(0, (S.iv_phaseEndTs - now) / 1000);
-    $("swRest").textContent = fmtSW(phaseRemain);
-    const cycleRemain = Math.max(0, (S.iv_cycleEndTs - now) / 1000);
-    $("timer").textContent = fmtSW(cycleRemain);
-    $("subcue").textContent = S.iv_cycleState === "hold"
-      ? T().ivHoldingSub(Math.ceil(cycleRemain))
-      : T().ivRestingSub(Math.ceil(cycleRemain));
-
-    if(cycleRemain <= 0){
-      ivStartCycle(S.iv_cycleState === "hold" ? "rest" : "hold");
-    }
-
-    if(phaseRemain <= 0){
-      S.iv_phaseIdx++;
-      if(S.iv_phaseIdx >= S.iv_phases.length){
-        S.scenarioFailMsg = T().ivComplete(S.iv_phases.length);
-        finish();
-        return;
-      }
-      S.iv_phaseEndTs = now + S.iv_phases[S.iv_phaseIdx].durMs;
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().ivPhaseOfLabel(S.iv_phaseIdx+1, S.iv_phases.length);
-      ivStartCycle("hold");
-    }
-  }
-  function ivPressStart(){
-    if(S.waitingStart) bootFirstPress();
-    S.swHoldStartTs = Date.now();
-    holding = true;
-    applyScreenColor();
-    $("holdBtn").classList.add("holding");
-    $("btnLab").textContent = T().holding;
-  }
-  function ivPressEnd(){
-    const heldSec = Math.max(0, (Date.now() - S.swHoldStartTs)/1000);
-    releaseHold();
-    $("holdBtn").classList.remove("holding");
-    $("btnLab").textContent = T().pressToStart;
-    S.done = (S.done||0) + 1;
-    $("repNow").textContent = S.done;
-    S.holdSec = (S.holdSec||0) + heldSec;
-    if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;
-    const heldSecRounded = Math.round(heldSec);
-    if(heldSecRounded > (S.pr||0) && !S.prBeaten && S.prAnnounce){
-      S.prBeaten = true;
-      say(T().newRecord(heldSecRounded));
-    }
-  }
-
   let clockTimer = 0;
   function fmtTime(totalSec){
     totalSec = Math.max(0, Math.floor(totalSec));
@@ -3289,10 +3225,42 @@
 
   function timeUp(){ return S.goal==="time" && S.endAt && Date.now() >= S.endAt; }
 
+  function ivUpdatePhaseIndicator(){
+    if(!S || S.scenario !== "interval") return;
+    $("swStats").classList.remove("hidden");
+    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().ivPhaseLabel;
+    $("swRest").textContent = T().ivPhaseOfLabel(S.iv_phaseIdx+1, S.iv_phasePresets.length);
+    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().ivPresetLabel;
+    $("swLongest").textContent = S.iv_phasePresets[S.iv_phaseIdx] || "";
+  }
+
+  function ivAdvancePhase(){
+    if(!S || S.scenario !== "interval") return false;
+    S.iv_phaseIdx++;
+    if(S.iv_phaseIdx >= S.iv_phasePresets.length) return false;
+    const presets = KV.get(K.presets, {});
+    const p = presets[S.iv_phasePresets[S.iv_phaseIdx]] || {};
+    applyRepsConfig(S, p);
+    applyIvPhaseCurve(p);
+    S.done = 0;
+    $("repTotalWrap").style.display = S.totalReps ? "" : "none";
+    $("repTotal").textContent = S.totalReps || "";
+    $("repNow").textContent = 0;
+    ivUpdatePhaseIndicator();
+    return true;
+  }
+
   function nextRep(first){
     if(!S) return;
-    S.armed = false;   
-    if(S.totalReps && S.done >= S.totalReps) return finish();
+    S.armed = false;
+    if(S.totalReps && S.done >= S.totalReps){
+      if(S.scenario === "interval" && ivAdvancePhase()){
+        // fall through into the rest-countdown/beginRep() below, now using the new phase's freshly-applied config
+      } else {
+        if(S.scenario === "interval") S.scenarioFailMsg = T().ivComplete(S.iv_phasePresets.length);
+        return finish();
+      }
+    }
     if(timeUp()) return finish();
 
     const restSecs = restSecsForNext();
@@ -3422,9 +3390,9 @@
   }
 
   function pressStart(){
-    if(!S || !S.armed) return;   
+    if(!S || !S.armed) return;
     if(holding) return;
-    if(S.goal === "scenario"){
+    if(S.goal === "scenario" && S.scenario !== "interval"){
       pressStartStopwatch();
       return;
     }
@@ -3454,7 +3422,7 @@
 
   function pressEnd(){
     if(!holding) return;
-    if(S && S.goal === "scenario"){
+    if(S && S.goal === "scenario" && S.scenario !== "interval"){
       pressEndStopwatch();
       return;
     }
@@ -3532,6 +3500,7 @@
       say(T().newRecord(heldSec));
     }
     S.done++;
+    if(S.scenario === "interval") S.iv_totalDone = (S.iv_totalDone||0) + 1;   // S.done is per-phase for interval (reset in ivAdvancePhase()); this tracks the true cross-phase total
     S.holdSec = (S.holdSec || 0) + heldSec;
     setCue("down", S.words.up, T().release);
     cmd("up");
@@ -3551,7 +3520,13 @@
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
     if (S && S.rr_timer) clearInterval(S.rr_timer);
-    if (S && S.iv_timer) clearInterval(S.iv_timer);
+
+    if(S && S.iv_savedCurves){
+      curves.hold = S.iv_savedCurves.hold.slice();
+      curves.rest = S.iv_savedCurves.rest.slice();
+      curveMode.hold = S.iv_savedCurves.modeHold;
+      curveMode.rest = S.iv_savedCurves.modeRest;
+    }
 
     progressStop();
     $("swStats").classList.add("hidden");
@@ -3565,7 +3540,7 @@
 
   function finish(){
     teardownSessionTimers();
-    const total = S ? S.done : 0;
+    const total = S ? (S.scenario === "interval" ? (S.iv_totalDone||0) : S.done) : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
     $("doneNum").textContent = total;
     if (S && S.scenarioFailMsg) {
