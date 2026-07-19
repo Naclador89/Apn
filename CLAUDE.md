@@ -27,28 +27,31 @@ CLAUDE.md              this file
 ARCHITECTURE.md         deep technical reference
 ```
 
-`index.html`'s `<script>` block runs `926`–`3749`, wrapped in a single
+`index.html`'s `<script>` block runs `926`–`3855`, wrapped in a single
 `"use strict"` IIFE. `$(id)` is a `getElementById` shorthand defined near the
 top of that block.
 
 ## Core architecture at a glance
 
 **Global session state**: a single object `S` (declared `let S = null;` at
-`index.html:2159`) holds everything about the in-flight session. It's built
-by `buildPlan()` (`index.html:2235`) at session start and set back to `null`
+`index.html:2249`) holds everything about the in-flight session. It's built
+by `buildPlan()` (`index.html:2326`) at session start and set back to `null`
 at the end of `finish()`/`stopSession()`. Many fields are *not* set in
 `buildPlan()` — they're added ad hoc by whichever function first needs them
 (rep counters, scenario phase fields, timer handles). See
 `ARCHITECTURE.md § Global state` for the full field table.
 
 Module-level state sits right above `S`: `holding` (is the hold currently
-active — mutated at 13 call sites, no shared setter), `lastCueKind`,
-`curScreenColorState`, and the various timer handles (`restTimer`,
-`reactTimer`, `swRestTimer`, `clockTimer`, `releaseTimer`), plus the `cam`
-object for camera control.
+active), `lastCueKind`, `curScreenColorState`, and the various timer handles
+(`restTimer`, `reactTimer`, `swRestTimer`, `clockTimer`, `releaseTimer`),
+plus the `cam` object for camera control. `holding` is set directly at 9
+call sites; the two that were verified near-verbatim duplicates are
+centralized behind `resumeHeldRelease(loopFn)` and `releaseHold()` — see
+`ARCHITECTURE.md § Known Issues` for why the other 7 weren't forced into the
+same helpers.
 
 **Two parallel session paths**, forking at the shared entry points
-`pressStart()`/`pressEnd()` (`index.html:3139`/`3177`) based on
+`pressStart()`/`pressEnd()` (`index.html:3238`/`3269`) based on
 `S.goal === "scenario"`:
 
 - **Reps / Time** (`S.goal` = `"reps"` or `"time"`): `armReady()` →
@@ -62,14 +65,13 @@ object for camera control.
   `stopwatchHoldLoop()` (timestamp-based, not delta-integrated) plus
   per-scenario timers (`S.sd_timer`, `S.rr_timer`).
 
-Both paths funnel into `finish()` (`index.html:3266`) on success/game-over.
-Manually hitting Stop calls `finish()` for scenario sessions but
-`stopSession()` (`index.html:3334`, no history/gamification bookkeeping) for
-reps/time — this asymmetry is intentional-looking but undocumented; see
-`ARCHITECTURE.md § Known Issues`.
+Both paths funnel into `finish()` (`index.html:3379`) on success/game-over —
+this is what records history/gamification. Manually hitting Stop always
+calls `stopSession()` (`index.html:3435`) instead, for both session types:
+an aborted session is never recorded, only a natural end is.
 
 **Scenario engine** (dispatch table, all set up in `armReadyScenario()`,
-`index.html:2437`):
+`index.html:2528`):
 
 | Scenario | Phase concept | Timer |
 |---|---|---|
@@ -86,14 +88,14 @@ prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
 field; check `ARCHITECTURE.md § Scenario engine` or grep.
 
 **Cue/feedback layer**: three *different*, overlapping small dispatchers —
-`setCue(kind,...)` (`index.html:3095`, `kind` ∈ `"up"/"down"/"rest"`, also
-always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2065`, `kind` ∈
+`setCue(kind,...)` (`index.html:3194`, `kind` ∈ `"up"/"down"/"rest"`, also
+always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2155`, `kind` ∈
 `"down"/"up"/"hold"`, drives speech+beep+vibrate), and `tick(kind)`
-(`index.html:2045`, lighter beep+vibrate only, for rapid action-phase taps).
+(`index.html:2135`, lighter beep+vibrate only, for rapid action-phase taps).
 Don't confuse `setCue`'s and `cmd`'s `kind` — they share two string values
 but are different enumerations for different purposes.
 
-**Screen-color mode** (`applyScreenColor()`, `index.html:2392`): two overlay
+**Screen-color mode** (`applyScreenColor()`, `index.html:2483`): two overlay
 layers, `#screenColorLayer` (slow ambient fill) and
 `#screenColorBorderLayer` (instant, fully-opaque 10px border using the
 theme's `--good`/`--rise`/`--bad` vars) — both driven by the same 3-state
@@ -103,48 +105,57 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1616`, 40 element
-IDs) + `KV`/`readAll()`/`writeAll()` (`index.html:932`/`1625`/`1633`)
-round-trip the whole settings form through `localStorage` key
-`lat.settings`. `buildPlan()` independently re-reads the same DOM elements
-(with its own clamping) rather than reusing `readAll()`'s output — a
-dual-source-of-truth pattern to keep in mind if you add a new setting (wire
-it into *both* `SETTING_IDS` and `buildPlan()`, and usually
-`updateSummaries()` too).
+**Settings / persistence**: `SETTING_IDS` (`index.html:1706`, 41 element
+IDs) + `KV`/`readAll()`/`writeAll()` (`index.html:932`/`1715`) round-trip
+the whole settings form through `localStorage` key `lat.settings`.
+`buildPlan()` independently re-reads the same DOM elements (with its own
+clamping) rather than reusing `readAll()`'s output — a dual-source-of-truth
+pattern to keep in mind if you add a new setting (wire it into *both*
+`SETTING_IDS` and `buildPlan()`, and usually `updateSummaries()` too). This
+one is still open — see `ARCHITECTURE.md § Known Issues`.
 
 **i18n**: `I18N` object (`index.html:940`) defines 11 languages; only
-`de`/`en` are complete (207/207 keys each) and exposed via
-`SUPPORTED_LANGS = ["de","en"]` (`index.html:1328`) — the other 9 are
-intentional 27-key stubs, not dead code, not reachable. `T()` merges
-`en.strings` (fallback) with the active language. **Known gap**: the
-`sd_hold`/`sd_speed`/`sd_mixed`/`timeattack` scenario engines have large
-amounts of hardcoded German UI text that bypasses `T()` entirely — see
-`ARCHITECTURE.md § Known Issues` before touching those code paths.
+`de`/`en` are complete (fully in sync key-for-key) and exposed via
+`SUPPORTED_LANGS = ["de","en"]` (`index.html:1414`) — the other 9 are
+intentional stubs, not dead code, not reachable. `T()` merges `en.strings`
+(fallback) with the active language. All six scenarios (including the
+Sudden Death family and Time Attack, which used to bypass this) now route
+their UI text through `T()`; validation errors, `alert`/`confirm` dialogs,
+and `aria-label`s do too (`data-i18n-aria` + `applyRuntimeI18n()`).
 
 ## Known inconsistencies (condensed — see `ARCHITECTURE.md § Known Issues` for full detail)
 
-- Sudden Death (hold/speed/mixed) + Time Attack scenario text is mostly
-  hardcoded German, unlike `stopwatch`/`rhythm` which are properly localized.
-- `finish()`/`stopSession()` share a near-duplicated teardown block and
-  differ in whether they record history/gamification on early stop.
-- `holding` is mutated at 13 call sites with no shared setter; the
-  `pendingRelease`-resume logic is duplicated verbatim in two places.
-- Validation errors, some dialogs (`alert`/`confirm`), and `aria-label`s are
-  hardcoded English, bypassing `T()`.
-- A handful of magic numbers (150ms tap threshold, 650ms rep pacing delay,
-  camera adapt-alpha 0.03, rhythm ±260ms timing window) have no inline
-  explanation.
+Resolved in a follow-up pass (kept here as a record, not deleted): Sudden
+Death/Time Attack hardcoded-German text, the `finish()`/`stopSession()`
+history-recording asymmetry + duplicated teardown, the two verified
+`holding`-flag duplications, hardcoded validation/dialog/`aria-label`
+strings, missing camera stream-loss detection, and unexplained magic
+numbers.
+
+Still open, deliberately left as documented rather than fixed:
+- `readAll()`/`buildPlan()` dual source of truth for settings — can
+  silently diverge on out-of-range input.
+- Naming inconsistencies: `sw`/`sd_`/`ta_`/`rr_` prefixes don't map cleanly
+  to their scope; `S`'s scenario-state fields mix snake-ish prefixes with
+  the rest of `S`'s camelCase. Full rename = large diff for cosmetic gain.
+- Confetti palette and curve-editor stroke color hardcode hex values close
+  to but not identical to the theme's `--good`/`--bad`/`--rise` — a
+  subjective cosmetic call, not a bug.
+- 9 of 11 `I18N` languages are intentional stubs, gated off by
+  `SUPPORTED_LANGS`.
 
 ## Camera control & Lives system (one-liners — see `ARCHITECTURE.md` for detail)
 
-- Camera control (`index.html:3361` on) drives the exact same
+- Camera control (`index.html:3446` on) drives the exact same
   `pressStart()`/`pressEnd()` as touch/keyboard via `camOnPress()`/
   `camOnRelease()` — it's a genuine drop-in input source, works in every
-  session type. No mid-session stream-loss detection exists yet.
-- Lives system (`tryLoseLife()`, `index.html:2383`) is wired into exactly
+  session type. Mid-session stream loss (permission revoked, device
+  unplugged) is now detected (`camWatchStreamTracks()`) and surfaced with a
+  `camStreamLost` message instead of silently freezing.
+- Lives system (`tryLoseLife()`, `index.html:2474`) is wired into exactly
   `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack` have
   no fail condition, so lives are structurally inapplicable there
-  (`scenarioSupportsLives()`, `index.html:2118`).
+  (`scenarioSupportsLives()`, `index.html:2208`).
 
 ## Workflow notes for this repo
 

@@ -15,9 +15,9 @@ area**, rather than leaving it stale for the next reader.
 
 ### The `S` object
 
-Declared `let S = null;` at `index.html:2159`. Created by `buildPlan()`
-(`index.html:2235-2313`) at session start, discarded (`S = null`) at the end
-of both `finish()` (`index.html:3266`) and `stopSession()` (`index.html:3334`).
+Declared `let S = null;` at `index.html:2249`. Created by `buildPlan()`
+(`index.html:2326`) at session start, discarded (`S = null`) at the end
+of both `finish()` (`index.html:3379`) and `stopSession()` (`index.html:3435`).
 
 **Fields set in `buildPlan()`:**
 
@@ -56,11 +56,11 @@ function first needs them — this is most of the state):
   different call sites.
 - `S.armed`, `S.waitingStart` — input-gate flags.
 - `S.startTime`, `S.endAt` — session clock anchors, set in
-  `bootFirstPress()` (`index.html:2515`) and `rhythmStart()`
-  (`index.html:2918`) — **the wall clock starts on first press, not at
+  `bootFirstPress()` (`index.html:2606`) and `rhythmStart()`
+  (`index.html:3016`) — **the wall clock starts on first press, not at
   `buildPlan()`/`startSession()`**.
 - `S.livesMax`, `S.livesLeft` — lives system, set in `armReadyScenario()`,
-  mutated in `tryLoseLife()` (`index.html:2383`).
+  mutated in `tryLoseLife()` (`index.html:2474`).
 - Stopwatch-family (`sw`-prefixed, shared beyond just "stopwatch" — see
   § Known Issues): `S.swLongest`, `S.swLastReleaseTs`, `S.swHoldStartTs`,
   `S.swReleaseTs`.
@@ -68,8 +68,10 @@ function first needs them — this is most of the state):
   `sd_speed`/`sd_mixed` — see § Known Issues): `sd_phase`,
   `sd_repsThisPhase`, `sd_prevPhaseReps`, `sd_prevActionReps`, `sd_prevHold`,
   `sd_actionMsAcc`, `sd_mixedRounds`, `sd_holdTargetHit`, `sd_lastCountSec`,
-  `sd_phaseEndTs`, `sd_timer`, `sd_failMsg` (the last one is actually used by
-  **every** scenario, not just the `sd_` ones — a naming leftover).
+  `sd_phaseEndTs`, `sd_timer`.
+- `S.scenarioFailMsg` — the end-of-session Game Over / Time Attack / Rhythm
+  result message, used by **every** scenario. (Renamed from `S.sd_failMsg`,
+  which was misleadingly `sd_`-prefixed despite being scenario-generic.)
 - Time Attack: `S.ta_target` (from `buildPlan`) + ad hoc `S.taScore`.
 - Rhythm (`rr_`-prefixed): `S.rr_interval`, `S.rr_window`,
   `S.rr_beatsPerLevel`, `S.rr_hits`, `S.rr_level`, `S.rr_countIn`,
@@ -78,15 +80,15 @@ function first needs them — this is most of the state):
 - `S.holdSec` — cumulative held seconds across the whole session, touched
   in `completeRep()`/`finalizeStopwatchRelease()`/`taComplete()`.
 - `S.reactLeft` — late-start countdown, set in `startReactionWindow()`
-  (`index.html:3059`).
+  (`index.html:3158`).
 
 ### Other module-level state
 
-Declared near `let S = null;` (`index.html:2159` onward) unless noted:
+Declared near `let S = null;` (`index.html:2249` onward) unless noted:
 
 | Var | Purpose |
 |---|---|
-| `holding` | true while the hold is actively engaged — the single most-mutated flag in the file (13 assignment sites, see § Known Issues) |
+| `holding` | true while the hold is actively engaged — set directly at 9 call sites; the two verified duplicates are centralized behind `resumeHeldRelease(loopFn)` (`index.html:2759`) and `releaseHold()` (`index.html:2771`), see § Known Issues |
 | `lastCueKind` | last `kind` passed to `setCue()`; drives `applyScreenColor()`'s green/yellow decision |
 | `curScreenColorState` | last applied screen-color state, used to skip redundant class churn / restart CSS animations |
 | `raf` | current `requestAnimationFrame` handle — shared by `loop()` (reps/time) and `stopwatchHoldLoop()` (scenario); only one runs at a time |
@@ -100,14 +102,14 @@ Declared near `let S = null;` (`index.html:2159` onward) unless noted:
 | `clockTimer` | `setInterval` for the top clock display |
 | `lastTs` | last RAF timestamp for `loop()`'s delta-time integration (reps/time only — `stopwatchHoldLoop` reads `Date.now()` directly instead, an inconsistent timing strategy between the two paths) |
 | `keyHeld` | space/enter key debounce |
-| `cam` (`index.html:3361`) | camera-control module state — see § Camera control subsystem |
+| `cam` (`index.html:3446`) | camera-control module state — see § Camera control subsystem |
 
 ---
 
 ## 2. Session lifecycle
 
 ```
-startSession() [index.html:2315]
+startSession() [index.html:2406]
   → buildPlan()                          (builds S)
   → show("session")
   → armReady()  or  armReadyScenario()    (dispatch on S.goal === "scenario")
@@ -125,7 +127,7 @@ startSession() [index.html:2315]
   stopSession()     (user hits Stop — reps/time & stopwatch-family only)
 ```
 
-`pressStart()`/`pressEnd()` (`index.html:3139`/`3177`) are the **only**
+`pressStart()`/`pressEnd()` (`index.html:3238`/`3269`) are the **only**
 shared dispatch point between the two families. They're the single entry
 point for all input sources: the hold button, the eyes-closed tap surface,
 the space/enter key, and the camera (`camOnPress`/`camOnRelease`). Below
@@ -133,53 +135,55 @@ this dispatch point the two paths are almost entirely separate.
 
 ### Reps/Time path
 
-- `armReady()` (`index.html:2339`): arms the first rep, picks `S.cur` via
+- `armReady()` (`index.html:2430`): arms the first rep, picks `S.cur` via
   `holdDurationFor()`.
 - `pressStart()`: on `waitingStart`, calls `bootFirstPress()` (shared with
   scenario) to start the clock, then sets `holding=true` and kicks `loop()`.
-- `loop(ts)` (`index.html:3106`): RAF-driven, delta-time hold-progress
+- `loop(ts)` (`index.html:3205`): RAF-driven, delta-time hold-progress
   integration; calls `completeRep()` at target.
-- `pressEnd()` → `finalizeRelease()` (`index.html:3196`): strict-mode
+- `pressEnd()` → `finalizeRelease()` (`index.html:3286`): strict-mode
   restart, penalty, early-release messaging. **Only this path uses
   `S.strict`, `S.penalty`, `startReactionWindow`, `applyPenalty`.**
-- `completeRep()` (`index.html:3242`): finalizes a rep, updates
+- `completeRep()` (`index.html:3332`): finalizes a rep, updates
   `S.done`/`S.holdSec`/`S.longestHold`/PR, `setTimeout(650ms)` →
   `nextRep(false)`.
-- `nextRep(first)` (`index.html:3007`): checks end conditions, runs the rest
+- `nextRep(first)` (`index.html:3106`): checks end conditions, runs the rest
   countdown, calls `beginRep()`.
-- `beginRep()` (`index.html:3029`): mirrors `armReady()` for reps 2..N, also
+- `beginRep()` (`index.html:3128`): mirrors `armReady()` for reps 2..N, also
   calls `startReactionWindow()`.
 
 ### Scenario path
 
-- `armReadyScenario()` (`index.html:2437`): single dispatcher that inline-
+- `armReadyScenario()` (`index.html:2528`): single dispatcher that inline-
   initializes **all six** scenarios' fields in one large if/else chain, then
   calls `rhythmStart()` for `"rhythm"` as a special case (rhythm alone
   auto-starts, no press needed to boot).
-- `bootFirstPress()` (`index.html:2515`): shared boot logic (clock/wake-
+- `bootFirstPress()` (`index.html:2606`): shared boot logic (clock/wake-
   lock/guard) **plus** it owns the entire `S.sd_timer` `setInterval`
   definitions for `sd_speed` and `sd_mixed` — two full per-scenario state
   machines defined as anonymous closures inside this one function.
   `sd_hold`/`stopwatch`/`timeattack` have no equivalent timer (purely
   press/release driven); `rhythm` has its own separate `S.rr_timer` set up
   in `rhythmStart()`.
-- `pressStartStopwatch()` (`index.html:2669`): handles "start holding";
+- `pressStartStopwatch()` (`index.html:2778`): handles "start holding";
   delegates immediately to `rhythmTap()` if scenario is `rhythm` — rhythm
-  doesn't "hold", it taps, but is routed through the same entry point.
-- `pressEndStopwatch()` (`index.html:2754`) → `finalizeStopwatchRelease()`
-  (`index.html:2768`): ~120-line function with a big if/else-if chain over
+  doesn't "hold", it taps, but is routed through the same entry point. The
+  release-grace resume branch now calls the shared `resumeHeldRelease()`
+  helper (`index.html:2759`, see § Known Issues).
+- `pressEndStopwatch()` (`index.html:2854`) → `finalizeStopwatchRelease()`
+  (`index.html:2866`): ~120-line function with a big if/else-if chain over
   `S.scenario` (`sd_hold`, `sd_mixed`, `sd_speed`, else), duplicating much
   of what `completeRep()`/`finalizeRelease()` do for reps/time, reimplemented
   scenario-by-scenario.
-- `stopwatchHoldLoop()` (`index.html:2722`): the scenario equivalent of
+- `stopwatchHoldLoop()` (`index.html:2822`): the scenario equivalent of
   `loop()`, but `Date.now()`-based rather than delta-integrated; also
   special-cases `timeattack` (calls `taComplete`) and `sd_mixed`'s hold
   phase inline. Its guard condition hand-lists five scenario names — adding
   a 7th scenario risks forgetting to add it here (no assertion ties this
   list to the scenario dropdown).
-- `taComplete()` (`index.html:2890`) and the `rhythm*` family
-  (`rhythmStart` `index.html:2918`, `rhythmTick` `2934`, `rhythmTap` `2950`,
-  `rhythmMiss` `2970`) are further, mostly self-contained mini state
+- `taComplete()` (`index.html:2988`) and the `rhythm*` family
+  (`rhythmStart` `index.html:3016`, `rhythmTick` `3033`, `rhythmTap` `3049`,
+  `rhythmMiss` `3069`) are further, mostly self-contained mini state
   machines that still funnel through `finish()`.
 
 ### Shared vs. diverging
@@ -212,10 +216,9 @@ Issues).
 
 - **`sd_` prefix** is used for `sd_hold`/`sd_speed`/`sd_mixed` fields, but
   `sd_hold` never sets `S.sd_phase` — the prefix implies a phase machine
-  that only 2 of the 3 "sd_" scenarios actually have.
-  `S.sd_failMsg` is used by **every** scenario including `timeattack` and
-  `rhythm` — it's really a generic "end-of-session message" field misnamed
-  after "sudden death".
+  that only 2 of the 3 "sd_" scenarios actually have. (The generic
+  end-of-session message field was similarly `sd_`-prefixed despite being
+  used by every scenario — now renamed to `S.scenarioFailMsg`, see § 1.)
 - **`sw` prefix** originally meant "stopwatch" but is shared by `sd_hold`
   too, and the DOM elements it's tied to (`#swStats`, `#swRest`,
   `#swLongest`) are reused and manually relabeled with hardcoded strings for
@@ -231,13 +234,13 @@ Issues).
 
 ## 4. Cue/feedback system
 
-### `setCue(kind, big, sub)` (`index.html:3095`)
+### `setCue(kind, big, sub)` (`index.html:3194`)
 
 Only three `kind` values are ever passed: **`"up"`**, **`"down"`**,
 **`"rest"`**. Sets `lastCueKind`, the `#cue` CSS class, and always calls
 `applyScreenColor()`.
 
-### `cmd(kind)` (`index.html:2065`)
+### `cmd(kind)` (`index.html:2155`)
 
 A *different*, overlapping vocabulary: `"down"`, `"up"`, `"hold"` (plus
 `cmdCount`, `cmdFinish`, `cmdPenalty`, `cmdPenaltyThenDown` for other cue
@@ -246,11 +249,11 @@ moments). Dispatches speech/beep/vibrate, each gated by
 `setCue`'s `kind` are different enumerations that happen to share two
 string values** ("up"/"down") — easy to conflate when reading call sites.
 
-`tick(kind)` (`index.html:2045`) is a third, lighter cue helper for
+`tick(kind)` (`index.html:2135`) is a third, lighter cue helper for
 `isActionTap()` cases (rapid sd_speed/sd_mixed reps) — same "down"/"up"
 vocabulary again, beep+vibrate only, no speech.
 
-### Screen-color layer (`applyScreenColor(force)`, `index.html:2392`)
+### Screen-color layer (`applyScreenColor(force)`, `index.html:2483`)
 
 Two DOM layers, `#screenColorLayer` (background wash) and
 `#screenColorBorderLayer` (10px inset-`box-shadow` border, fully opaque,
@@ -291,8 +294,8 @@ through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 `"lat.camOnboarded"` — inconsistent but harmless (all share the `lat.`
 prefix).
 
-`SETTING_IDS` (`index.html:1616`, 40 element IDs) + `readAll()`/
-`writeAll()` (`index.html:1625`/`1633`) round-trip the settings form through
+`SETTING_IDS` (`index.html:1706`, 41 element IDs) + `readAll()`/
+`writeAll()` (`index.html:1715`/`1723`) round-trip the settings form through
 `lat.settings` on every change (debounced 400ms). `writeAll()` also contains
 a legacy migration shim: old blobs with `o.rest` but no `o.minRest` get
 split into `minRest`/`maxRest`.
@@ -345,21 +348,22 @@ previous goal carries over invisibly on a mode switch.
 `I18N` (`index.html:940`) defines 11 languages: `de, en, zh, hi, es, fr, ar,
 bn, pt, ru, ur`. `T()` merges `en.strings` (fallback) with the active
 language's `strings`. `SUPPORTED_LANGS = ["de","en"]`
-(`index.html:1328`) is the actual gate — only these two are offered in the
+(`index.html:1414`) is the actual gate — only these two are offered in the
 language dropdown.
 
-Verified key coverage: `de` and `en` each define all **207** `strings` keys
-(identical sets, zero gaps). The other 9 languages each define only **27**
-keys — genuine, intentional stubs (not reachable, not dead code to delete —
-they're prepared for future translation work).
+Verified key coverage: `de` and `en` each define all **294** `strings` keys
+(identical sets, zero gaps — grew from 207 after the i18n/aria-label
+localization pass). The other 9 languages each define only **27** keys —
+genuine, intentional stubs (not reachable, not dead code to delete — they're
+prepared for future translation work).
 
 Two keys (`scenarioTitle`, `statsStreak`) are defined in `de`/`en` but
 appear unreferenced anywhere — worth confirming before deleting.
 
-`applyRuntimeI18n()` (`index.html:1343`) walks `[data-i18n]`/
-`[data-i18n-ph]` elements, then re-runs `updateScenarioHint()`,
-`applyGoalVisibility()`, `refreshPresetSelect()`, `updateSummaries()`, and
-curve redraws.
+`applyRuntimeI18n()` (`index.html:1429`) walks `[data-i18n]`/
+`[data-i18n-ph]`/`[data-i18n-aria]` elements (the last sets `aria-label`),
+then re-runs `updateScenarioHint()`, `applyGoalVisibility()`,
+`refreshPresetSelect()`, `updateSummaries()`, and curve redraws.
 
 **Feature-toggle inventory:**
 
@@ -387,13 +391,13 @@ curve redraws.
 
 ## 6. Camera control subsystem
 
-All logic in one block, `index.html:3361` onward. CSS `index.html:390-417`.
+All logic in one block, `index.html:3446` onward. CSS `index.html:390-417`.
 Markup: PiP preview `#camPip` (`~825`), setup overlay `#camOverlay`
 (`~883`), onboarding card `#camIntro` (`~925`).
 
 ### State object
 
-`const cam = {...}` (`index.html:3361`): `stream`, `video`, `running`,
+`const cam = {...}` (`index.html:3446`): `stream`, `video`, `running`,
 `raf`, `mode` (`"idle"|"setup"|"session"`), `roi` (centered 30%×30% box by
 default), `ref` (calibration baseline frame), a 48×48 downsample buffer
 (`aw`/`ah`/`actx`), `pressThr:25`, `releaseThr:10`, `pixelDelta:25`,
@@ -403,13 +407,13 @@ Persisted via `saveCamCfg()`/`loadCamCfg()` under `localStorage` key
 
 ### Capture & detection pipeline
 
-1. **Acquire**: `camAcquire()` (`index.html:3495`) calls `getUserMedia` with
+1. **Acquire**: `camAcquire()` (`index.html:3583`) calls `getUserMedia` with
    facingMode + 640×480 ideal constraints; retries with bare
    `{video:true}` on failure before giving up.
-2. **Sample**: `camSampleGray()` (`index.html:3398`) draws the ROI sub-rect
+2. **Sample**: `camSampleGray()` (`index.html:3486`) draws the ROI sub-rect
    (computed against the *mirrored* preview) into the 48×48 canvas,
    converts to grayscale via standard luma weights.
-3. **Change score**: `camChangeFrom(g)` (`index.html:3408`) counts pixels
+3. **Change score**: `camChangeFrom(g)` (`index.html:3496`) counts pixels
    differing from the reference frame by more than `pixelDelta` (25),
    returns a percentage of 2304 pixels.
 4. **Hysteresis**: in the main loop's `tick()`, not-pressed + `pct >=
@@ -422,9 +426,9 @@ Persisted via `saveCamCfg()`/`loadCamCfg()` under `localStorage` key
 
 ### Calibration
 
-- **Manual** `camCalibrate()` (`index.html:3413`): snapshots the current
+- **Manual** `camCalibrate()` (`index.html:3501`): snapshots the current
   frame as `cam.ref`; user sets thresholds manually.
-- **Auto** `camAutoCalibrate()` (`index.html:3419`): snapshots reference,
+- **Auto** `camAutoCalibrate()` (`index.html:3507`): snapshots reference,
   measures idle noise floor for 1.6s, derives thresholds via a hand-tuned
   formula (`releaseThr = clamp(3,40,round(measMax)+4)`; `pressThr =
   clamp(rel+3, 90, round(rel*2)+6)`) — these constants are tuned-by-feel,
@@ -445,22 +449,27 @@ just a subset.
 ### Setup/consent flow
 
 Toggling `#cameraControl` fires `maybeShowCamIntro()`
-(`index.html:3528`, gated by `lat.camOnboarded`). `startSession()` redirects
-to `camOpenSetup()` (`index.html:3501`) instead of starting a session if the
+(`index.html:3636`, gated by `lat.camOnboarded`). `startSession()` redirects
+to `camOpenSetup()` (`index.html:3609`) instead of starting a session if the
 camera isn't yet in `"session"` mode; `camConfirmStart()`
-(`index.html:3549`) validates thresholds and calibration before switching
+(`index.html:3657`) validates thresholds and calibration before switching
 modes and calling `startSession()` again. Camera flip forces recalibration
 (`cam.ref = null`) since front/rear framing/lighting differ substantially.
 
-### Error handling — known gaps
+### Error handling
 
 - No camera / permission denied: shown as static text, no retry/re-prompt
   UX, and all failure modes (denied vs. no hardware vs. unsatisfiable
-  constraints) collapse to the same message.
-- **No `track.onended`/error listener** — if the stream dies mid-session
-  (permission revoked, tab backgrounded, device unplugged), the gesture
-  detector just silently stops updating; no user-facing error, no pause, no
-  fallback to touch.
+  constraints) collapse to the same message. Still a known gap, not fixed.
+- **Stream-loss detection**: every acquired stream's tracks get a
+  `track.onended` watcher (`camWatchStreamTracks()`, `index.html:3595`). If
+  the feed dies mid-session (permission revoked, device unplugged), any
+  stuck hold is released via `pressEnd()`, the camera is detached
+  (`camDetach()`), and a `camStreamLost` message is shown (`#subcue`
+  in-session, `#camErr` during setup) — no more silent freeze. The watcher
+  guards against firing after an intentional stream replacement (e.g.
+  `camFlip()`'s restart) by checking `cam.stream === stream` before
+  reacting.
 
 ---
 
@@ -474,10 +483,10 @@ function scenarioSupportsLives(scn){
   return scn==="sd_hold" || scn==="sd_speed" || scn==="sd_mixed" || scn==="rhythm";
 }
 ```
-(`index.html:2118`) — gates whether the toggle is even shown.
+(`index.html:2208`) — gates whether the toggle is even shown.
 
-**Every `tryLoseLife()` call site** (`index.html:2383`, note: distinct from
-`cueLifeLost()` at `2373`, which is just the vibrate/beep/flash cue fired
+**Every `tryLoseLife()` call site** (`index.html:2474`, note: distinct from
+`cueLifeLost()` at `2464`, which is just the vibrate/beep/flash cue fired
 from inside it):
 
 | Scenario | Fail condition |
@@ -497,7 +506,7 @@ so a lives system is structurally inapplicable, matching
 S.livesLeft=null`, the sentinel that hides `#livesRow`). `tryLoseLife()`
 decrements, re-renders, cues, and returns whether lives remain. Every call
 site follows the same pattern: `if(tryLoseLife()){ /* reset phase, retry */
-} else { S.sd_failMsg = ...; finish(); }` — reaching 0 lives is what turns a
+} else { S.scenarioFailMsg = ...; finish(); }` — reaching 0 lives is what turns a
 survivable miss into game-over; with lives remaining, the same fail
 condition instead resets the current phase and lets the player retry.
 
@@ -553,57 +562,81 @@ designed in from the start.
 
 ## 9. Known Issues / technical debt
 
-Honest inventory of what's messy, each with a risk note. None of these are
-fixed as part of a documentation pass — they're flagged here so future work
-can address them deliberately, with full context, rather than by accident.
+Honest inventory of what's messy, each with a risk note. A first audit pass
+flagged the items below; a follow-up pass then fixed everything except the
+last three (naming, confetti/curve colors, stub languages), which were
+deliberately left as documented, low-priority items rather than fixed as
+drive-by changes. **Resolved** items are kept here (not deleted) as a record
+of what was found and how it was addressed — update this list again the next
+time an item here gets fixed or a new one is found.
 
-- **Biggest one: hardcoded German bypasses i18n in the Sudden Death family
-  and Time Attack.** `sd_hold`/`sd_speed`/`sd_mixed`/`timeattack` scenario
-  code is riddled with hardcoded German UI strings that never route through
-  `T()` — swStats labels ("Phase Zeit", "Gesamt-Hold", "Level (BPM)" etc.),
-  live subcues ("Action-Phase endet in Xs", "Halten in Xs"), cue-word
-  overrides that bypass the user's custom words entirely ("HALTEN",
-  "GESCHAFFT"), and failure messages mixing German/English in one string.
-  `stopwatch` and `rhythm` are correctly localized via `T()`. **This is a
-  real, easily-reproducible bug in English mode**, not just a stylistic gap.
-  Risk to fix: touches dozens of call sites across 4 scenario engines,
-  needs full regression testing in both languages.
-- **`finish()`/`stopSession()` asymmetry.** Both open with a near-identical
-  ~10-line teardown block (cancel timers, hide UI, reset color state) that
-  should be a shared `teardownSessionTimers()` helper. Beyond that, `finish()`
-  additionally does history/gamification bookkeeping that `stopSession()`
-  skips entirely — and the Stop button branches so that **stopping a
-  scenario session early always records it, stopping a reps/time session
-  early never does.** Looks like an unintentional asymmetry, not a
-  deliberate design choice. Risk to fix: behavior-changing, needs an
-  explicit decision on which behavior is "correct" before touching it.
-- **`holding` mutated at 13 call sites**, no shared setter/getter. The
-  `pendingRelease`-resume block is duplicated near-verbatim between
-  `pressStartStopwatch()` and `pressStart()`. Good candidate for a shared
-  `beginHold()`/`endHold()` helper, but touches every input path — needs
-  careful regression testing across touch/keyboard/camera/eyes-closed.
+- ~~Hardcoded German bypassed i18n in the Sudden Death family and Time
+  Attack.~~ **Fixed.** `sd_hold`/`sd_speed`/`sd_mixed`/`timeattack` now route
+  every swStats label, live subcue, cue-word override, and Game Over message
+  through `T()` (~25 new `I18N.de`/`en` keys, following the existing
+  `swRestLabel`/`taDone`/`rrOver` pattern), verified in both languages via
+  Playwright. `S.sd_failMsg` was also renamed to `S.scenarioFailMsg` while
+  touching these lines, since every scenario sets it, not just the `sd_`
+  ones.
+- ~~`finish()`/`stopSession()` asymmetry.~~ **Fixed.** The shared ~10-line
+  teardown block is now `teardownSessionTimers()`, called by both. The Stop
+  button now always calls `stopSession()` regardless of `S.goal` — manual
+  Stop never records to history/gamification for either session type;
+  `finish()` (natural end: target reached / game over) still does. Verified:
+  reps/time and scenario both behave identically now for manual-stop vs.
+  natural-end.
+- ~~`holding` mutated at 13 call sites with duplicated logic.~~ **Partially
+  fixed.** Auditing all 13 showed they're not all the same shape — arming a
+  new rep/session and final cleanup are genuinely different resets, not
+  duplicates. The two call sites that **were** verified near-verbatim
+  duplicates are now centralized: `resumeHeldRelease(loopFn)` (the
+  release-grace resume logic, previously copy-pasted between
+  `pressStartStopwatch()`/`pressStart()`) and `releaseHold()` (the
+  `holding=false; applyScreenColor(); cancelAnimationFrame(raf);` triple,
+  previously repeated in `pressEnd()`/`pressEndStopwatch()`/
+  `flushPendingRelease()`/`taComplete()`). Raw mutation count: 13 → 9, with
+  the two real duplications named and single-sourced. The remaining 9 are
+  intentionally left alone (see `armReady()`/`armReadyScenario()`/
+  `beginRep()`/`completeRep()`/`stopSession()` in § 2) — forcing them into
+  one helper would be premature abstraction, not simplification.
+- ~~Validation errors, `alert`/`confirm` dialogs, and vibration-test
+  messages hardcoded English.~~ **Fixed.** `validate()`'s ~12 error strings,
+  the preset-save `alert`, the history-clear `confirm`, and all three
+  vibration-test messages now route through `T()` (new `err*`/
+  `confirmClearHistory`/`vibrate*` keys).
+- ~~`aria-label` attributes hardcoded English, ignored by
+  `applyRuntimeI18n()`.~~ **Fixed.** `applyRuntimeI18n()` now also walks
+  `[data-i18n-aria]` elements and sets `aria-label` from `T()`; all ~40
+  `aria-label`s in the settings form got a matching `data-i18n-aria="..."`
+  attribute + `aria*` key pair (the static English `aria-label` stays as the
+  pre-JS fallback, same pattern as `data-i18n-ph`).
+- ~~No stream-loss detection for camera control.~~ **Fixed.** Every
+  acquired `MediaStream`'s tracks now get a `track.onended` watcher
+  (`camWatchStreamTracks()`); if the feed dies mid-session (permission
+  revoked, device unplugged), any stuck hold is released, the camera is
+  detached, and a new `camStreamLost` message is shown (`#subcue` in-session,
+  `#camErr` during setup) instead of silently freezing. Verified by
+  dispatching a synthetic `ended` event on the track in both modes.
+- ~~Magic numbers without inline explanation.~~ **Fixed** with one-line
+  comments: `heldMs > 150` (accidental-tap threshold), `650ms` post-rep
+  pacing delay, `CAM_ADAPT_ALPHA = 0.03`, `rr_window = 260ms`.
 - **`readAll()`/`buildPlan()` dual source of truth** for settings (see § 5)
-  — can silently diverge on out-of-range input.
-- Validation error strings (`validate()`), some `alert`/`confirm` dialogs,
-  and vibration-test messages are hardcoded English, never routed through
-  `T()`.
-- `aria-label` attributes across the settings form are hardcoded English,
-  never updated by `applyRuntimeI18n()` — screen-reader users get English
-  labels regardless of `appLang`.
-- Magic numbers without inline explanation: `heldMs > 150` (early-tap
-  threshold in `finalizeRelease()`), `650ms` post-rep pacing delay in
-  `completeRep()`, `CAM_ADAPT_ALPHA = 0.03`, `rr_window = 260ms` (rhythm
-  beat-timing tolerance, not user-configurable unlike `rr_bpm`/`rr_step`).
-- Naming inconsistencies: `sw`/`sd_`/`ta_`/`rr_` prefixes don't map cleanly
-  to their scope (see § 3); `S`'s scenario-state fields mix snake-ish
-  prefixes (`sd_actionMs`) with the rest of `S`'s camelCase.
-- Confetti palette (`index.html:~1888`) and the curve-editor stroke color
-  hardcode hex values close to but not identical to the theme's
-  `--good`/`--bad`/`--rise` CSS variables. Left intentionally as-is — this
-  is a subjective/cosmetic call with no clear "correct" fix, not a
-  correctness bug.
-- 9 of 11 `I18N` languages are 27/207-key stubs, intentionally gated off by
-  `SUPPORTED_LANGS` — documented here so nobody assumes they're either dead
-  code to delete or complete/reachable.
-- Two `I18N` keys (`scenarioTitle`, `statsStreak`) appear to be defined but
-  unreferenced — worth confirming before deleting.
+  — can silently diverge on out-of-range input. Not addressed — would need
+  a decision on whether `buildPlan()`'s clamping should also correct the
+  persisted value, which is a behavior change, not a pure cleanup.
+- **Naming inconsistencies** (not addressed, deliberately deferred): `sw`/
+  `sd_`/`ta_`/`rr_` prefixes still don't map cleanly to their scope (see
+  § 3); `S`'s scenario-state fields still mix snake-ish prefixes
+  (`sd_actionMs`) with the rest of `S`'s camelCase. A full rename would touch
+  a large fraction of the scenario engine for a purely internal/cosmetic
+  gain — left as a deliberate future call, not a quick fix.
+- **Confetti palette** (`index.html:1967`) and the curve-editor stroke
+  color still hardcode hex values close to but not identical to the theme's
+  `--good`/`--bad`/`--rise` CSS variables. Left intentionally as-is — this is
+  a subjective/cosmetic call with no clear "correct" fix, not a correctness
+  bug.
+- 9 of 11 `I18N` languages are still 27/294-key stubs, intentionally gated
+  off by `SUPPORTED_LANGS` — documented here so nobody assumes they're
+  either dead code to delete or complete/reachable.
+- Two `I18N` keys (`scenarioTitle`, `statsStreak`) still appear to be
+  defined but unreferenced — worth confirming before deleting.

@@ -437,7 +437,7 @@
       <h1 class="mark" id="appTitle" data-i18n="mark">Breathless</h1>
       <span class="tagline" data-i18n="title">Gasping for More</span>
     </div>
-    <select id="appLang" class="langSel" aria-label="App language"></select>
+    <select id="appLang" class="langSel" aria-label="App language" data-i18n-aria="ariaAppLang"></select>
   </header>
 
   <section id="setup">
@@ -446,7 +446,7 @@
       <summary><span data-i18n="uiGoalTitle">Session goal</span> <span class="sumSub" id="sumGoal"></span></summary>
       <div class="body">
         <div class="field" style="margin-bottom:12px">
-          <div class="seg" id="goalSeg" role="group" aria-label="Session goal">
+          <div class="seg" id="goalSeg" role="group" aria-label="Session goal" data-i18n-aria="ariaSessionGoal">
             <button type="button" data-goal="reps" aria-pressed="true" data-i18n="goalReps">Reps</button>
             <button type="button" data-goal="time" aria-pressed="false" data-i18n="goalTime">Time</button>
             <button type="button" data-goal="scenario" aria-pressed="false" data-i18n="goalScenario">Scenario</button>
@@ -456,20 +456,20 @@
         <div class="field" id="repsField">
           <label class="lbl" data-i18n="labelReps">Number of reps (random in range)</label>
           <div class="row">
-            <input id="minReps" type="number" min="1" value="15" aria-label="Minimum reps">
-            <input id="maxReps" type="number" min="1" value="25" aria-label="Maximum reps">
+            <input id="minReps" type="number" min="1" value="15" aria-label="Minimum reps" data-i18n-aria="ariaMinReps">
+            <input id="maxReps" type="number" min="1" value="25" aria-label="Maximum reps" data-i18n-aria="ariaMaxReps">
           </div>
           <div class="hint" data-i18n="hintReps">The app picks a random number between min and max.</div>
         </div>
 
         <div class="field hidden" id="timeField">
           <label class="lbl" data-i18n="labelDuration">Session duration (minutes)</label>
-          <input id="totalMin" type="number" min="1" value="5" aria-label="Duration in minutes">
+          <input id="totalMin" type="number" min="1" value="5" aria-label="Duration in minutes" data-i18n-aria="ariaDurationMin">
         </div>
 
         <div class="field hidden" id="scenarioField" style="margin-bottom:0">
           <label class="lbl" data-i18n="labelScenario">Scenario</label>
-          <select id="scenarioSel" aria-label="Choose scenario">
+          <select id="scenarioSel" aria-label="Choose scenario" data-i18n-aria="ariaChooseScenario">
             <option value="stopwatch" selected data-i18n="scenarioStopwatch">Stopwatch — hold as long as you can</option>
             <option value="sd_hold" data-i18n="scenarioSdHold">Sudden death: Hold</option>
             <option value="sd_speed" data-i18n="scenarioSdSpeed">Sudden death: Speed</option>
@@ -481,29 +481,29 @@
           <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
             <label class="lbl" id="sdSpeedLbl" data-i18n="labelActionPause">Action / Pause length (seconds)</label>
             <div class="row">
-              <input id="sdActionSec" type="number" min="5" max="600" step="1" value="60" aria-label="Action phase length in seconds">
-              <input id="sdPauseSec" type="number" min="3" max="300" step="1" value="20" aria-label="Pause phase length in seconds">
+              <input id="sdActionSec" type="number" min="5" max="600" step="1" value="60" aria-label="Action phase length in seconds" data-i18n-aria="ariaActionSec">
+              <input id="sdPauseSec" type="number" min="3" max="300" step="1" value="20" aria-label="Pause phase length in seconds" data-i18n-aria="ariaPauseSec">
             </div>
             <div class="hint" id="sdSpeedHint" data-i18n="hintActionPause">Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.</div>
           </div>
           <div class="field hidden" id="sdMixedField" style="margin:12px 0 0">
             <label class="lbl" data-i18n="labelMixedStart">Mixed — start values (round 1)</label>
             <div class="row">
-              <input id="sdStartReps" type="number" min="1" max="50" step="1" value="1" aria-label="Start rep target for round 1">
-              <input id="sdStartHold" type="number" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1">
+              <input id="sdStartReps" type="number" min="1" max="50" step="1" value="1" aria-label="Start rep target for round 1" data-i18n-aria="ariaStartReps">
+              <input id="sdStartHold" type="number" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1" data-i18n-aria="ariaStartHold">
             </div>
             <div class="hint" data-i18n="hintMixedStart">Left: reps in round 1 · right: minimum hold (s) in round 1. Each round must then raise both.</div>
           </div>
           <div class="field hidden" id="taField" style="margin:12px 0 0">
             <label class="lbl" data-i18n="labelTaTarget">Target total hold (seconds)</label>
-            <input id="taTarget" type="number" min="10" max="900" step="5" value="60" aria-label="Target total hold seconds">
+            <input id="taTarget" type="number" min="10" max="900" step="5" value="60" aria-label="Target total hold seconds" data-i18n-aria="ariaTaTarget">
             <div class="hint" data-i18n="hintTa">Reach this much accumulated hold time as fast as you can — score = target ÷ your time.</div>
           </div>
           <div class="field hidden" id="rrField" style="margin:12px 0 0">
             <label class="lbl" data-i18n="labelRr">Start tempo (BPM) / speed-up per level</label>
             <div class="row">
-              <input id="rrBpm" type="number" min="20" max="200" step="5" value="45" aria-label="Start BPM">
-              <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level">
+              <input id="rrBpm" type="number" min="20" max="200" step="5" value="45" aria-label="Start BPM" data-i18n-aria="ariaRrBpm">
+              <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level" data-i18n-aria="ariaRrStep">
             </div>
             <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
           </div>
@@ -517,7 +517,7 @@
             </div>
             <div class="field hidden" id="livesCountField">
               <label class="lbl" data-i18n="labelLivesCount">Number of lives</label>
-              <input id="livesCount" type="number" min="1" max="9" step="1" value="3" aria-label="Number of lives">
+              <input id="livesCount" type="number" min="1" max="9" step="1" value="3" aria-label="Number of lives" data-i18n-aria="ariaLivesCount">
             </div>
           </div>
         </div>
@@ -529,15 +529,15 @@
       <div class="body">
         <div class="field" id="fBase">
           <label class="lbl" data-i18n="labelHoldPerRep">Hold time per rep (seconds)</label>
-          <input id="baseHold" type="number" min="0.1" step="0.1" value="2" aria-label="Base hold time">
+          <input id="baseHold" type="number" min="0.1" step="0.1" value="2" aria-label="Base hold time" data-i18n-aria="ariaBaseHold">
           <div class="hint" data-i18n="hintHoldPerRep">How long you must keep the button pressed for the rep to count. Values below 1 s are allowed (e.g. 0.5).</div>
         </div>
 
         <div class="field" id="fRest">
           <label class="lbl" data-i18n="labelRest">Rest between reps (seconds, random in range)</label>
           <div class="row">
-            <input id="minRest" type="number" min="0" value="3" aria-label="Minimum rest">
-            <input id="maxRest" type="number" min="0" value="3" aria-label="Maximum rest">
+            <input id="minRest" type="number" min="0" value="3" aria-label="Minimum rest" data-i18n-aria="ariaMinRest">
+            <input id="maxRest" type="number" min="0" value="3" aria-label="Maximum rest" data-i18n-aria="ariaMaxRest">
           </div>
           <div class="hint" data-i18n="hintRest">Equal min and max = fixed rest.</div>
           <div class="curveBox">
@@ -545,29 +545,29 @@
               <span class="lbl" data-i18n="labelCurve">Probability curve</span>
               <button type="button" class="curveOpen" data-curve="rest" data-i18n="btnEditCurve">Edit curve</button>
             </div>
-            <canvas class="curvePreview" id="curveRest" width="600" height="56" aria-label="Open rest curve editor"></canvas>
+            <canvas class="curvePreview" id="curveRest" width="600" height="56" aria-label="Open rest curve editor" data-i18n-aria="ariaOpenRestCurve"></canvas>
             <div class="curveAxis"><span id="curveRestLo">min</span><span id="curveRestHi">max</span></div>
           </div>
         </div>
 
         <div class="field" id="fChance">
           <label class="lbl" data-i18n="labelChance">Chance of a long hold (%)</label>
-          <input id="holdChance" type="number" min="0" max="100" value="25" aria-label="Long-hold chance">
+          <input id="holdChance" type="number" min="0" max="100" value="25" aria-label="Long-hold chance" data-i18n-aria="ariaHoldChance">
           <div class="hint" data-i18n="hintChance">Some reps randomly become longer endurance holds.</div>
         </div>
 
         <div class="field" id="fHolds" style="margin-bottom:0">
           <label class="lbl" data-i18n="labelLongHold">Long hold duration (seconds, random in range)</label>
           <div class="row">
-            <input id="minHold" type="number" min="1" value="5" aria-label="Minimum long hold">
-            <input id="maxHold" type="number" min="1" value="12" aria-label="Maximum long hold">
+            <input id="minHold" type="number" min="1" value="5" aria-label="Minimum long hold" data-i18n-aria="ariaMinHold">
+            <input id="maxHold" type="number" min="1" value="12" aria-label="Maximum long hold" data-i18n-aria="ariaMaxHold">
           </div>
           <div class="curveBox">
             <div class="curveHeader">
               <span class="lbl" data-i18n="labelCurve">Probability curve</span>
               <button type="button" class="curveOpen" data-curve="hold" data-i18n="btnEditCurve">Edit curve</button>
             </div>
-            <canvas class="curvePreview" id="curveHold" width="600" height="56" aria-label="Open hold curve editor"></canvas>
+            <canvas class="curvePreview" id="curveHold" width="600" height="56" aria-label="Open hold curve editor" data-i18n-aria="ariaOpenHoldCurve"></canvas>
             <div class="curveAxis"><span id="curveHoldLo">min</span><span id="curveHoldHi">max</span></div>
             <div class="hint" style="margin-top:6px" data-i18n="hintCurveDraw">Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.</div>
           </div>
@@ -603,11 +603,11 @@
           <div class="row">
             <div>
               <span class="sublbl" id="penaltyLbl">Penalty amount (+reps)</span>
-              <input id="penaltyX" type="number" min="1" value="2" aria-label="Penalty amount">
+              <input id="penaltyX" type="number" min="1" value="2" aria-label="Penalty amount" data-i18n-aria="ariaPenaltyX">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblLateStart">Allowed late-start (s)</span>
-              <input id="lateTol" type="number" min="1" value="3" aria-label="Allowed late start">
+              <input id="lateTol" type="number" min="1" value="3" aria-label="Allowed late start" data-i18n-aria="ariaLateTol">
             </div>
           </div>
           <div class="hint" id="lateTolHint" data-i18n="hintLateStart">If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.</div>
@@ -623,7 +623,7 @@
 
         <div class="field" id="fReleaseGrace" style="margin-bottom:0">
           <label class="lbl" data-i18n="labelReleaseGrace">Release tolerance (ms)</label>
-          <input id="releaseGrace" type="number" min="0" step="10" value="150" aria-label="Release tolerance">
+          <input id="releaseGrace" type="number" min="0" step="10" value="150" aria-label="Release tolerance" data-i18n-aria="ariaReleaseGrace">
           <div class="hint" data-i18n="hintReleaseGrace">If you briefly lift your finger, it doesn't count as releasing yet — the hold continues seamlessly. 0 = release is immediate.</div>
         </div>
       </div>
@@ -659,15 +659,15 @@
           <div class="row3">
             <div>
               <span class="sublbl" data-i18n="sublblStartHold">Start hold</span>
-              <input id="cmdDown" type="text" value="Hold" aria-label="Start-hold cue word">
+              <input id="cmdDown" type="text" value="Hold" aria-label="Start-hold cue word" data-i18n-aria="ariaCmdDown">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblRelease">Release</span>
-              <input id="cmdUp" type="text" value="Breathe" aria-label="Release cue word">
+              <input id="cmdUp" type="text" value="Breathe" aria-label="Release cue word" data-i18n-aria="ariaCmdUp">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblLongHold">Long hold</span>
-              <input id="cmdHold" type="text" value="Keep going" aria-label="Long-hold cue word">
+              <input id="cmdHold" type="text" value="Keep going" aria-label="Long-hold cue word" data-i18n-aria="ariaCmdHold">
             </div>
           </div>
         </div>
@@ -675,17 +675,17 @@
           <div class="row">
             <div>
               <span class="sublbl" data-i18n="sublblPenaltyWord">Penalty word</span>
-              <input id="cmdPenaltyWord" type="text" value="Penalty" aria-label="Penalty word">
+              <input id="cmdPenaltyWord" type="text" value="Penalty" aria-label="Penalty word" data-i18n-aria="ariaCmdPenaltyWord">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblFinishWord">Finish word</span>
-              <input id="cmdFinishWord" type="text" value="Done" aria-label="Finish word">
+              <input id="cmdFinishWord" type="text" value="Done" aria-label="Finish word" data-i18n-aria="ariaCmdFinishWord">
             </div>
           </div>
         </div>
         <div class="field" style="margin-bottom:0">
           <span class="sublbl" data-i18n="sublblRate">Speech rate (0.5–2)</span>
-          <input id="cmdRate" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate">
+          <input id="cmdRate" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate" data-i18n-aria="ariaCmdRate">
         </div>
       </div>
     </details>
@@ -756,8 +756,8 @@
         <div class="field">
           <label class="lbl" data-i18n="labelPresets">Presets</label>
           <div class="row">
-            <input id="presetName" type="text" placeholder="Name" data-i18n-ph="phPresetName" aria-label="Preset name">
-            <select id="presetSel" aria-label="Load preset"><option value="" data-i18n="optLoad">– load –</option></select>
+            <input id="presetName" type="text" placeholder="Name" data-i18n-ph="phPresetName" aria-label="Preset name" data-i18n-aria="ariaPresetName">
+            <select id="presetSel" aria-label="Load preset" data-i18n-aria="ariaLoadPreset"><option value="" data-i18n="optLoad">– load –</option></select>
           </div>
           <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="ghost" id="presetSave" data-i18n="btnSave">Save</button>
@@ -792,7 +792,7 @@
       </div>
       <div class="cue" id="cue" data-i18n="ready">Ready?</div>
       <div class="subcue" id="subcue" data-i18n="subCue">Press &amp; hold on the start cue, release on the release cue.</div>
-      <div id="livesRow" class="livesRow hidden" aria-label="Lives remaining"></div>
+      <div id="livesRow" class="livesRow hidden" aria-label="Lives remaining" data-i18n-aria="ariaLivesRemaining"></div>
       <div id="swStats" class="swStats hidden">
         <div class="swStat"><span class="swLbl">Rest since last hold</span><span class="swVal" id="swRest">0.0s</span></div>
         <div class="swStat"><span class="swLbl">Longest hold</span><span class="swVal" id="swLongest">0.0s</span></div>
@@ -807,7 +807,7 @@
       </button>
     </div>
 
-    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface"><span class="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
+    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface" data-i18n-aria="ariaTapSurface"><span class="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
 
     <div id="camPip" class="camPip hidden" aria-hidden="true">
       <div class="camPipVid" id="camPipHost"><div class="camPipRoi" id="camPipRoi"></div></div>
@@ -850,11 +850,11 @@
       </div>
       <button class="ghost" id="curveOverlayDone" data-i18n="done">Done</button>
     </div>
-    <div class="toolbar" role="group" aria-label="Curve mode">
+    <div class="toolbar" role="group" aria-label="Curve mode" data-i18n-aria="ariaCurveMode">
       <button type="button" id="modeRandom" data-mode="random" aria-pressed="true" data-i18n="curveModeRandom">Random</button>
       <button type="button" id="modeTiming" data-mode="timing" aria-pressed="false" data-i18n="curveModeTiming">Timing</button>
     </div>
-    <div class="toolbar" role="group" aria-label="Curve presets">
+    <div class="toolbar" role="group" aria-label="Curve presets" data-i18n-aria="ariaCurvePresets">
       <button type="button" data-overlay-preset="uniform" data-i18n="curveUniform">Uniform</button>
       <button type="button" data-overlay-preset="low" data-i18n="curveLow">Skew low</button>
       <button type="button" data-overlay-preset="middle" data-i18n="curveMiddle">Middle</button>
@@ -862,7 +862,7 @@
       <button type="button" data-overlay-preset="clear" data-i18n="curveClear">Clear</button>
     </div>
     <div class="stage">
-      <canvas id="curveBig" class="big" aria-label="Draw probability curve"></canvas>
+      <canvas id="curveBig" class="big" aria-label="Draw probability curve" data-i18n-aria="ariaDrawCurve"></canvas>
     </div>
     <div class="axis"><span id="curveBigLo">min</span><span id="curveBigHi">max</span></div>
   </div>
@@ -896,11 +896,11 @@
       <div class="camSliders">
         <div class="camSlider">
           <span class="sublbl"><span data-i18n="camReleaseThr">Release below</span> <b id="camRelVal">10</b>%</span>
-          <input id="camRelThr" type="range" min="1" max="90" value="10" aria-label="Release threshold">
+          <input id="camRelThr" type="range" min="1" max="90" value="10" aria-label="Release threshold" data-i18n-aria="ariaCamRelThr">
         </div>
         <div class="camSlider">
           <span class="sublbl"><span data-i18n="camPressThr">Press above</span> <b id="camPressVal">25</b>%</span>
-          <input id="camPressThr" type="range" min="2" max="95" value="25" aria-label="Press threshold">
+          <input id="camPressThr" type="range" min="2" max="95" value="25" aria-label="Press threshold" data-i18n-aria="ariaCamPressThr">
         </div>
       </div>
       <label class="camAdapt"><input id="camAdapt" type="checkbox" checked><span data-i18n="camAdapt">Adapt to light changes</span></label>
@@ -969,6 +969,32 @@
         newRecord:s=>`Neuer Rekord! ${s} Sekunden.`, holdForN:n=>`Halte für ${n} Sekunden`,
         andHold:"— und halten", continueWord:"Weiter",
         tooLate:"Zu spät gestartet", tooEarly:"Zu früh losgelassen", tooEarlyLab:"Zu früh — nochmal",
+        errRepsInvalid:"Bitte gültige Wiederholungszahlen eingeben.", errRepsMinMax:"Min darf nicht größer als Max sein.",
+        errDurationMin:"Bitte eine Dauer von mindestens 1 Minute wählen.",
+        errHoldMin:"Haltezeit pro Wiederholung muss mindestens 0,1 s betragen.",
+        errChanceRange:"Chance auf langen Hold muss zwischen 0 und 100 liegen.",
+        errLongHoldInvalid:"Bitte gültige Zeiten für langen Hold eingeben.", errLongHoldMinMax:"Min. langer Hold darf Max. nicht überschreiten.",
+        errRestNegative:"Pause darf nicht negativ sein.", errRestMinMax:"Min. Pause darf Max. Pause nicht überschreiten.",
+        errReleaseGraceNegative:"Loslass-Toleranz darf nicht negativ sein.",
+        errPenaltyAmount:"Bitte eine gültige Strafmenge eingeben (mind. 1).", errLateTolMin:"Erlaubter Spätstart muss mindestens 1 Sekunde betragen.",
+        errNoPresetName:"Bitte einen Namen eingeben.", confirmClearHistory:"Den gesamten Verlauf und Bestwert löschen?",
+        vibrateUnsupported:"Dieser Browser meldet keine Vibrationsunterstützung.",
+        vibrateTestTriggered:"Test ausgelöst. Nichts gespürt? Auf Android: Einstellungen → Ton & Vibration → Vibration & Haptik aktivieren; und sicherstellen, dass das Handy nicht stumm/Nicht-stören ist.",
+        vibrateBlocked:"Vibration wurde vom Browser blockiert (Nutzer-Interaktion oder Systemeinstellung erforderlich).",
+        ariaAppLang:"App-Sprache", ariaSessionGoal:"Trainingsziel", ariaMinReps:"Minimale Wiederholungen", ariaMaxReps:"Maximale Wiederholungen",
+        ariaDurationMin:"Dauer in Minuten", ariaChooseScenario:"Szenario wählen",
+        ariaActionSec:"Länge der Action-Phase in Sekunden", ariaPauseSec:"Länge der Pause-Phase in Sekunden",
+        ariaStartReps:"Start-Rep-Ziel für Runde 1", ariaStartHold:"Start-Haltesekunden für Runde 1",
+        ariaTaTarget:"Gesamtziel Haltesekunden", ariaRrBpm:"Start-BPM", ariaRrStep:"BPM-Schritt pro Level",
+        ariaLivesCount:"Anzahl Leben", ariaBaseHold:"Basis-Haltezeit", ariaMinRest:"Minimale Pause", ariaMaxRest:"Maximale Pause",
+        ariaOpenRestCurve:"Pausenkurve bearbeiten", ariaHoldChance:"Chance auf langen Hold",
+        ariaMinHold:"Minimaler langer Hold", ariaMaxHold:"Maximaler langer Hold", ariaOpenHoldCurve:"Hold-Kurve bearbeiten",
+        ariaPenaltyX:"Strafmenge", ariaLateTol:"Erlaubter Spätstart", ariaReleaseGrace:"Loslass-Toleranz",
+        ariaCmdDown:"Signalwort Halten", ariaCmdUp:"Signalwort Loslassen", ariaCmdHold:"Signalwort langer Hold",
+        ariaCmdPenaltyWord:"Strafe-Wort", ariaCmdFinishWord:"Fertig-Wort", ariaCmdRate:"Sprechtempo",
+        ariaPresetName:"Preset-Name", ariaLoadPreset:"Preset laden", ariaLivesRemaining:"Verbleibende Leben",
+        ariaTapSurface:"Tippfläche", ariaCurveMode:"Kurven-Modus", ariaCurvePresets:"Kurven-Vorlagen", ariaDrawCurve:"Wahrscheinlichkeitskurve zeichnen",
+        ariaCamRelThr:"Loslass-Schwelle", ariaCamPressThr:"Druck-Schwelle",
         rankNames:["Schnorchler","Apnoe-Neuling","Freitaucher","Tieftaucher","Abgrund","Meister","Legende"],
         xpGained:n=>`+${n} XP`,
         levelUp:name=>`Rang aufgestiegen: ${name}!`,
@@ -1055,6 +1081,7 @@
         camNotSupported:"Kamera wird auf diesem Gerät/Browser nicht unterstützt.",
         camCalibrateFirst:"Zuerst den Ruhezustand kalibrieren.",
         camThrOrder:"Drücken-% muss über Loslassen-% liegen.",
+        camStreamLost:"Kamera-Bild verloren (Berechtigung entzogen oder Gerät getrennt) — Kamerasteuerung deaktiviert.",
         camAuto:"Auto", camFlip:"Kamera wechseln", camAdapt:"An Lichtwechsel anpassen",
         camMeasuring:"Messe… still halten",
         camIntroTitle:"Kamera-Steuerung",
@@ -1111,6 +1138,32 @@
         newRecord:s=>`New record! ${s} seconds.`, holdForN:n=>`Hold for ${n} seconds`,
         andHold:"— and hold", continueWord:"Continue",
         tooLate:"Started too late", tooEarly:"Released too early", tooEarlyLab:"Too early — retry",
+        errRepsInvalid:"Please enter valid rep counts.", errRepsMinMax:"Min must not be greater than max.",
+        errDurationMin:"Please choose a duration of at least 1 minute.",
+        errHoldMin:"Hold time per rep must be at least 0.1 s.",
+        errChanceRange:"Long-hold chance must be between 0 and 100.",
+        errLongHoldInvalid:"Please enter valid long-hold times.", errLongHoldMinMax:"Min long hold must not exceed max.",
+        errRestNegative:"Rest must not be negative.", errRestMinMax:"Min rest must not exceed max rest.",
+        errReleaseGraceNegative:"Release tolerance must not be negative.",
+        errPenaltyAmount:"Please enter a valid penalty amount (min 1).", errLateTolMin:"Allowed late-start must be at least 1 second.",
+        errNoPresetName:"Please enter a name.", confirmClearHistory:"Clear the whole history and personal best?",
+        vibrateUnsupported:"This browser reports no vibration support.",
+        vibrateTestTriggered:"Test triggered. Nothing felt? On Android: Settings → Sound & vibration → enable Vibration & haptics; and make sure the phone is not silenced/Do-Not-Disturb.",
+        vibrateBlocked:"Vibration was blocked by the browser (user gesture or system setting required).",
+        ariaAppLang:"App language", ariaSessionGoal:"Session goal", ariaMinReps:"Minimum reps", ariaMaxReps:"Maximum reps",
+        ariaDurationMin:"Duration in minutes", ariaChooseScenario:"Choose scenario",
+        ariaActionSec:"Action phase length in seconds", ariaPauseSec:"Pause phase length in seconds",
+        ariaStartReps:"Start rep target for round 1", ariaStartHold:"Start hold seconds for round 1",
+        ariaTaTarget:"Target total hold seconds", ariaRrBpm:"Start BPM", ariaRrStep:"BPM step per level",
+        ariaLivesCount:"Number of lives", ariaBaseHold:"Base hold time", ariaMinRest:"Minimum rest", ariaMaxRest:"Maximum rest",
+        ariaOpenRestCurve:"Open rest curve editor", ariaHoldChance:"Long-hold chance",
+        ariaMinHold:"Minimum long hold", ariaMaxHold:"Maximum long hold", ariaOpenHoldCurve:"Open hold curve editor",
+        ariaPenaltyX:"Penalty amount", ariaLateTol:"Allowed late start", ariaReleaseGrace:"Release tolerance",
+        ariaCmdDown:"Start-hold cue word", ariaCmdUp:"Release cue word", ariaCmdHold:"Long-hold cue word",
+        ariaCmdPenaltyWord:"Penalty word", ariaCmdFinishWord:"Finish word", ariaCmdRate:"Speech rate",
+        ariaPresetName:"Preset name", ariaLoadPreset:"Load preset", ariaLivesRemaining:"Lives remaining",
+        ariaTapSurface:"Tap surface", ariaCurveMode:"Curve mode", ariaCurvePresets:"Curve presets", ariaDrawCurve:"Draw probability curve",
+        ariaCamRelThr:"Release threshold", ariaCamPressThr:"Press threshold",
         rankNames:["Snorkeler","Apnist","Free Diver","Deep Diver","Abyss","Master","Legend"],
         xpGained:n=>`+${n} XP`,
         levelUp:name=>`Rank up: ${name}!`,
@@ -1197,6 +1250,7 @@
         camNotSupported:"Camera is not supported on this device or browser.",
         camCalibrateFirst:"Calibrate the resting state first.",
         camThrOrder:"Press % must be above release %.",
+        camStreamLost:"Camera feed lost (permission revoked or device disconnected) — camera control disabled.",
         camAuto:"Auto", camFlip:"Flip camera", camAdapt:"Adapt to light changes",
         camMeasuring:"Measuring… hold still",
         camIntroTitle:"Camera control",
@@ -1382,6 +1436,10 @@
     document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
       const v = t[el.getAttribute('data-i18n-ph')];
       if(typeof v === "string") el.placeholder = v;
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el=>{
+      const v = t[el.getAttribute('data-i18n-aria')];
+      if(typeof v === "string") el.setAttribute('aria-label', v);
     });
     const rl2 = $("repLabel"); if(rl2) rl2.textContent = t.rep;
     updateScenarioHint();
@@ -1980,7 +2038,7 @@
   }
   function presetSave(){
     const name = ($("presetName").value || "").trim();
-    if(!name){ alert("Please enter a name."); return; }
+    if(!name){ alert(T().errNoPresetName); return; }
     const p = KV.get(K.presets, {});
     p[name] = readAll();
     KV.set(K.presets, p);
@@ -2238,28 +2296,29 @@
   }
 
   function validate(){
+    const t = T();
     if(goal==="reps"){
       const a=num("minReps"), b=num("maxReps");
-      if(!(a>=1) || !(b>=1)) return "Please enter valid rep counts.";
-      if(a>b) return "Min must not be greater than max.";
+      if(!(a>=1) || !(b>=1)) return t.errRepsInvalid;
+      if(a>b) return t.errRepsMinMax;
     } else if(goal==="time"){
-      if(!(num("totalMin")>=1)) return "Please choose a duration of at least 1 minute.";
+      if(!(num("totalMin")>=1)) return t.errDurationMin;
     }
     if(goal!=="scenario"){
-      if(!(fnum("baseHold")>=0.1)) return "Hold time per rep must be at least 0.1 s.";
+      if(!(fnum("baseHold")>=0.1)) return t.errHoldMin;
       const hc=num("holdChance");
-      if(!(hc>=0 && hc<=100)) return "Long-hold chance must be between 0 and 100.";
+      if(!(hc>=0 && hc<=100)) return t.errChanceRange;
       const mn=num("minHold"), mx=num("maxHold");
-      if(!(mn>=1)||!(mx>=1)) return "Please enter valid long-hold times.";
-      if(mn>mx) return "Min long hold must not exceed max.";
+      if(!(mn>=1)||!(mx>=1)) return t.errLongHoldInvalid;
+      if(mn>mx) return t.errLongHoldMinMax;
       const rn=num("minRest"), rx=num("maxRest");
-      if(rn<0 || rx<0 || isNaN(rn) || isNaN(rx)) return "Rest must not be negative.";
-      if(rn>rx) return "Min rest must not exceed max rest.";
+      if(rn<0 || rx<0 || isNaN(rn) || isNaN(rx)) return t.errRestNegative;
+      if(rn>rx) return t.errRestMinMax;
     }
-    if(num("releaseGrace")<0 || isNaN(num("releaseGrace"))) return "Release tolerance must not be negative.";
+    if(num("releaseGrace")<0 || isNaN(num("releaseGrace"))) return t.errReleaseGraceNegative;
     if(goal!=="scenario"){
-      if($("penalty").checked && !(num("penaltyX")>=1)) return "Please enter a valid penalty amount (min 1).";
-      if($("penalty").checked && !(num("lateTol")>=1)) return "Allowed late-start must be at least 1 second.";
+      if($("penalty").checked && !(num("penaltyX")>=1)) return t.errPenaltyAmount;
+      if($("penalty").checked && !(num("lateTol")>=1)) return t.errLateTolMin;
     }
     return null;
   }
@@ -2958,7 +3017,8 @@
     S.waitingStart = false;
     S.startTime = Date.now();
     S.rr_interval = 60000 / S.rr_bpm;
-    S.rr_window = 260; S.rr_beatsPerLevel = 8;
+    S.rr_window = 260;   // ± timing tolerance (ms) around each beat to count as a hit; not user-configurable, unlike rr_bpm/rr_step
+    S.rr_beatsPerLevel = 8;
     S.rr_hits = 0; S.rr_level = 1; S.rr_countIn = 4;
     S.rr_beatTime = Date.now() + 1200;   // lead-in before the first beat
     S.rr_ticked = false; S.rr_tapped = false;
@@ -3229,7 +3289,7 @@
     if(!S || !S.cur) return;
     const target = S.cur.secs*1000;
     if(S.heldMs < target){
-      const realAttempt = S.heldMs > 150;
+      const realAttempt = S.heldMs > 150;   // 150ms: below this, treat it as an accidental tap, not a real (penalized) early release
       const penalized = S.penalty && realAttempt;
       if(penalized) applyPenalty();
       if(S.strict){
@@ -3290,7 +3350,7 @@
     setCue("down", S.words.up, T().release);
     cmd("up");
     $("btnLab").textContent = T().pressHold;
-    setTimeout(()=>{ if(S) nextRep(false); }, 650);
+    setTimeout(()=>{ if(S) nextRep(false); }, 650);   // 650ms: lets the release cue land before the rest countdown starts
   }
 
   // Shared teardown for both finish() (natural session end — recorded) and
@@ -3392,6 +3452,9 @@
     facing:"user", adapt:true,
     measuring:false, measMax:0, measEnd:0
   };
+  // CAM_ADAPT_ALPHA: exponential-smoothing rate for the drifting reference frame
+  // (§ 6 in ARCHITECTURE.md) — small and tuned by feel so slow lighting changes
+  // are absorbed without the reference chasing an actual press.
   const CAMK = "lat.cam", CAM_ONBOARD_KEY = "lat.camOnboarded", CAM_ADAPT_ALPHA = 0.03;
   function camSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
   function camEnabled(){ const el=$("cameraControl"); return !!(el && el.checked); }
@@ -3523,6 +3586,26 @@
     catch(e){ try{ stream=await navigator.mediaDevices.getUserMedia({ video:true, audio:false }); }catch(e2){ return null; } }
     return stream;
   }
+  // No stream-loss detection existed before this: if the camera track died
+  // mid-session (permission revoked, device unplugged, tab backgrounded and
+  // reclaimed by the OS), the gesture detector just silently stopped updating
+  // with no user-facing error and no fallback. Watch every acquired track and
+  // react once, guarding against the listener firing after we ourselves
+  // already replaced/stopped the stream (e.g. camFlip()'s intentional restart).
+  function camWatchStreamTracks(stream){
+    stream.getTracks().forEach(track=>{
+      track.onended = ()=>{ if(cam.stream === stream) camHandleStreamLoss(); };
+    });
+  }
+  function camHandleStreamLoss(){
+    if(cam.mode === "session"){
+      if(holding) pressEnd();   // don't leave a hold stuck open with a dead input source
+      camDetach();
+      $("subcue").textContent = T().camStreamLost;
+    } else if(cam.mode === "setup"){
+      $("camErr").textContent = T().camStreamLost;
+    }
+  }
   async function camOpenSetup(){
     const open=()=>{ const o=$("camOverlay"); o.classList.remove("hidden"); o.setAttribute("aria-hidden","false"); };
     $("camErr").textContent="";
@@ -3530,7 +3613,7 @@
     if(!camSupported()){ open(); $("camErr").textContent=T().camNotSupported; return; }
     const stream = await camAcquire();
     if(!stream){ open(); $("camErr").textContent=T().camNoAccess; return; }
-    cam.stream=stream;
+    cam.stream=stream; camWatchStreamTracks(stream);
     cam.ref=null; cam.pressed=false; cam.measuring=false; cam.mode="setup";
     const v=camGetVideo(); v.srcObject=stream;
     camMoveVideoTo($("camStage"));
@@ -3545,7 +3628,7 @@
     if(cam.stream){ try{ cam.stream.getTracks().forEach(t=>t.stop()); }catch(e){} cam.stream=null; }
     const stream = await camAcquire();
     if(!stream){ $("camErr").textContent=T().camNoAccess; return; }
-    cam.stream=stream; const v=camGetVideo(); v.srcObject=stream;
+    cam.stream=stream; camWatchStreamTracks(stream); const v=camGetVideo(); v.srcObject=stream;
     try{ await v.play(); }catch(e){}
     cam.ref=null; cam.pressed=false; cam.measuring=false;   // recalibrate after switching camera
   }
@@ -3657,7 +3740,7 @@
   $("presetLoad").addEventListener("click", ()=>{ presetLoad(); updateSummaries(); });
   $("presetDel").addEventListener("click", ()=>{ presetDel(); updateSummaries(); });
   $("statsClear").addEventListener("click", ()=>{
-    if(confirm("Clear the whole history and personal best?")){
+    if(confirm(T().confirmClearHistory)){
       KV.del(K.history); KV.del(K.pr); KV.del(K.game); renderStats();
     }
   });
@@ -3749,7 +3832,7 @@
   (function(){
     const vt = $("vibrate"), vh = $("vibrateHint");
     if(!("vibrate" in navigator)){
-      if(vh) vh.textContent = "This browser reports no vibration support.";
+      if(vh) vh.textContent = T().vibrateUnsupported;
       return;
     }
     vt.addEventListener("change", ()=>{
@@ -3757,9 +3840,7 @@
       let ok = false;
       try{ ok = navigator.vibrate([120,60,200]); }catch(e){ ok = false; }
       if(vh){
-        vh.textContent = ok
-          ? "Test triggered. Nothing felt? On Android: Settings → Sound & vibration → enable Vibration & haptics; and make sure the phone is not silenced/Do-Not-Disturb."
-          : "Vibration was blocked by the browser (user gesture or system setting required).";
+        vh.textContent = ok ? T().vibrateTestTriggered : T().vibrateBlocked;
       }
     });
   })();
