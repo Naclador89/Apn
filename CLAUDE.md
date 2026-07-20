@@ -48,7 +48,16 @@ plus the `cam` object for camera control. `holding` is set directly at 9
 call sites; the two that were verified near-verbatim duplicates are
 centralized behind `resumeHeldRelease(loopFn)` and `releaseHold()` — see
 `ARCHITECTURE.md § Known Issues` for why the other 7 weren't forced into the
-same helpers.
+same helpers. `holding` has a companion, `activePointerId` — the
+`pointerId` of the touch/pointer currently driving the hold (`null` for
+camera-/keyboard-driven holds, which have no pointer). `pressStart()`/
+`pressStartStopwatch()`/`resumeHeldRelease()` take an optional `pointerId`
+argument and set it; `pressEnd()` checks it and ignores a
+pointerup/pointercancel/lostpointercapture from a pointer that isn't the
+active one, so a second finger touching down and lifting elsewhere on the
+screen can't cut a hold short (previously the biggest offender was the
+`window`-level `pointerup` fallback next to `holdBtn`'s listeners, which had
+zero pointer filtering at all).
 
 **Two parallel session paths**, forking at the shared entry points
 `armReady()`/`pressStart()`/`pressEnd()` (`index.html:2548`/`3392`/`3423`)
@@ -198,8 +207,10 @@ Resolved in a follow-up pass (kept here as a record, not deleted): Sudden
 Death/Time Attack hardcoded-German text, the `finish()`/`stopSession()`
 history-recording asymmetry + duplicated teardown, the two verified
 `holding`-flag duplications, hardcoded validation/dialog/`aria-label`
-strings, missing camera stream-loss detection, and unexplained magic
-numbers.
+strings, missing camera stream-loss detection, unexplained magic numbers,
+and multitouch spuriously ending an in-progress hold (a second finger
+lifting anywhere on the screen no longer calls `pressEnd()` unless it's the
+pointer that actually started the hold — see `activePointerId` above).
 
 Still open, deliberately left as documented rather than fixed:
 - `readAll()`/`buildPlan()` dual source of truth for settings — can

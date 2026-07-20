@@ -2341,6 +2341,8 @@
 
   let S = null;
   let holding = false;
+  let activePointerId = null;  // pointerId that started the current hold;
+                                // null while idle and for camera-/keyboard-driven holds
   let lastCueKind = "up";
   let curScreenColorState = null;
   let raf = 0;
@@ -2901,10 +2903,11 @@
   // Shared "resume a hold that was still inside its release-grace window"
   // logic — was duplicated near-verbatim between pressStartStopwatch() and
   // pressStart(). loopFn is the RAF loop to resume (stopwatchHoldLoop or loop).
-  function resumeHeldRelease(loopFn){
+  function resumeHeldRelease(loopFn, pointerId){
     clearTimeout(releaseTimer); releaseTimer = 0;
     pendingRelease = false;
     holding = true;
+    activePointerId = (pointerId !== undefined) ? pointerId : null;
     applyScreenColor();
     $("holdBtn").classList.add("holding");
     progressStart();
@@ -2915,24 +2918,26 @@
   // in-progress hold before its own follow-up logic (finalize, grace timer, etc).
   function releaseHold(){
     holding = false;
+    activePointerId = null;
     applyScreenColor();
     cancelAnimationFrame(raf);
   }
 
   let swRestTimer = 0;
-  function pressStartStopwatch(){
+  function pressStartStopwatch(pointerId){
     if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
     if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
     if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
 
     if(pendingRelease){
-      resumeHeldRelease(stopwatchHoldLoop);
+      resumeHeldRelease(stopwatchHoldLoop, pointerId);
       return;
     }
     if(S.waitingStart) bootFirstPress();
     clearInterval(swRestTimer); swRestTimer = 0;
     S.swHoldStartTs = Date.now();
     holding = true;
+    activePointerId = (pointerId !== undefined) ? pointerId : null;
     applyScreenColor();
     $("holdBtn").classList.add("holding");
     setCue("up", S.words.down, "");
@@ -3415,17 +3420,17 @@
     raf = requestAnimationFrame(loop);
   }
 
-  function pressStart(){
+  function pressStart(pointerId){
     if(!S || !S.armed) return;
     if(holding) return;
     if(S.goal === "scenario" && S.scenario !== "interval"){
-      pressStartStopwatch();
+      pressStartStopwatch(pointerId);
       return;
     }
     if(!S.cur) return;
     if(pendingRelease){
       lastTs = 0;
-      resumeHeldRelease(loop);
+      resumeHeldRelease(loop, pointerId);
       return;
     }
     if(S.waitingStart){
@@ -3435,6 +3440,7 @@
     clearInterval(reactTimer); reactTimer = 0;
     if(S.subBase) $("subcue").textContent = S.subBase;
     holding = true;
+    activePointerId = (pointerId !== undefined) ? pointerId : null;
     applyScreenColor();
     lastTs = 0;
     $("holdBtn").classList.add("holding");
@@ -3446,8 +3452,9 @@
     raf = requestAnimationFrame(loop);
   }
 
-  function pressEnd(){
+  function pressEnd(pointerId){
     if(!holding) return;
+    if(pointerId !== undefined && activePointerId !== null && pointerId !== activePointerId) return;
     if(S && S.goal === "scenario" && S.scenario !== "interval"){
       pressEndStopwatch();
       return;
@@ -3886,23 +3893,23 @@
   btn.addEventListener("pointerdown", e=>{
     e.preventDefault();
     try{ btn.setPointerCapture(e.pointerId); }catch(_){}
-    pressStart();
+    pressStart(e.pointerId);
   });
-  btn.addEventListener("pointerup",     e=>{ e.preventDefault(); pressEnd(); });
-  btn.addEventListener("pointercancel", e=>{ pressEnd(); });
-  btn.addEventListener("lostpointercapture", ()=>{ pressEnd(); });
-  window.addEventListener("pointerup", ()=>{ if(holding) pressEnd(); });
+  btn.addEventListener("pointerup",     e=>{ e.preventDefault(); pressEnd(e.pointerId); });
+  btn.addEventListener("pointercancel", e=>{ pressEnd(e.pointerId); });
+  btn.addEventListener("lostpointercapture", e=>{ pressEnd(e.pointerId); });
+  window.addEventListener("pointerup", e=>{ if(holding && e.pointerId === activePointerId) pressEnd(e.pointerId); });
   btn.addEventListener("contextmenu", e=>e.preventDefault());
 
   const tap = $("tapSurface");
   tap.addEventListener("pointerdown", e=>{
     e.preventDefault();
     try{ tap.setPointerCapture(e.pointerId); }catch(_){}
-    pressStart();
+    pressStart(e.pointerId);
   });
-  tap.addEventListener("pointerup",     e=>{ e.preventDefault(); pressEnd(); });
-  tap.addEventListener("pointercancel", ()=>{ pressEnd(); });
-  tap.addEventListener("lostpointercapture", ()=>{ pressEnd(); });
+  tap.addEventListener("pointerup",     e=>{ e.preventDefault(); pressEnd(e.pointerId); });
+  tap.addEventListener("pointercancel", e=>{ pressEnd(e.pointerId); });
+  tap.addEventListener("lostpointercapture", e=>{ pressEnd(e.pointerId); });
   tap.addEventListener("contextmenu", e=>e.preventDefault());
 
   let keyHeld = false;

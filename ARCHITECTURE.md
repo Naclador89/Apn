@@ -114,6 +114,7 @@ Declared near `let S = null;` (`index.html:2337` onward) unless noted:
 | Var | Purpose |
 |---|---|
 | `holding` | true while the hold is actively engaged — set directly at 9 call sites; the two verified duplicates are centralized behind `resumeHeldRelease(loopFn)` (`index.html:2881`) and `releaseHold()` (`index.html:2893`), see § Known Issues |
+| `activePointerId` | `pointerId` of the touch/pointer currently driving the hold; `null` while idle and for camera-/keyboard-driven holds (they pass no `pointerId`). Set alongside `holding=true` in `pressStart()`, `pressStartStopwatch()`, `resumeHeldRelease()`; cleared alongside `holding=false` in `releaseHold()`. `pressEnd()` ignores a pointerup/pointercancel/lostpointercapture whose `pointerId` doesn't match, so a second finger touching down and lifting elsewhere can't end an in-progress hold |
 | `lastCueKind` | last `kind` passed to `setCue()`; drives `applyScreenColor()`'s green/yellow decision |
 | `curScreenColorState` | last applied screen-color state, used to skip redundant class churn / restart CSS animations |
 | `raf` | current `requestAnimationFrame` handle — shared by `loop()` (reps/time) and `stopwatchHoldLoop()` (scenario); only one runs at a time |
@@ -845,6 +846,20 @@ time an item here gets fixed or a new one is found.
   intentionally left alone (see `armReady()`/`armReadyScenario()`/
   `beginRep()`/`completeRep()`/`stopSession()` in § 2) — forcing them into
   one helper would be premature abstraction, not simplification.
+- ~~Multitouch could spuriously end an in-progress hold.~~ **Fixed.** None
+  of the `pointerdown`/`pointerup`/`pointercancel`/`lostpointercapture`
+  listeners on `holdBtn`/`tapSurface` (nor the `window`-level `pointerup`
+  fallback next to `holdBtn`'s listeners, which had no filtering at all)
+  checked which `pointerId` had actually started the current hold, so a
+  second finger touching down and lifting elsewhere on the screen — e.g. an
+  accidental palm touch — would call `pressEnd()` and cut the hold short
+  even though the original holding finger was still down. Fixed by adding
+  the `activePointerId` companion variable (see table above): `pressEnd()`
+  now no-ops when the releasing `pointerId` doesn't match the one that
+  started the hold. Camera/keyboard paths call `pressStart()`/`pressEnd()`
+  with no `pointerId` argument and are unaffected. Verified with a
+  Playwright script dispatching independent `pointerId`s at `holdBtn` and
+  `tapSurface`.
 - ~~Validation errors, `alert`/`confirm` dialogs, and vibration-test
   messages hardcoded English.~~ **Fixed.** `validate()`'s ~12 error strings,
   the preset-save `alert`, the history-clear `confirm`, and all three
