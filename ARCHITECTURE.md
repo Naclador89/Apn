@@ -1,13 +1,17 @@
 # Architecture reference — Breathless
 
-Deep technical reference for `index.html` (single-file PWA, ~3750 lines).
-Read `CLAUDE.md` first for the quick orientation; this file is the detailed
-backing reference for everything summarized there.
+Deep technical reference for Breathless, a static PWA split (July 2026,
+purely for AI-agent token efficiency, no behavior change) across
+`index.html` (markup + head only), `styles.css`, `i18n.js` (the `I18N`
+object), and `app.js` (everything else — one `"use strict"` IIFE, ~2600
+lines). Read `CLAUDE.md` first for the quick orientation; this file is the
+detailed backing reference for everything summarized there.
 
-All line numbers below reflect the file as of the documentation pass that
-created this file. They will drift as the code changes — **if you notice a
-reference here is off by more than a few lines, fix it while you're in the
-area**, rather than leaving it stale for the next reader.
+All line numbers below are `file:line` and reflect the file as of the
+documentation pass that created this file (updated for the file split).
+They will drift as the code changes — **if you notice a reference here is
+off by more than a few lines, fix it while you're in the area**, rather
+than leaving it stale for the next reader.
 
 ---
 
@@ -15,16 +19,16 @@ area**, rather than leaving it stale for the next reader.
 
 ### The `S` object
 
-Declared `let S = null;` at `index.html:2337`. Created by `buildPlan()`
-(`index.html:2446`) at session start, discarded (`S = null`) at the end
-of both `finish()` (`index.html:3541`) and `stopSession()` (`index.html:3597`).
+Declared `let S = null;` at `app.js:906`. Created by `buildPlan()`
+(`app.js:1031`) at session start, discarded (`S = null`) at the end
+of both `finish()` (`app.js:2139`) and `stopSession()` (`app.js:2195`).
 
 **Fields set in `buildPlan()`:**
 
 | Field | Purpose |
 |---|---|
 | `goal` | `"reps"` / `"time"` / `"scenario"` |
-| `base`, `chance`, `minHold`, `maxHold`, `minRest`, `maxRest`, `releaseGrace`, `strict`, `penalty`, `penaltyX`, `lateTol`, `hide` | the shared hold/rest/strict/penalty difficulty field set, populated by the shared helper `applyRepsConfig(cfg, src)` (`index.html:2439`) — used both for the plain baseline (`applyRepsConfig(cfg, readAll())`) and, for Interval Sequence, re-applied per phase from a saved preset object (see `iv_*` below and § 3) |
+| `base`, `chance`, `minHold`, `maxHold`, `minRest`, `maxRest`, `releaseGrace`, `strict`, `penalty`, `penaltyX`, `lateTol`, `hide` | the shared hold/rest/strict/penalty difficulty field set, populated by the shared helper `applyRepsConfig(cfg, src)` (`app.js:1005`) — used both for the plain baseline (`applyRepsConfig(cfg, readAll())`) and, for Interval Sequence, re-applied per phase from a saved preset object (see `iv_*` below and § 3) |
 | `iv_phaseMode`, `totalReps` / `totalMin` | also set by `applyRepsConfig()`: reads `src.goal` and sets `iv_phaseMode` to `"time"` (with `totalMin` and `totalReps=null`) or `"reps"` (with `totalReps` rolled via `rand(minReps,maxReps)`) — this is what lets an Interval Sequence phase be either rep-count- or duration-driven; harmless/unused for non-interval sessions |
 | `armed` | whether input is currently accepted |
 | `progressTone`, `prAnnounce` | feedback toggles |
@@ -52,7 +56,7 @@ function first needs them — this is most of the state):
   `completeRep()`, `finalizeStopwatchRelease()`, `taComplete()`,
   `rhythmTap()` (which aliases it to `S.rr_hits` — the only scenario that
   does this the other way round). **For Interval Sequence, `S.done` is
-  per-phase** — reset to `0` in `ivAdvancePhase()` (`index.html:3260`) at
+  per-phase** — reset to `0` in `ivAdvancePhase()` (`app.js:1829`) at
   every phase transition, so `#repNow`/`#repTotal` behave exactly as they
   would for a standalone Reps session. The true cross-phase total is
   tracked separately in `S.iv_totalDone`, incremented alongside `S.done` in
@@ -65,8 +69,8 @@ function first needs them — this is most of the state):
   different call sites.
 - `S.armed`, `S.waitingStart` — input-gate flags.
 - `S.startTime`, `S.endAt` — session clock anchors, set in
-  `bootFirstPress()` (`index.html:2747`) and `rhythmStart()`
-  (`index.html:3138`) — **the wall clock starts on first press, not at
+  `bootFirstPress()` (`app.js:1313`) and `rhythmStart()`
+  (`app.js:1730`) — **the wall clock starts on first press, not at
   `buildPlan()`/`startSession()`**. `S.endAt` is also reused, unmodified in
   meaning, for Interval Sequence's time-based phases (see § 3) — it just
   gets re-set to the *current phase's* end time by `bootFirstPress()`
@@ -74,7 +78,7 @@ function first needs them — this is most of the state):
   whole session's; safe because every reader of `S.endAt` for standalone
   Time mode is gated on `S.goal==="time"`, never true for interval.
 - `S.livesMax`, `S.livesLeft` — lives system, set in `armReadyScenario()`,
-  mutated in `tryLoseLife()` (`index.html:2596`).
+  mutated in `tryLoseLife()` (`app.js:1181`).
 - Stopwatch-family (`sw`-prefixed, shared beyond just "stopwatch" — see
   § Known Issues): `S.swLongest`, `S.swLastReleaseTs`, `S.swHoldStartTs`,
   `S.swReleaseTs`.
@@ -94,7 +98,7 @@ function first needs them — this is most of the state):
 - `S.holdSec` — cumulative held seconds across the whole session, touched
   in `completeRep()`/`finalizeStopwatchRelease()`/`taComplete()`.
 - `S.reactLeft` — late-start countdown, set in `startReactionWindow()`
-  (`index.html:3312`).
+  (`app.js:1907`).
 - `S.iv_*` (Interval Sequence, `iv_` prefix) — `iv_phasePresets` (array of
   saved preset names, one per phase, set in `buildPlan()`), `iv_phaseIdx`
   (0-based current phase, also set in `buildPlan()`), `iv_totalDone`
@@ -109,11 +113,11 @@ function first needs them — this is most of the state):
 
 ### Other module-level state
 
-Declared near `let S = null;` (`index.html:2337` onward) unless noted:
+Declared near `let S = null;` (`app.js:906` onward) unless noted:
 
 | Var | Purpose |
 |---|---|
-| `holding` | true while the hold is actively engaged — set directly at 9 call sites; the two verified duplicates are centralized behind `resumeHeldRelease(loopFn)` (`index.html:2881`) and `releaseHold()` (`index.html:2893`), see § Known Issues |
+| `holding` | true while the hold is actively engaged — set directly at 9 call sites; the two verified duplicates are centralized behind `resumeHeldRelease(loopFn)` (`app.js:1470`) and `releaseHold()` (`app.js:1483`), see § Known Issues |
 | `activePointerId` | `pointerId` of the touch/pointer currently driving the hold; `null` while idle and for camera-/keyboard-driven holds (they pass no `pointerId`). Set alongside `holding=true` in `pressStart()`, `pressStartStopwatch()`, `resumeHeldRelease()`; cleared alongside `holding=false` in `releaseHold()`. `pressEnd()` ignores a pointerup/pointercancel/lostpointercapture whose `pointerId` doesn't match, so a second finger touching down and lifting elsewhere can't end an in-progress hold |
 | `lastCueKind` | last `kind` passed to `setCue()`; drives `applyScreenColor()`'s green/yellow decision |
 | `curScreenColorState` | last applied screen-color state, used to skip redundant class churn / restart CSS animations |
@@ -128,14 +132,14 @@ Declared near `let S = null;` (`index.html:2337` onward) unless noted:
 | `clockTimer` | `setInterval` for the top clock display |
 | `lastTs` | last RAF timestamp for `loop()`'s delta-time integration (reps/time only — `stopwatchHoldLoop` reads `Date.now()` directly instead, an inconsistent timing strategy between the two paths) |
 | `keyHeld` | space/enter key debounce |
-| `cam` (`index.html:3608`) | camera-control module state — see § Camera control subsystem |
+| `cam` (`app.js:2206`) | camera-control module state — see § Camera control subsystem |
 
 ---
 
 ## 2. Session lifecycle
 
 ```
-startSession() [index.html:2524]
+startSession() [app.js:1109]
   → buildPlan()                          (builds S; for interval, also resolves
                                             phase 1's preset and its curve)
   → show("session")
@@ -161,7 +165,7 @@ startSession() [index.html:2524]
   stopSession()     (user hits Stop — every goal/scenario, never recorded)
 ```
 
-`armReady()`/`pressStart()`/`pressEnd()` (`index.html:2548`/`3392`/`3423`)
+`armReady()`/`pressStart()`/`pressEnd()` (`app.js:1133`/`1987`/`2019`)
 are the **only** shared dispatch points between the two families. They're
 the single entry point for all input sources: the hold button, the
 eyes-closed tap surface, the space/enter key, and the camera
@@ -174,62 +178,62 @@ is never rewritten to `"reps"` to achieve this).
 
 ### Reps/Time/Interval-Sequence path
 
-- `armReady()` (`index.html:2548`): arms the first rep, picks `S.cur` via
+- `armReady()` (`app.js:1133`): arms the first rep, picks `S.cur` via
   `holdDurationFor()`. For `S.scenario==="interval"`, also shows `#swStats`
-  and calls `ivUpdatePhaseIndicator()` (`index.html:3228`).
+  and calls `ivUpdatePhaseIndicator()` (`app.js:1820`).
 - `pressStart()`: on `waitingStart`, calls `bootFirstPress()` (shared with
   scenario) to start the clock, then sets `holding=true` and kicks `loop()`.
-- `loop(ts)` (`index.html:3359`): RAF-driven, delta-time hold-progress
+- `loop(ts)` (`app.js:1954`): RAF-driven, delta-time hold-progress
   integration; calls `completeRep()` at target.
-- `pressEnd()` → `finalizeRelease()` (`index.html:3440`): strict-mode
+- `pressEnd()` → `finalizeRelease()` (`app.js:2037`): strict-mode
   restart, penalty, early-release messaging. **Only this path uses
   `S.strict`, `S.penalty`, `startReactionWindow`, `applyPenalty`** — which is
   exactly why Interval Sequence rides this path: each phase gets the real
   strict/penalty/late-start-tolerance system, not a reimplementation.
-- `completeRep()` (`index.html:3486`): finalizes a rep, updates
+- `completeRep()` (`app.js:2084`): finalizes a rep, updates
   `S.done`/`S.holdSec`/`S.longestHold`/PR, and (interval only) increments
   `S.iv_totalDone`; `setTimeout(650ms)` → `nextRep(false)`.
-- `nextRep(first)` (`index.html:3253`): checks end conditions; for interval,
-  a met end condition first tries `ivAdvancePhase()` (`index.html:3237`) —
+- `nextRep(first)` (`app.js:1847`): checks end conditions; for interval,
+  a met end condition first tries `ivAdvancePhase()` (`app.js:1829`) —
   if it returns `true` (more phases remain), execution falls through into
   the same rest-countdown/`beginRep()` code below using the newly-applied
   phase's config; only when `ivAdvancePhase()` returns `false` (last phase
   finished) does it fall through to `finish()`.
-- `beginRep()` (`index.html:3282`): mirrors `armReady()` for reps 2..N, also
+- `beginRep()` (`app.js:1877`): mirrors `armReady()` for reps 2..N, also
   calls `startReactionWindow()`.
 
 ### Scenario path (the other six sub-modes)
 
-- `armReadyScenario()` (`index.html:2650`): single dispatcher that inline-
+- `armReadyScenario()` (`app.js:1235`): single dispatcher that inline-
   initializes each of the **six** non-interval scenarios' fields in one
   large if/else chain, then calls `rhythmStart()` for `"rhythm"` as a
   special case (rhythm alone auto-starts, no press needed to boot).
-- `bootFirstPress()` (`index.html:2728`): shared boot logic (clock/wake-
+- `bootFirstPress()` (`app.js:1313`): shared boot logic (clock/wake-
   lock/guard) **plus** it owns the entire `S.sd_timer` `setInterval`
   definitions for `sd_speed` and `sd_mixed` — two full per-scenario state
   machines defined inside this one function as anonymous closures.
   `sd_hold`/`stopwatch`/`timeattack` have no equivalent timer (purely
   press/release driven); `rhythm` has its own separate `S.rr_timer` set up
   in `rhythmStart()`.
-- `pressStartStopwatch()` (`index.html:2900`): handles "start holding";
+- `pressStartStopwatch()` (`app.js:1491`): handles "start holding";
   delegates immediately to `rhythmTap()` if scenario is `rhythm` (taps, not
   holds). The release-grace resume branch calls the shared
-  `resumeHeldRelease()` helper (`index.html:2881`, see § Known Issues).
-- `pressEndStopwatch()` (`index.html:2976`) → `finalizeStopwatchRelease()`
-  (`index.html:2988`): ~120-line function with a big if/else-if chain over
+  `resumeHeldRelease()` helper (`app.js:1470`, see § Known Issues).
+- `pressEndStopwatch()` (`app.js:1568`) → `finalizeStopwatchRelease()`
+  (`app.js:1580`): ~120-line function with a big if/else-if chain over
   `S.scenario` (`sd_hold`, `sd_mixed`, `sd_speed`, else), duplicating much
   of what `completeRep()`/`finalizeRelease()` do for reps/time, reimplemented
   scenario-by-scenario.
-- `stopwatchHoldLoop()` (`index.html:2944`): the scenario equivalent of
+- `stopwatchHoldLoop()` (`app.js:1536`): the scenario equivalent of
   `loop()`, but `Date.now()`-based rather than delta-integrated; also
   special-cases `timeattack` (calls `taComplete`) and `sd_mixed`'s hold
   phase inline. Its guard condition hand-lists the scenario names it applies
   to — `rhythm` is excluded (owns its own timer, `S.rr_timer`); `interval`
   never reaches this function at all (it doesn't take the scenario path),
   so no exclusion is needed for it here.
-- `taComplete()` (`index.html:3110`) and the `rhythm*` family
-  (`rhythmStart` `index.html:3138`, `rhythmTick` `3155`, `rhythmTap` `3171`,
-  `rhythmMiss` `3191`) are further, mostly self-contained mini state
+- `taComplete()` (`app.js:1702`) and the `rhythm*` family
+  (`rhythmStart` `app.js:1730`, `rhythmTick` `1747`, `rhythmTap` `1763`,
+  `rhythmMiss` `1783`) are further, mostly self-contained mini state
   machines that still funnel through `finish()`.
 
 ### Shared vs. diverging
@@ -287,7 +291,7 @@ assigned to it.
 **Why `S.goal` is never rewritten to `"reps"` or `"time"`:**
 `commitGameSession()` branches on `snap.goal === "reps"` *and*
 `snap.goal === "time"` to award their respective personal-best records
-(`index.html:1929`/`1931`). If Interval Sequence sessions literally set
+(`app.js:492`/`494`). If Interval Sequence sessions literally set
 `S.goal` to either value to reuse the engine, every run would silently
 contaminate whichever record matched the current phase — reversing the
 deliberate exclusion noted above. Instead, `S.goal` stays `"scenario"` and
@@ -310,25 +314,25 @@ probability-curve shape (see below) — so assigning a preset to a phase slot
 reproduces a full Reps- or Time-mode session exactly, without a second copy
 of the settings UI (which would otherwise mean up to 6 independent curve
 editors, times two for Reps vs. Time fields). `populatePresetOptions()`
-(`index.html:2096`) tags each dropdown option with `(Reps)`/`(Time)` (reusing
+(`app.js:660`) tags each dropdown option with `(Reps)`/`(Time)` (reusing
 the existing `t.goalReps`/`t.goalTime` labels) by reading the preset's own
 stored `.goal`, so it's clear which is which before assigning it.
 
 **Mechanics:**
-- `buildPlan()` (`index.html:2465`) resolves phase 1's preset
+- `buildPlan()` (`app.js:1031`) resolves phase 1's preset
   (`KV.get(K.presets,{})[S.iv_phasePresets[0]]`), applies it via
-  `applyRepsConfig(cfg, p0)` (`index.html:2439` — the same helper used for
+  `applyRepsConfig(cfg, p0)` (`app.js:1005` — the same helper used for
   the plain baseline), snapshots the real global curve state into
   `cfg.iv_savedCurves`, then swaps in phase 1's curve via
-  `applyIvPhaseCurve(p0)` (`index.html:1523`).
-- `ivAdvancePhase()` (`index.html:3260`), called from `nextRep()`'s
-  end-of-session check (`index.html:3278`): increments `S.iv_phaseIdx`; if
+  `applyIvPhaseCurve(p0)` (`app.js:87`).
+- `ivAdvancePhase()` (`app.js:1829`), called from `nextRep()`'s
+  end-of-session check (`app.js:1851`): increments `S.iv_phaseIdx`; if
   phases remain, resolves the next preset, re-applies it onto the *live*
   `S` via `applyRepsConfig(S, p)`, swaps its curve via
   `applyIvPhaseCurve(p)`, resets `S.done` to `0` (per-phase — see § 1) and
   `S.iv_phaseStartAt` to the current time, sets `S.endAt` for a time-based
   phase (see below), updates `#repTotal`/`#repNow`, and calls
-  `ivUpdatePhaseIndicator()` (`index.html:3251`, reuses the shared
+  `ivUpdatePhaseIndicator()` (`app.js:1820`, reuses the shared
   `#swStats` slot to show "Phase X/Y" and the active preset's name — same
   reused-readout pattern as every other scenario, see the naming notes
   below). Returns `false` once the last phase is exhausted, at which point
@@ -343,7 +347,7 @@ stored `.goal`, so it's clear which is which before assigning it.
   for interval sessions — see § 1's `S.done` bullet for why the two are
   split.
 
-**Time-based phases.** `applyRepsConfig(cfg, src)` (`index.html:2439`) reads
+**Time-based phases.** `applyRepsConfig(cfg, src)` (`app.js:1005`) reads
 `src.goal`: if `"time"`, it sets `cfg.iv_phaseMode = "time"`,
 `cfg.totalMin = fn("totalMin")`, and `cfg.totalReps = null`; otherwise
 (`"reps"` or anything else — an unchanged fallback) it sets
@@ -355,26 +359,26 @@ session's* start, not the current phase's) — reusing `S.endAt` is safe
 because every place that reads it for standalone Time mode is gated on
 `S.goal === "time"`, which is never true for interval, so the two uses never
 collide:
-- `bootFirstPress()` (`index.html:2747`) sets `S.iv_phaseStartAt = S.startTime`
+- `bootFirstPress()` (`app.js:1313`) sets `S.iv_phaseStartAt = S.startTime`
   for phase 1, and — if `S.iv_phaseMode === "time"` — `S.endAt = S.startTime
   + S.totalMin*60*1000`, mirroring the standalone-Time-mode line right above
   it.
 - `ivAdvancePhase()` sets `S.iv_phaseStartAt = Date.now()` and (if the new
   phase is time-based) `S.endAt = S.iv_phaseStartAt + S.totalMin*60*1000`
   for every phase after the first.
-- `nextRep()`'s end check (`index.html:3278`) now fires on
+- `nextRep()`'s end check (`app.js:1851`) now fires on
   `(S.totalReps && S.done >= S.totalReps) || ivPhaseTimeUp`, where
   `ivPhaseTimeUp = S.scenario==="interval" && S.iv_phaseMode==="time" &&
   S.endAt && Date.now() >= S.endAt` — `timeUp()` itself is untouched and
   still never fires for interval (gated on `S.goal==="time"`).
-- `sessionProgress()` (`index.html:1745`, used by "timing"-mode probability
+- `sessionProgress()` (`app.js:309`, used by "timing"-mode probability
   curves) gained a matching branch ahead of its existing
   `S.goal==="time"` one, computing the ratio from `S.iv_phaseStartAt`/
   `S.endAt` instead of `S.startTime`/`S.endAt` — without it, a "timing"-curve
   on a time-based interval phase would silently always sample as if progress
   were `0`, since neither of the two pre-existing branches (`S.goal==="time"`,
   `S.totalReps>0`) is ever true for it.
-- `applyPenalty()`/`penaltyNote()` (`index.html:3496`/`3506`) each gained an
+- `applyPenalty()`/`penaltyNote()` (`app.js:2067`/`2077`) each gained an
   `S.scenario==="interval" && S.iv_phaseMode==="time"` alternative alongside
   their `S.goal==="time"` check — without it, a late-start penalty on a
   time-based phase would silently do nothing (neither the time-extension
@@ -389,10 +393,10 @@ probability-curve system (`curves`/`curveMode`, § below "Cue/feedback
 system" or grep) is a single global mutable object with one `localStorage`
 key (`K.curves`); there's no built-in way to have several independent named
 curves. Two distinct rules keep this safe:
-1. `presetSave()`/`presetLoad()` (`index.html:2106`/`2117`) capture/restore
+1. `presetSave()`/`presetLoad()` (`app.js:675`/`686`) capture/restore
    the curve shape as part of the preset blob (`snap.curves =
    {hold,rest,modeHold,modeRest}`) — this is what lets a phase reproduce its
-   curve at all. `applyIvPhaseCurve(presetObj)` (`index.html:1523`) applies
+   curve at all. `applyIvPhaseCurve(presetObj)` (`app.js:87`) applies
    a captured curve, or falls back to a blank/uniform-random curve if the
    preset predates curve-capture (no `.curves` key) — this must never
    crash, since old presets are expected to exist.
@@ -443,13 +447,13 @@ curves. Two distinct rules keep this safe:
 
 ## 4. Cue/feedback system
 
-### `setCue(kind, big, sub)` (`index.html:3348`)
+### `setCue(kind, big, sub)` (`app.js:1943`)
 
 Only three `kind` values are ever passed: **`"up"`**, **`"down"`**,
 **`"rest"`**. Sets `lastCueKind`, the `#cue` CSS class, and always calls
 `applyScreenColor()`.
 
-### `cmd(kind)` (`index.html:2227`)
+### `cmd(kind)` (`app.js:796`)
 
 A *different*, overlapping vocabulary: `"down"`, `"up"`, `"hold"` (plus
 `cmdCount`, `cmdFinish`, `cmdPenalty`, `cmdPenaltyThenDown` for other cue
@@ -458,11 +462,11 @@ moments). Dispatches speech/beep/vibrate, each gated by
 `setCue`'s `kind` are different enumerations that happen to share two
 string values** ("up"/"down") — easy to conflate when reading call sites.
 
-`tick(kind)` (`index.html:2207`) is a third, lighter cue helper for
+`tick(kind)` (`app.js:776`) is a third, lighter cue helper for
 `isActionTap()` cases (rapid sd_speed/sd_mixed reps) — same "down"/"up"
 vocabulary again, beep+vibrate only, no speech.
 
-### Screen-color layer (`applyScreenColor(force)`, `index.html:2605`)
+### Screen-color layer (`applyScreenColor(force)`, `app.js:1190`)
 
 Two DOM layers, `#screenColorLayer` (background wash) and
 `#screenColorBorderLayer` (10px inset-`box-shadow` border, fully opaque,
@@ -496,17 +500,17 @@ side effect from `setCue()` itself plus a handful of direct calls.
 
 ### `SETTING_IDS` / `KV` / `readAll()` / `writeAll()`
 
-Storage helper `KV` (`index.html:962`) wraps `localStorage` with keys under
+Storage helper `KV` (`app.js:6`) wraps `localStorage` with keys under
 `K` (`lat.settings`, `lat.presets`, `lat.history`, `lat.pr`, `lat.curves`,
 `lat.game`). A few keys are used as raw string literals instead of going
 through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 `"lat.camOnboarded"` — inconsistent but harmless (all share the `lat.`
 prefix).
 
-`SETTING_IDS` (`index.html:1765`, 48 element IDs — 7 are the Interval
+`SETTING_IDS` (`app.js:332`, 48 element IDs — 7 are the Interval
 Sequence scenario's per-phase fields: `ivPhaseCount` + `ivPhasePreset1..6`,
 each a `<select>` of saved preset names) + `readAll()`/
-`writeAll()` (`index.html:1776`/`1784`) round-trip the settings form through
+`writeAll()` (`app.js:343`/`351`) round-trip the settings form through
 `lat.settings` on every change (debounced 400ms). `writeAll()` also contains
 a legacy migration shim: old blobs with `o.rest` but no `o.minRest` get
 split into `minRest`/`maxRest`. A settings blob from before this rework
@@ -560,10 +564,11 @@ previous goal carries over invisibly on a mode switch.
 
 ### i18n
 
-`I18N` (`index.html:970`) defines 11 languages: `de, en, zh, hi, es, fr, ar,
+`I18N` (`i18n.js:1`, its own file — see `CLAUDE.md`'s file table) defines
+11 languages: `de, en, zh, hi, es, fr, ar,
 bn, pt, ru, ur`. `T()` merges `en.strings` (fallback) with the active
 language's `strings`. `SUPPORTED_LANGS = ["de","en"]`
-(`index.html:1460`) is the actual gate — only these two are offered in the
+(`app.js:24`) is the actual gate — only these two are offered in the
 language dropdown.
 
 `de` and `en` each define the same `strings` keys (identical sets, zero
@@ -580,7 +585,7 @@ translation work).
 Two keys (`scenarioTitle`, `statsStreak`) are defined in `de`/`en` but
 appear unreferenced anywhere — worth confirming before deleting.
 
-`applyRuntimeI18n()` (`index.html:1475`) walks `[data-i18n]`/
+`applyRuntimeI18n()` (`app.js:39`) walks `[data-i18n]`/
 `[data-i18n-ph]`/`[data-i18n-aria]` elements (the last sets `aria-label`),
 then re-runs `updateScenarioHint()`, `ivLabelPhases()` (sets the Interval
 Sequence's numbered "Phase N" headings and each phase preset select's
@@ -617,13 +622,13 @@ it still exists), `updateSummaries()`, and curve redraws.
 
 ## 6. Camera control subsystem
 
-All logic in one block, `index.html:3608` onward. CSS `index.html:390-417`.
-Markup: PiP preview `#camPip` (`~825`), setup overlay `#camOverlay`
-(`~883`), onboarding card `#camIntro` (`~925`).
+All logic in one block, `app.js:2205` onward. CSS `styles.css:332-386`.
+Markup: PiP preview `#camPip` (`index.html:428`), setup overlay `#camOverlay`
+(`index.html:486`), onboarding card `#camIntro` (`index.html:528`).
 
 ### State object
 
-`const cam = {...}` (`index.html:3608`): `stream`, `video`, `running`,
+`const cam = {...}` (`app.js:2206`): `stream`, `video`, `running`,
 `raf`, `mode` (`"idle"|"setup"|"session"`), `roi` (centered 30%×30% box by
 default), `ref` (calibration baseline frame), a 48×48 downsample buffer
 (`aw`/`ah`/`actx`), `pressThr:25`, `releaseThr:10`, `pixelDelta:25`,
@@ -633,13 +638,13 @@ Persisted via `saveCamCfg()`/`loadCamCfg()` under `localStorage` key
 
 ### Capture & detection pipeline
 
-1. **Acquire**: `camAcquire()` (`index.html:3745`) calls `getUserMedia` with
+1. **Acquire**: `camAcquire()` (`app.js:2343`) calls `getUserMedia` with
    facingMode + 640×480 ideal constraints; retries with bare
    `{video:true}` on failure before giving up.
-2. **Sample**: `camSampleGray()` (`index.html:3648`) draws the ROI sub-rect
+2. **Sample**: `camSampleGray()` (`app.js:2246`) draws the ROI sub-rect
    (computed against the *mirrored* preview) into the 48×48 canvas,
    converts to grayscale via standard luma weights.
-3. **Change score**: `camChangeFrom(g)` (`index.html:3658`) counts pixels
+3. **Change score**: `camChangeFrom(g)` (`app.js:2256`) counts pixels
    differing from the reference frame by more than `pixelDelta` (25),
    returns a percentage of 2304 pixels.
 4. **Hysteresis**: in the main loop's `tick()`, not-pressed + `pct >=
@@ -652,9 +657,9 @@ Persisted via `saveCamCfg()`/`loadCamCfg()` under `localStorage` key
 
 ### Calibration
 
-- **Manual** `camCalibrate()` (`index.html:3663`): snapshots the current
+- **Manual** `camCalibrate()` (`app.js:2261`): snapshots the current
   frame as `cam.ref`; user sets thresholds manually.
-- **Auto** `camAutoCalibrate()` (`index.html:3669`): snapshots reference,
+- **Auto** `camAutoCalibrate()` (`app.js:2267`): snapshots reference,
   measures idle noise floor for 1.6s, derives thresholds via a hand-tuned
   formula (`releaseThr = clamp(3,40,round(measMax)+4)`; `pressThr =
   clamp(rel+3, 90, round(rel*2)+6)`) — these constants are tuned-by-feel,
@@ -675,10 +680,10 @@ scenarios, and Interval Sequence), not just a subset.
 ### Setup/consent flow
 
 Toggling `#cameraControl` fires `maybeShowCamIntro()`
-(`index.html:3798`, gated by `lat.camOnboarded`). `startSession()` redirects
-to `camOpenSetup()` (`index.html:3771`) instead of starting a session if the
+(`app.js:2396`, gated by `lat.camOnboarded`). `startSession()` redirects
+to `camOpenSetup()` (`app.js:2369`) instead of starting a session if the
 camera isn't yet in `"session"` mode; `camConfirmStart()`
-(`index.html:3819`) validates thresholds and calibration before switching
+(`app.js:2417`) validates thresholds and calibration before switching
 modes and calling `startSession()` again. Camera flip forces recalibration
 (`cam.ref = null`) since front/rear framing/lighting differ substantially.
 
@@ -688,7 +693,7 @@ modes and calling `startSession()` again. Camera flip forces recalibration
   UX, and all failure modes (denied vs. no hardware vs. unsatisfiable
   constraints) collapse to the same message. Still a known gap, not fixed.
 - **Stream-loss detection**: every acquired stream's tracks get a
-  `track.onended` watcher (`camWatchStreamTracks()`, `index.html:3757`). If
+  `track.onended` watcher (`camWatchStreamTracks()`, `app.js:2355`). If
   the feed dies mid-session (permission revoked, device unplugged), any
   stuck hold is released via `pressEnd()`, the camera is detached
   (`camDetach()`), and a `camStreamLost` message is shown (`#subcue`
@@ -701,7 +706,7 @@ modes and calling `startSession()` again. Camera flip forces recalibration
 
 ## 7. Lives system
 
-Core state/UI: CSS `index.html:423-429`; checkbox `#livesOn`; row container
+Core state/UI: CSS `styles.css:392-403`; checkbox `#livesOn`; row container
 `#livesRow`.
 
 ```js
@@ -709,10 +714,10 @@ function scenarioSupportsLives(scn){
   return scn==="sd_hold" || scn==="sd_speed" || scn==="sd_mixed" || scn==="rhythm";
 }
 ```
-(`index.html:2280`) — gates whether the toggle is even shown.
+(`app.js:849`) — gates whether the toggle is even shown.
 
-**Every `tryLoseLife()` call site** (`index.html:2596`, note: distinct from
-`cueLifeLost()` at `2586`, which is just the vibrate/beep/flash cue fired
+**Every `tryLoseLife()` call site** (`app.js:1181`, note: distinct from
+`cueLifeLost()` at `app.js:1171`, which is just the vibrate/beep/flash cue fired
 from inside it):
 
 | Scenario | Fail condition |
@@ -748,11 +753,14 @@ condition instead resets the current phase and lets the player retry.
   `index.html:~11` — two copies of the same artwork, not auto-synced.
 - **No service worker.** Grepped for `serviceWorker`/`sw.js` registration:
   none exists. The app has no offline cache layer beyond ordinary HTTP
-  caching of the single file — the app is installable (manifest +
-  standalone display) but not actually offline-capable in the service-worker
-  sense.
-- **No TODO/FIXME/XXX/debug markers** anywhere in `index.html` (verified by
-  grep; only false-positive substring hits on the word "Tempo").
+  caching of its files — the app is installable (manifest + standalone
+  display) but not actually offline-capable in the service-worker sense.
+  This also means the July 2026 CSS/JS/i18n file split (see the top of this
+  document) didn't need any cache-list update — there was no cache list to
+  begin with.
+- **No TODO/FIXME/XXX/debug markers** anywhere in `index.html`/`app.js`/
+  `i18n.js`/`styles.css` (verified by grep; only false-positive substring
+  hits on the word "Tempo").
 
 ### Feature history (chronological, from `git log`)
 
@@ -798,6 +806,11 @@ condition instead resets the current phase and lets the player retry.
     for the same PR-record-contamination reason `S.goal` was never
     rewritten to `"reps"`; preset dropdowns now tag each option `(Reps)`/
     `(Time)` so it's clear which is which
+26. Split the single `index.html` into `index.html` (markup + head) +
+    `styles.css` + `i18n.js` + `app.js`, purely to reduce the tokens an AI
+    coding agent has to load per edit — zero behavior change, verified via
+    `node --check` and Playwright smoke tests over both `file://` and a
+    served URL
 
 This narrative explains several of the inconsistencies below: features
 built early (Sudden Death family) predate the i18n retrofit and the
@@ -891,7 +904,7 @@ time an item here gets fixed or a new one is found.
   (`sd_actionMs`) with the rest of `S`'s camelCase. A full rename would touch
   a large fraction of the scenario engine for a purely internal/cosmetic
   gain — left as a deliberate future call, not a quick fix.
-- **Confetti palette** (`index.html:2028`) and the curve-editor stroke
+- **Confetti palette** (`app.js:595`) and the curve-editor stroke
   color still hardcode hex values close to but not identical to the theme's
   `--good`/`--bad`/`--rise` CSS variables. Left intentionally as-is — this is
   a subjective/cosmetic call with no clear "correct" fix, not a correctness

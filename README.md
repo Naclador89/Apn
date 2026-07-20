@@ -1,6 +1,6 @@
 # Breathless — Gasping for More
 
-A single-file breath-hold / apnea training web app. No build step, no
+A static breath-hold / apnea training web app. No build step, no
 dependencies, no backend — just open `index.html`. Installable as a PWA on
 mobile and desktop.
 
@@ -30,7 +30,7 @@ mobile and desktop.
 
 ## Running locally
 
-Because it's a single static file, any of these work:
+Because it's a static site with no build step, any of these work:
 
 ```bash
 # Just open it
@@ -39,15 +39,15 @@ open index.html            # macOS
 
 # …or serve it (needed for PWA install-to-homescreen behaviour;
 # note there is no service worker, so there's no offline cache — it's
-# just a single static file served over HTTP)
+# just static files served over HTTP)
 python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
 ## Deploying
 
-The app is a static `index.html`, so it deploys anywhere that serves static
-files. With **GitHub Pages**: enable Pages for this repository (Settings →
+The app is a handful of static files (`index.html`, `styles.css`, `app.js`,
+`i18n.js`), so it deploys anywhere that serves static files. With **GitHub Pages**: enable Pages for this repository (Settings →
 Pages → Deploy from branch → `main` / root) and the app is live.
 
 ## Safety
@@ -59,7 +59,10 @@ Pages → Deploy from branch → `main` / root) and the app is live.
 ## Structure
 
 ```
-index.html             # the entire app: markup, styles, logic, i18n strings
+index.html             # markup + <head> only
+styles.css              # all CSS
+app.js                  # all app logic (one IIFE)
+i18n.js                 # the I18N object (11 languages)
 manifest.webmanifest    # PWA manifest (name, icons, theme colors)
 icon.svg                # app icon source
 ```
