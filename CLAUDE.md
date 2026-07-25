@@ -27,15 +27,15 @@ CLAUDE.md              this file
 ARCHITECTURE.md         deep technical reference
 ```
 
-`index.html`'s `<script>` block runs `956`–`4017`, wrapped in a single
+`index.html`'s `<script>` block runs `956`–`4093`, wrapped in a single
 `"use strict"` IIFE. `$(id)` is a `getElementById` shorthand defined near the
 top of that block.
 
 ## Core architecture at a glance
 
 **Global session state**: a single object `S` (declared `let S = null;` at
-`index.html:2337`) holds everything about the in-flight session. It's built
-by `buildPlan()` (`index.html:2446`) at session start and set back to `null`
+`index.html:2368`) holds everything about the in-flight session. It's built
+by `buildPlan()` (`index.html:2477`) at session start and set back to `null`
 at the end of `finish()`/`stopSession()`. Many fields are *not* set in
 `buildPlan()` — they're added ad hoc by whichever function first needs them
 (rep counters, scenario phase fields, timer handles). See
@@ -60,7 +60,7 @@ screen can't cut a hold short (previously the biggest offender was the
 zero pointer filtering at all).
 
 **Two parallel session paths**, forking at the shared entry points
-`armReady()`/`pressStart()`/`pressEnd()` (`index.html:2548`/`3392`/`3423`)
+`armReady()`/`pressStart()`/`pressEnd()` (`index.html:2582`/`3392`/`3423`)
 based on `S.goal === "scenario" && S.scenario !== "interval"`:
 
 - **Reps / Time / Interval Sequence** (`S.goal` = `"reps"` or `"time"`, or
@@ -84,13 +84,13 @@ based on `S.goal === "scenario" && S.scenario !== "interval"`:
   per-scenario timers (`S.sd_timer`, `S.rr_timer`). Every one of these is
   press-gated.
 
-Both paths funnel into `finish()` (`index.html:3541`) on success/game-over —
+Both paths funnel into `finish()` (`index.html:3582`) on success/game-over —
 this is what records history/gamification. Manually hitting Stop always
-calls `stopSession()` (`index.html:3597`) instead, for both session types:
+calls `stopSession()` (`index.html:3639`) instead, for both session types:
 an aborted session is never recorded, only a natural end is.
 
 **Scenario engine** (dispatch table, all set up in `armReadyScenario()`,
-`index.html:2650`):
+`index.html:2684`):
 
 | Scenario | Phase concept | Timer |
 |---|---|---|
@@ -110,7 +110,7 @@ prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
 field; check `ARCHITECTURE.md § Scenario engine` or grep.
 
 **Interval Sequence** (`S.scenario === "interval"`, 2–6 phases,
-`index.html:3251`-`3277`): each phase is configured by picking one of your
+`index.html:3285`-`3277`): each phase is configured by picking one of your
 saved **presets** from a dropdown (`ivPhasePreset1..6`), so running the
 sequence feels exactly like running several independent Reps *or Time*
 sessions back to back — press-gated, with the same hold/rest probability
@@ -118,14 +118,14 @@ curves, strict mode, penalty, and late-start tolerance as the standalone
 mode the preset was saved from, phase by phase. **A phase can be either
 rep-count-driven or duration-driven**, decided by the assigned preset's own
 saved `goal` (`"reps"` vs `"time"`) — `applyRepsConfig(cfg, src)`
-(`index.html:2439`) sets `cfg.iv_phaseMode` accordingly (`S.iv_phaseMode` at
+(`index.html:2470`) sets `cfg.iv_phaseMode` accordingly (`S.iv_phaseMode` at
 runtime) and either rolls `cfg.totalReps` or carries over `cfg.totalMin`
 with `cfg.totalReps = null`. Preset-select dropdowns tag each option with
 its mode (`(Reps)`/`(Time)`, via `populatePresetOptions()`,
-`index.html:2096`) so it's clear which is which before assigning it to a
+`index.html:2127`) so it's clear which is which before assigning it to a
 phase. Mechanically this works by reusing the entire Reps engine unmodified
 (see above) plus one hook: `nextRep()`'s end-of-session check
-(`index.html:3278`) now fires on **either** `S.done >= S.totalReps` (a
+(`index.html:3317`) now fires on **either** `S.done >= S.totalReps` (a
 reps-mode phase) **or** the phase's own `S.endAt` timestamp elapsing
 (`S.iv_phaseMode === "time"` — `S.endAt`/`S.iv_phaseStartAt` are set in
 `bootFirstPress()` for phase 1 and in `ivAdvancePhase()` for every phase
@@ -138,12 +138,12 @@ code that owns them normally — see `timeUp()`/`sessionProgress()`/
 alongside their existing `S.goal==="time"` check, precisely because
 `S.goal` itself must never become `"time"` here — same PR-record-
 contamination reasoning as why it never becomes `"reps"`, see below).
-`ivAdvancePhase()` (`index.html:3260`) re-applies the next phase's preset
+`ivAdvancePhase()` (`index.html:3300`) re-applies the next phase's preset
 onto the live `S` via `applyRepsConfig(S, presetObj)`, resets `S.done` to 0
 (per-phase, so `#repNow`/`#repTotal` behave exactly as a fresh Reps session
 would — hidden entirely for a time-based phase, same as standalone Time
 mode), and swaps in that phase's captured probability curve via
-`applyIvPhaseCurve()` (`index.html:1523`). The true cross-phase rep total is
+`applyIvPhaseCurve()` (`index.html:1550`). The true cross-phase rep total is
 tracked separately in `S.iv_totalDone` (incremented in `completeRep()`),
 since `S.done` itself is per-phase; `finish()` reports `S.iv_totalDone`
 instead of `S.done` for interval sessions. Presets capture their
@@ -153,20 +153,20 @@ session start) in `teardownSessionTimers()` — purely in memory, **never**
 via `saveCurves()`, so the user's own hand-drawn curve shapes in
 `localStorage` are never touched by an Interval Sequence run, whether it
 ends naturally or via manual Stop. `ivUpdatePhaseIndicator()`
-(`index.html:3251`) reuses the `#swStats` slot (shared with the other
+(`index.html:3285`) reuses the `#swStats` slot (shared with the other
 scenarios) to show "Phase X/Y" and the active preset's name. An old preset
 saved before curve-capture existed (no `.curves` key) falls back to a
 blank/uniform-random curve rather than crashing.
 
 **Cue/feedback layer**: three *different*, overlapping small dispatchers —
-`setCue(kind,...)` (`index.html:3348`, `kind` ∈ `"up"/"down"/"rest"`, also
-always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2227`, `kind` ∈
+`setCue(kind,...)` (`index.html:3389`, `kind` ∈ `"up"/"down"/"rest"`, also
+always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2258`, `kind` ∈
 `"down"/"up"/"hold"`, drives speech+beep+vibrate), and `tick(kind)`
-(`index.html:2207`, lighter beep+vibrate only, for rapid action-phase taps).
+(`index.html:2238`, lighter beep+vibrate only, for rapid action-phase taps).
 Don't confuse `setCue`'s and `cmd`'s `kind` — they share two string values
 but are different enumerations for different purposes.
 
-**Screen-color mode** (`applyScreenColor()`, `index.html:2605`): two overlay
+**Screen-color mode** (`applyScreenColor()`, `index.html:2639`): two overlay
 layers, `#screenColorLayer` (slow ambient fill) and
 `#screenColorBorderLayer` (instant, fully-opaque 10px border using the
 theme's `--good`/`--rise`/`--bad` vars) — both driven by the same 3-state
@@ -176,7 +176,7 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1765`, 48 element
+**Settings / persistence**: `SETTING_IDS` (`index.html:1791`, 48 element
 IDs — 7 of them are the Interval Sequence scenario's per-phase fields,
 `ivPhaseCount` + `ivPhasePreset1..6`, each a `<select>` of saved preset
 names rather than a raw numeric field) + `KV`/`readAll()`/`writeAll()`
@@ -187,14 +187,14 @@ output — a dual-source-of-truth pattern to keep in mind if you add a new
 setting (wire it into *both* `SETTING_IDS` and `buildPlan()`, and usually
 `updateSummaries()` too). This one is still open — see
 `ARCHITECTURE.md § Known Issues`. Presets (`presetSave()`/`presetLoad()`,
-`index.html:2106`/`2117`) capture the *entire* `readAll()` output plus the
+`index.html:2137`/`2117`) capture the *entire* `readAll()` output plus the
 current probability-curve shape — this is what lets an Interval Sequence
 phase reproduce a full Reps- or Time-mode session exactly, including
 hold/rest timing curves, from a single dropdown pick.
 
 **i18n**: `I18N` object (`index.html:970`) defines 11 languages; only
 `de`/`en` are complete (fully in sync key-for-key) and exposed via
-`SUPPORTED_LANGS = ["de","en"]` (`index.html:1460`) — the other 9 are
+`SUPPORTED_LANGS = ["de","en"]` (`index.html:1486`) — the other 9 are
 intentional stubs, not dead code, not reachable. `T()` merges `en.strings`
 (fallback) with the active language. All six scenarios (including the
 Sudden Death family and Time Attack, which used to bypass this) now route
@@ -212,6 +212,21 @@ and multitouch spuriously ending an in-progress hold (a second finger
 lifting anywhere on the screen no longer calls `pressEnd()` unless it's the
 pointer that actually started the hold — see `activePointerId` above).
 
+Resolved in a third review pass: the generic "Best pace" record being
+contaminated by tap scenarios (rhythm/`sd_mixed` tap tempos — now gated to
+press-gated rep sessions in `commitGameSession()`); `sd_speed` losing an
+in-flight rep at the action-phase boundary when `releaseGrace > 0` (now
+`flushPendingRelease()`, same as `sd_mixed`); Interval Sequence re-reading
+presets from `localStorage` at each phase advance (deleting one mid-session
+soft-locked the session — presets are now snapshotted into
+`S.iv_phasePresetObjs` at `buildPlan()` time); an interval time-phase
+starting one extra rep when its deadline passed during a rest countdown
+(`ivPhaseTimeUp()` now also checked in `beginRep()`); and the last
+hardcoded-English UI text (stats box, curve-overlay titles, eyes-closed tap
+hint, "Wdhs" plural — all through `T()` now). `updateSummaries()` also
+names Time Attack/Rhythm in the goal summary, and history entries now store
+`scenario` alongside `goal`.
+
 Still open, deliberately left as documented rather than fixed:
 - `readAll()`/`buildPlan()` dual source of truth for settings — can
   silently diverge on out-of-range input.
@@ -223,19 +238,26 @@ Still open, deliberately left as documented rather than fixed:
   subjective cosmetic call, not a bug.
 - 9 of 11 `I18N` languages are intentional stubs, gated off by
   `SUPPORTED_LANGS`.
+- Loading a pre-curve-capture preset (no `.curves` key) blanks the stored
+  hand-drawn curves via `presetLoad()`'s `saveCurves()` — full-restore
+  semantics, only affects legacy presets; documented, not changed.
+- Rest/late-start countdowns are tick-counted `setInterval`s, so
+  background-tab throttling stretches them (deadline-based timestamps
+  would be exact) — see `ARCHITECTURE.md § Known Issues` for why this and
+  the RAF hold loop freezing while hidden are left as-is.
 
 ## Camera control & Lives system (one-liners — see `ARCHITECTURE.md` for detail)
 
-- Camera control (`index.html:3608` on) drives the exact same
+- Camera control (`index.html:3650` on) drives the exact same
   `pressStart()`/`pressEnd()` as touch/keyboard via `camOnPress()`/
   `camOnRelease()` — it's a genuine drop-in input source, works in every
   session type. Mid-session stream loss (permission revoked, device
   unplugged) is now detected (`camWatchStreamTracks()`) and surfaced with a
   `camStreamLost` message instead of silently freezing.
-- Lives system (`tryLoseLife()`, `index.html:2596`) is wired into exactly
+- Lives system (`tryLoseLife()`, `index.html:2630`) is wired into exactly
   `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack`/
   `interval` have no fail condition, so lives are structurally inapplicable
-  there (`scenarioSupportsLives()`, `index.html:2280`).
+  there (`scenarioSupportsLives()`, `index.html:2311`).
 
 ## Workflow notes for this repo
 

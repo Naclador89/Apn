@@ -837,7 +837,7 @@
       </button>
     </div>
 
-    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface" data-i18n-aria="ariaTapSurface"><span class="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
+    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface" data-i18n-aria="ariaTapSurface"><span class="tapHint" data-i18n="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
 
     <div id="camPip" class="camPip hidden" aria-hidden="true">
       <div class="camPipVid" id="camPipHost"><div class="camPipRoi" id="camPipRoi"></div></div>
@@ -1142,7 +1142,20 @@
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
         labelLivesCount:"Anzahl Leben",
-        statsRank:"Rang", statsStreak:"Streak"
+        statsRank:"Rang", statsStreak:"Streak",
+        repPlural:"Wdh.",
+        statsNoSessions:"Noch keine Sitzungen.",
+        statsSessionsLine:(total,recent)=>`Sitzungen gesamt: <b>${total}</b> · letzte 7 Tage: <b>${recent}</b>`,
+        statsLongestLine:v=>`Längster Hold (Rekord): <b>${v} s</b>`,
+        statsTotalHeldLine:v=>`Gesamte Haltezeit: <b>${v}</b>`,
+        statsLastLine:(when,reps,dur)=>`Letzte Sitzung: <b>${when}</b> · ${reps} Wdh. · ${dur}`,
+        curveTitleHoldTiming:"Dauer langer Holds über die Sitzung", curveTitleHoldRandom:"Wahrscheinlichkeitskurve langer Hold",
+        curveTitleRestTiming:"Pausendauer über die Sitzung", curveTitleRestRandom:"Wahrscheinlichkeitskurve Pause",
+        curveSubHoldTiming:"X = Sitzungsfortschritt. Y = Dauer des langen Holds zu dem Zeitpunkt.",
+        curveSubRestTiming:"X = Sitzungsfortschritt. Y = Pausenlänge zu dem Zeitpunkt.",
+        curveSubHoldRandom:"Höher auf der Kurve = diese Dauer ist wahrscheinlicher.",
+        curveSubRestRandom:"Höher auf der Kurve = diese Pausenlänge ist wahrscheinlicher.",
+        tapHint:"Augen-zu-Modus · irgendwo auf den Bildschirm tippen zum Halten (Stopp-Taste bleibt aktiv)"
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1320,6 +1333,19 @@
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
         labelLivesCount:"Number of lives",
         statsRank:"Rank", statsStreak:"Streak",
+        repPlural:"Reps",
+        statsNoSessions:"No sessions yet.",
+        statsSessionsLine:(total,recent)=>`Total sessions: <b>${total}</b> · last 7 days: <b>${recent}</b>`,
+        statsLongestLine:v=>`Longest hold (record): <b>${v} s</b>`,
+        statsTotalHeldLine:v=>`Total time held: <b>${v}</b>`,
+        statsLastLine:(when,reps,dur)=>`Last session: <b>${when}</b> · ${reps} reps · ${dur}`,
+        curveTitleHoldTiming:"Long-hold duration over the session", curveTitleHoldRandom:"Long-hold probability curve",
+        curveTitleRestTiming:"Rest duration over the session", curveTitleRestRandom:"Rest probability curve",
+        curveSubHoldTiming:"X = session progress. Y = long-hold duration at that time.",
+        curveSubRestTiming:"X = session progress. Y = rest length at that time.",
+        curveSubHoldRandom:"Higher on the curve = long hold more likely to be that duration.",
+        curveSubRestRandom:"Higher on the curve = rest more likely to be that length.",
+        tapHint:"Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1493,6 +1519,7 @@
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
     if(typeof refreshPresetSelect === "function") refreshPresetSelect();
     if(typeof updateSummaries === "function") updateSummaries();
+    renderStats();   // stats box is innerHTML-built from T(), not data-i18n-driven
     try{ drawCurve("hold"); drawCurve("rest"); }catch(e){}
     if($("appLang")) $("appLang").value = LANG;
   }
@@ -1649,14 +1676,13 @@
     const which = overlayWhich; if(!which) return;
     const isHold = which==="hold";
     const mode = curveMode[which];
+    const t = T();
     $("curveOverlayTitle").textContent = isHold
-      ? (mode==="timing" ? "Long-hold duration over the session" : "Long-hold probability curve")
-      : (mode==="timing" ? "Rest duration over the session" : "Rest probability curve");
+      ? (mode==="timing" ? t.curveTitleHoldTiming : t.curveTitleHoldRandom)
+      : (mode==="timing" ? t.curveTitleRestTiming : t.curveTitleRestRandom);
     $("curveOverlaySub").textContent = mode==="timing"
-      ? (isHold ? "X = session progress. Y = long-hold duration at that time."
-                : "X = session progress. Y = rest length at that time.")
-      : (isHold ? "Higher on the curve = long hold more likely to be that duration."
-                : "Higher on the curve = rest more likely to be that length.");
+      ? (isHold ? t.curveSubHoldTiming : t.curveSubRestTiming)
+      : (isHold ? t.curveSubHoldRandom : t.curveSubRestRandom);
     if(mode==="timing"){
       $("curveBigLo").textContent = "0% · " + (isHold ? num("minHold") : num("minRest")) + "s";
       $("curveBigHi").textContent = "100% · " + (isHold ? num("maxHold") : num("maxRest")) + "s";
@@ -1815,7 +1841,7 @@
     const s = readAll();
     const t = T();
     const setTxt = (id, txt) => { const e = $(id); if(e) e.textContent = txt; };
-    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, interval: t.scenarioInterval };
+    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, timeattack: t.scenarioTimeAttack, rhythm: t.scenarioRhythm, interval: t.scenarioInterval };
     const goalTxt = {
       reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
@@ -1934,14 +1960,19 @@
     // ---- pace (reps per minute) ----
     // Speed mode gets its own "action pace" over action-phase time only
     // (pauses excluded), tracked as a distinct record from the generic pace.
+    // The generic pace only applies to press-gated rep sessions (reps/time/
+    // interval): tap-driven scenarios (rhythm, sd_mixed action taps) would
+    // post tap tempos of 40+/min and lock the record out of reach.
     let pace = 0, paceShown = false, paceKind = null;
     const isSpeed = snap.goal === "scenario" && snap.scenario === "sd_speed";
+    const isRepSession = snap.goal === "reps" || snap.goal === "time" ||
+                         (snap.goal === "scenario" && snap.scenario === "interval");
     if(reps > 0){
       if(isSpeed && (snap.actionSec || 0) > 0){
         pace = Math.round((reps * 60 / snap.actionSec) * 10) / 10;
         paceShown = true; paceKind = "speed";
         if(reps >= 5 && snap.actionSec >= 20) tryRecord("speedPace", pace);
-      } else if(!isSpeed && elapsed > 0){
+      } else if(isRepSession && elapsed > 0){
         pace = Math.round((reps * 60 / elapsed) * 10) / 10;
         paceShown = true; paceKind = "total";
         // only chase a pace record on sessions substantial enough to be meaningful
@@ -2070,7 +2101,8 @@
   function renderStats(){
     const h = KV.get(K.history, []);
     const box = $("statsBox"); if(!box) return;
-    if(!h.length){ box.textContent = "No sessions yet."; return; }
+    const t = T();
+    if(!h.length){ box.textContent = t.statsNoSessions; return; }
     const total = h.length;
     const last = h[h.length-1];
     const week = Date.now() - 7*24*3600*1000;
@@ -2078,7 +2110,6 @@
     const sumHold = h.reduce((a,x)=>a + (x.holdSec||0), 0);
     const bestRep = Math.max(0, ...h.map(x=>x.longestHold||0));
     const fmt = s=>{ s=Math.round(s); const m=Math.floor(s/60); return m? (m+":"+String(s%60).padStart(2,"0")) : (s+" s"); };
-    const t = T();
     const g = loadGame();
     const ri = rankInfo(g.xp);
     let gameLine = `${t.statsRank || "Rank"}: <b>${ri.name}</b> · <b>${g.xp}</b> XP`;
@@ -2087,10 +2118,10 @@
     if(g.rec && g.rec.speedPace > 0) gameLine += ` · ⚡<b>${g.rec.speedPace}</b>/min`;
     box.innerHTML =
       gameLine + `<br>` +
-      `Total sessions: <b>${total}</b> · last 7 days: <b>${recent.length}</b><br>` +
-      `Longest hold (record): <b>${bestRep} s</b><br>` +
-      `Total time held: <b>${fmt(sumHold)}</b><br>` +
-      `Last session: <b>${new Date(last.at).toLocaleString()}</b> · ${last.reps} reps · ${fmt(last.elapsed)}`;
+      t.statsSessionsLine(total, recent.length) + `<br>` +
+      t.statsLongestLine(bestRep) + `<br>` +
+      t.statsTotalHeldLine(fmt(sumHold)) + `<br>` +
+      t.statsLastLine(new Date(last.at).toLocaleString(), last.reps, fmt(last.elapsed));
   }
 
   function populatePresetOptions(sel){
@@ -2510,7 +2541,10 @@
         cfg.iv_phaseIdx = 0;
         cfg.iv_totalDone = 0;
         const presets = KV.get(K.presets, {});
-        const p0 = presets[cfg.iv_phasePresets[0]] || {};
+        // snapshot the resolved preset objects: deleting a preset mid-session
+        // must not turn a later phase's config into NaNs
+        cfg.iv_phasePresetObjs = cfg.iv_phasePresets.map(name => presets[name] || {});
+        const p0 = cfg.iv_phasePresetObjs[0];
         applyRepsConfig(cfg, p0);       // phase 1's own preset overrides the baseline
         cfg.iv_savedCurves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
         applyIvPhaseCurve(p0);
@@ -2773,7 +2807,7 @@
 
            if (remain <= 0) {
                if (S.sd_phase === "action") {
-                   if (holding) pressEndStopwatch();
+                   flushPendingRelease();   // count an in-progress/grace-pending tap synchronously, like sd_mixed does
                    if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
                        if(tryLoseLife()){
                            // retry: redo the same action phase from scratch, target unchanged
@@ -3252,6 +3286,12 @@
   }
 
   function timeUp(){ return S.goal==="time" && S.endAt && Date.now() >= S.endAt; }
+  // Interval sibling of timeUp(): has the current duration-driven phase's
+  // deadline passed? (S.goal stays "scenario" for interval, so timeUp() never
+  // fires there — see applyRepsConfig()'s comment.)
+  function ivPhaseTimeUp(){
+    return !!(S && S.scenario === "interval" && S.iv_phaseMode === "time" && S.endAt && Date.now() >= S.endAt);
+  }
 
   function ivUpdatePhaseIndicator(){
     if(!S || S.scenario !== "interval") return;
@@ -3266,8 +3306,7 @@
     if(!S || S.scenario !== "interval") return false;
     S.iv_phaseIdx++;
     if(S.iv_phaseIdx >= S.iv_phasePresets.length) return false;
-    const presets = KV.get(K.presets, {});
-    const p = presets[S.iv_phasePresets[S.iv_phaseIdx]] || {};
+    const p = S.iv_phasePresetObjs[S.iv_phaseIdx] || {};
     applyRepsConfig(S, p);
     applyIvPhaseCurve(p);
     S.done = 0;
@@ -3283,8 +3322,7 @@
   function nextRep(first){
     if(!S) return;
     S.armed = false;
-    const ivPhaseTimeUp = S.scenario === "interval" && S.iv_phaseMode === "time" && S.endAt && Date.now() >= S.endAt;
-    if((S.totalReps && S.done >= S.totalReps) || ivPhaseTimeUp){
+    if((S.totalReps && S.done >= S.totalReps) || ivPhaseTimeUp()){
       if(S.scenario === "interval" && ivAdvancePhase()){
         // fall through into the rest-countdown/beginRep() below, now using the new phase's freshly-applied config
       } else {
@@ -3313,6 +3351,9 @@
   function beginRep(){
     if(!S) return;
     if(timeUp()) return finish();
+    // interval time-phase deadline passed during the rest countdown -> don't
+    // start another rep; nextRep() advances the phase (or finishes on the last)
+    if(ivPhaseTimeUp()) return nextRep(false);
     pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
@@ -3580,7 +3621,7 @@
     if (S && S.scenarioFailMsg) {
         $("doneMsg").textContent = S.scenarioFailMsg;
     } else {
-        $("doneMsg").textContent = (total===1 ? T().rep : (T().rep + "s")) + " · " + fmtTime(elapsedSec);
+        $("doneMsg").textContent = (total===1 ? T().rep : T().repPlural) + " · " + fmtTime(elapsedSec);
     }
     
     cmdFinish();
@@ -3589,6 +3630,7 @@
       addHistory({
         at: Date.now(),
         goal: S.goal,
+        scenario: S.scenario || null,
         reps: total,
         elapsed: elapsedSec,
         holdSec: S.holdSec || 0,
