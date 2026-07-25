@@ -476,6 +476,8 @@
             <option value="sd_mixed" data-i18n="scenarioSdMixed">Sudden death: Mixed</option>
             <option value="timeattack" data-i18n="scenarioTimeAttack">Time Attack</option>
             <option value="rhythm" data-i18n="scenarioRhythm">Rhythm Rush</option>
+            <option value="co2" data-i18n="scenarioCo2">CO₂ table</option>
+            <option value="o2" data-i18n="scenarioO2">O₂ table</option>
             <option value="interval" data-i18n="scenarioInterval">Interval Sequence</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
@@ -501,12 +503,62 @@
             <div class="hint" data-i18n="hintTa">Reach this much accumulated hold time as fast as you can — score = target ÷ your time.</div>
           </div>
           <div class="field hidden" id="rrField" style="margin:12px 0 0">
-            <label class="lbl" data-i18n="labelRr">Start tempo (BPM) / speed-up per level</label>
-            <div class="row">
-              <input id="rrBpm" type="number" min="20" max="200" step="5" value="45" aria-label="Start BPM" data-i18n-aria="ariaRrBpm">
-              <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level" data-i18n-aria="ariaRrStep">
+            <label class="lbl" data-i18n="labelRr">Start tempo (BPM) / speed-up per level / timing window</label>
+            <div class="row3">
+              <div>
+                <span class="sublbl" data-i18n="sublblRrBpm">Start BPM</span>
+                <input id="rrBpm" type="number" min="20" max="200" step="5" value="45" aria-label="Start BPM" data-i18n-aria="ariaRrBpm">
+              </div>
+              <div>
+                <span class="sublbl" data-i18n="sublblRrStep">+BPM / level</span>
+                <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level" data-i18n-aria="ariaRrStep">
+              </div>
+              <div>
+                <span class="sublbl" data-i18n="sublblRrWindow">Window (ms)</span>
+                <input id="rrWindow" type="number" min="80" max="600" step="10" value="260" aria-label="Beat timing window in milliseconds" data-i18n-aria="ariaRrWindow">
+              </div>
             </div>
-            <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
+            <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run. The window is how far off a tap may be (± ms) and still count.</div>
+          </div>
+          <div class="field hidden" id="tableField" style="margin:12px 0 0">
+            <label class="lbl" data-i18n="labelTableRounds">Number of rounds</label>
+            <input id="tableRounds" type="number" min="2" max="10" step="1" value="8" aria-label="Number of rounds" data-i18n-aria="ariaTableRounds">
+            <div class="field hidden" id="co2Field" style="margin:12px 0 0">
+              <label class="lbl" data-i18n="labelCo2">CO₂ — hold / first rest / rest decrease (seconds)</label>
+              <div class="row3">
+                <div>
+                  <span class="sublbl" data-i18n="sublblTableHold">Hold</span>
+                  <input id="co2Hold" type="number" min="1" max="300" step="5" value="45" aria-label="Hold seconds" data-i18n-aria="ariaCo2Hold">
+                </div>
+                <div>
+                  <span class="sublbl" data-i18n="sublblCo2Rest">First rest</span>
+                  <input id="co2Rest" type="number" min="3" max="600" step="5" value="90" aria-label="First rest in seconds" data-i18n-aria="ariaCo2Rest">
+                </div>
+                <div>
+                  <span class="sublbl" data-i18n="sublblTableDec">− per round</span>
+                  <input id="co2Dec" type="number" min="1" max="60" step="5" value="15" aria-label="Rest decrease per round" data-i18n-aria="ariaCo2Dec">
+                </div>
+              </div>
+              <div class="hint" data-i18n="hintCo2">The hold stays fixed while the rest shrinks each round (never below 3 s).</div>
+            </div>
+            <div class="field hidden" id="o2Field" style="margin:12px 0 0">
+              <label class="lbl" data-i18n="labelO2">O₂ — first hold / hold increase / rest (seconds)</label>
+              <div class="row3">
+                <div>
+                  <span class="sublbl" data-i18n="sublblTableHold">Hold</span>
+                  <input id="o2Hold" type="number" min="1" max="300" step="5" value="30" aria-label="First hold in seconds" data-i18n-aria="ariaO2Hold">
+                </div>
+                <div>
+                  <span class="sublbl" data-i18n="sublblTableInc">+ per round</span>
+                  <input id="o2Inc" type="number" min="1" max="60" step="5" value="15" aria-label="Hold increase per round" data-i18n-aria="ariaO2Inc">
+                </div>
+                <div>
+                  <span class="sublbl" data-i18n="sublblO2Rest">Rest</span>
+                  <input id="o2Rest" type="number" min="3" max="600" step="5" value="120" aria-label="Rest in seconds" data-i18n-aria="ariaO2Rest">
+                </div>
+              </div>
+              <div class="hint" data-i18n="hintO2">The rest stays fixed while the hold grows each round.</div>
+            </div>
           </div>
           <div class="field hidden" id="ivField" style="margin:12px 0 0">
             <label class="lbl" data-i18n="labelIvPhaseCount">Number of phases</label>
@@ -798,8 +850,12 @@
         <div class="field" style="margin-bottom:0">
           <label class="lbl" data-i18n="labelStats">Stats</label>
           <div id="statsBox" class="hint" style="line-height:1.6">No sessions yet.</div>
+          <div id="recordsBox" class="hint hidden" style="line-height:1.6;margin-top:8px"></div>
           <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="ghost" id="statsClear" data-i18n="btnClearHistory">Clear history</button>
+            <button type="button" class="ghost" id="dataExport" data-i18n="btnExport">Export data</button>
+            <button type="button" class="ghost" id="dataImport" data-i18n="btnImport">Import data</button>
+            <input id="importFile" type="file" accept=".json,application/json" class="hidden">
           </div>
         </div>
       </div>
@@ -1123,8 +1179,8 @@
         scenarioTimeAttack:"Time Attack", scenarioRhythm:"Rhythm Rush",
         labelTaTarget:"Ziel-Gesamt-Hold (Sekunden)",
         hintTa:"Erreiche diese Gesamt-Haltezeit so schnell wie möglich — Score = Ziel ÷ deine Zeit.",
-        labelRr:"Start-Tempo (BPM) / Steigerung pro Level",
-        hintRr:"Tippe den Knopf auf jeden Beat. Alle 8 Treffer wird es schneller. Ein Fehler beendet den Lauf.",
+        labelRr:"Start-Tempo (BPM) / Steigerung pro Level / Zeitfenster",
+        hintRr:"Tippe den Knopf auf jeden Beat. Alle 8 Treffer wird es schneller. Ein Fehler beendet den Lauf. Das Fenster ist die erlaubte Abweichung (± ms) pro Tap.",
         hintTimeAttack:"Sammle eine Ziel-Gesamthaltezeit so schnell wie möglich — zwischen den Holds atmen, die Uhr läuft weiter.",
         hintRhythm:"Tippe im Takt des Metronoms. Alle paar Treffer wird es schneller. Ein verpasster oder falsch getimter Beat beendet den Lauf — wie schnell schaffst du es?",
         taDone:(tgt,timeStr,score)=>`${tgt}s Hold erreicht in ${timeStr} · Score ${score}`,
@@ -1155,7 +1211,31 @@
         curveSubRestTiming:"X = Sitzungsfortschritt. Y = Pausenlänge zu dem Zeitpunkt.",
         curveSubHoldRandom:"Höher auf der Kurve = diese Dauer ist wahrscheinlicher.",
         curveSubRestRandom:"Höher auf der Kurve = diese Pausenlänge ist wahrscheinlicher.",
-        tapHint:"Augen-zu-Modus · irgendwo auf den Bildschirm tippen zum Halten (Stopp-Taste bleibt aktiv)"
+        tapHint:"Augen-zu-Modus · irgendwo auf den Bildschirm tippen zum Halten (Stopp-Taste bleibt aktiv)",
+        scenarioCo2:"CO₂-Tabelle", scenarioO2:"O₂-Tabelle",
+        hintTableCo2:"Klassische CO₂-Tabelle: Die Haltezeit bleibt gleich, die Pause vor jedem Hold wird Runde für Runde kürzer. Entspannter Modus: Frühes Loslassen pausiert den Hold nur — erneut drücken setzt fort.",
+        hintTableO2:"Klassische O₂-Tabelle: Die Pause bleibt gleich, jeder Hold wird Runde für Runde länger. Entspannter Modus: Frühes Loslassen pausiert den Hold nur — erneut drücken setzt fort.",
+        labelTableRounds:"Anzahl Runden",
+        labelCo2:"CO₂ — Hold / erste Pause / Pausen-Verkürzung (Sekunden)",
+        labelO2:"O₂ — erster Hold / Hold-Steigerung / Pause (Sekunden)",
+        sublblTableHold:"Hold", sublblCo2Rest:"Erste Pause", sublblTableDec:"− pro Runde",
+        sublblTableInc:"+ pro Runde", sublblO2Rest:"Pause",
+        hintCo2:"Die Haltezeit bleibt fest, die Pause schrumpft jede Runde (nie unter 3 s).",
+        hintO2:"Die Pause bleibt fest, der Hold wächst jede Runde.",
+        ariaTableRounds:"Anzahl Runden", ariaCo2Hold:"Haltesekunden", ariaCo2Rest:"Erste Pause in Sekunden",
+        ariaCo2Dec:"Pausen-Verkürzung pro Runde", ariaO2Hold:"Erster Hold in Sekunden",
+        ariaO2Inc:"Hold-Steigerung pro Runde", ariaO2Rest:"Pause in Sekunden",
+        tableComplete:(n,total)=>`Tabelle geschafft — ${n} Runden · ${total} Gesamt-Hold.`,
+        recCo2:"CO₂-Tabelle (Gesamt-Hold)", recO2:"O₂-Tabelle (Gesamt-Hold)",
+        tableHoldLbl:"Hold", tableNextRestLbl:"Nächste Pause",
+        errTableInvalid:"Bitte gültige Tabellen-Werte eingeben.",
+        sublblRrBpm:"Start-BPM", sublblRrStep:"+BPM / Level", sublblRrWindow:"Fenster (ms)",
+        ariaRrWindow:"Beat-Zeitfenster in Millisekunden",
+        errRrWindow:"Das Zeitfenster muss 80–600 ms betragen.",
+        btnExport:"Daten exportieren", btnImport:"Daten importieren",
+        confirmImport:"Daten auf diesem Gerät durch das importierte Backup ersetzen? (Einstellungen, Presets, Verlauf, Rekorde)",
+        errImportInvalid:"Diese Datei ist kein Breathless-Backup.",
+        statsRecords:"Rekorde"
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1313,8 +1393,8 @@
         scenarioTimeAttack:"Time Attack", scenarioRhythm:"Rhythm Rush",
         labelTaTarget:"Target total hold (seconds)",
         hintTa:"Reach this much accumulated hold time as fast as you can — score = target ÷ your time.",
-        labelRr:"Start tempo (BPM) / speed-up per level",
-        hintRr:"Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.",
+        labelRr:"Start tempo (BPM) / speed-up per level / timing window",
+        hintRr:"Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run. The window is how far off a tap may be (± ms) and still count.",
         hintTimeAttack:"Rack up a target amount of total breath-hold time as fast as possible — breathe between holds, the clock keeps running.",
         hintRhythm:"Tap in time with the metronome. Every few hits it gets faster. One mistimed or missed beat ends the run — how fast can you go?",
         taDone:(tgt,timeStr,score)=>`Reached ${tgt}s hold in ${timeStr} · Score ${score}`,
@@ -1346,6 +1426,30 @@
         curveSubHoldRandom:"Higher on the curve = long hold more likely to be that duration.",
         curveSubRestRandom:"Higher on the curve = rest more likely to be that length.",
         tapHint:"Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)",
+        scenarioCo2:"CO₂ table", scenarioO2:"O₂ table",
+        hintTableCo2:"Classic CO₂ table: the hold stays the same while the rest before each hold gets shorter round by round. Relaxed mode: an early release only pauses the hold — press again to continue.",
+        hintTableO2:"Classic O₂ table: the rest stays the same while each hold gets longer round by round. Relaxed mode: an early release only pauses the hold — press again to continue.",
+        labelTableRounds:"Number of rounds",
+        labelCo2:"CO₂ — hold / first rest / rest decrease (seconds)",
+        labelO2:"O₂ — first hold / hold increase / rest (seconds)",
+        sublblTableHold:"Hold", sublblCo2Rest:"First rest", sublblTableDec:"− per round",
+        sublblTableInc:"+ per round", sublblO2Rest:"Rest",
+        hintCo2:"The hold stays fixed while the rest shrinks each round (never below 3 s).",
+        hintO2:"The rest stays fixed while the hold grows each round.",
+        ariaTableRounds:"Number of rounds", ariaCo2Hold:"Hold seconds", ariaCo2Rest:"First rest in seconds",
+        ariaCo2Dec:"Rest decrease per round", ariaO2Hold:"First hold in seconds",
+        ariaO2Inc:"Hold increase per round", ariaO2Rest:"Rest in seconds",
+        tableComplete:(n,total)=>`Table complete — ${n} rounds · ${total} total hold.`,
+        recCo2:"CO₂ table (total hold)", recO2:"O₂ table (total hold)",
+        tableHoldLbl:"Hold", tableNextRestLbl:"Next rest",
+        errTableInvalid:"Please enter valid table values.",
+        sublblRrBpm:"Start BPM", sublblRrStep:"+BPM / level", sublblRrWindow:"Window (ms)",
+        ariaRrWindow:"Beat timing window in milliseconds",
+        errRrWindow:"The timing window must be 80–600 ms.",
+        btnExport:"Export data", btnImport:"Import data",
+        confirmImport:"Replace the data on this device with the imported backup? (settings, presets, history, records)",
+        errImportInvalid:"This file is not a Breathless backup.",
+        statsRecords:"Records",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1527,7 +1631,7 @@
   function updateScenarioHint(){
     const el = $("scenarioHint"); if(!el) return;
     const t = T();
-    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm, interval:t.hintInterval };
+    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm, co2:t.hintTableCo2, o2:t.hintTableO2, interval:t.hintInterval };
     const v = map[$("scenarioSel").value];
     if(typeof v === "string") el.textContent = v;
   }
@@ -1792,7 +1896,8 @@
 
 
   const SETTING_IDS = [
-    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
+    "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","rrWindow","livesOn","livesCount",
+    "tableRounds","co2Hold","co2Rest","co2Dec","o2Hold","o2Inc","o2Rest",
     "ivPhaseCount",
     "ivPhasePreset1","ivPhasePreset2","ivPhasePreset3","ivPhasePreset4","ivPhasePreset5","ivPhasePreset6",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
@@ -1841,7 +1946,7 @@
     const s = readAll();
     const t = T();
     const setTxt = (id, txt) => { const e = $(id); if(e) e.textContent = txt; };
-    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, timeattack: t.scenarioTimeAttack, rhythm: t.scenarioRhythm, interval: t.scenarioInterval };
+    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, timeattack: t.scenarioTimeAttack, rhythm: t.scenarioRhythm, co2: t.scenarioCo2, o2: t.scenarioO2, interval: t.scenarioInterval };
     const goalTxt = {
       reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
@@ -1893,7 +1998,7 @@
       xp: g.xp || 0,
       streakCount: g.streakCount || 0,
       streakLast: (g.streakLast == null ? null : g.streakLast),
-      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, sd_mixed:0, reps:0, time:0, pace:0, speedPace:0, timeattack:0, rhythm:0 }, g.rec || {})
+      rec: Object.assign({ stopwatch:0, sd_hold:0, sd_speed:0, sd_mixed:0, reps:0, time:0, pace:0, speedPace:0, timeattack:0, rhythm:0, co2:0, o2:0 }, g.rec || {})
     };
   }
   function saveGame(g){ KV.set(K.game, g); }
@@ -1951,6 +2056,10 @@
       else if(snap.scenario === "sd_mixed") tryRecord("sd_mixed", snap.mixedRounds || 0);
       else if(snap.scenario === "timeattack") tryRecord("timeattack", snap.taScore || 0);
       else if(snap.scenario === "rhythm") tryRecord("rhythm", snap.rrBpm || 0);
+      // tables: record = total held seconds of a completed table (finish()
+      // only runs on natural end, so an aborted table never gets here)
+      else if(snap.scenario === "co2") tryRecord("co2", Math.round(snap.holdSec || 0));
+      else if(snap.scenario === "o2") tryRecord("o2", Math.round(snap.holdSec || 0));
     } else if(snap.goal === "reps"){
       tryRecord("reps", reps);
     } else if(snap.goal === "time"){
@@ -1994,19 +2103,24 @@
     };
   }
 
-  function recordText(t, rec){
+  // Shared by the finish-screen record badges and the stats-panel records list.
+  function recordLabel(t, key){
     const map = {
       stopwatch: t.recStopwatch, sd_hold: t.recSdHold, sd_speed: t.recSdSpeed, sd_mixed: t.recSdMixed,
       reps: t.recReps, time: t.recTime, pace: t.recPace, speedPace: t.recSpeedPace,
-      timeattack: t.recTimeAttack, rhythm: t.recRhythm
+      timeattack: t.recTimeAttack, rhythm: t.recRhythm, co2: t.recCo2, o2: t.recO2
     };
-    const label = map[rec.key] || "";
-    let val;
-    if(rec.key === "stopwatch") val = fmtSW(rec.val);
-    else if(rec.key === "pace" || rec.key === "speedPace") val = rec.val + "/min";
-    else if(rec.key === "rhythm") val = rec.val + " BPM";
-    else val = rec.val;
-    return (t.newBest || "New best!") + " · " + label + " " + val;
+    return map[key] || "";
+  }
+  function recordValue(key, val){
+    if(key === "stopwatch") return fmtSW(val);
+    if(key === "pace" || key === "speedPace") return val + "/min";
+    if(key === "rhythm") return val + " BPM";
+    if(key === "co2" || key === "o2") return fmtTime(val);
+    return val;
+  }
+  function recordText(t, rec){
+    return (t.newBest || "New best!") + " · " + recordLabel(t, rec.key) + " " + recordValue(rec.key, rec.val);
   }
 
   function renderFinishGame(r){
@@ -2098,10 +2212,23 @@
     if(h.length>200) h.splice(0, h.length-200);
     KV.set(K.history, h);
   }
+  // Records overview: one line per nonzero personal best, in a fixed order.
+  // Rendered independently of the history (records can exist after an import
+  // or survive "history-only" states), hidden entirely when all are zero.
+  function renderRecords(t){
+    const rb = $("recordsBox"); if(!rb) return;
+    const g = loadGame();
+    const order = ["reps","time","pace","speedPace","stopwatch","sd_hold","sd_speed","sd_mixed","timeattack","rhythm","co2","o2"];
+    const lines = order.filter(k => (g.rec[k]||0) > 0)
+      .map(k => `${recordLabel(t, k)}: <b>${recordValue(k, g.rec[k])}</b>`);
+    rb.classList.toggle("hidden", !lines.length);
+    rb.innerHTML = lines.length ? `🏆 <b>${t.statsRecords}</b><br>` + lines.join("<br>") : "";
+  }
   function renderStats(){
     const h = KV.get(K.history, []);
     const box = $("statsBox"); if(!box) return;
     const t = T();
+    renderRecords(t);
     if(!h.length){ box.textContent = t.statsNoSessions; return; }
     const total = h.length;
     const last = h[h.length-1];
@@ -2169,6 +2296,40 @@
     delete p[name];
     KV.set(K.presets, p);
     refreshPresetSelect();
+  }
+
+  // ---------- data backup: export/import every "lat."-prefixed localStorage key ----------
+  function exportData(){
+    const data = {};
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k && k.indexOf("lat.")===0){
+          try{ data[k] = JSON.parse(localStorage.getItem(k)); }catch(e){}
+        }
+      }
+    }catch(e){}
+    const payload = { app:"breathless", version:1, exportedAt:new Date().toISOString(), data };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "breathless-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(a.href); }catch(e){} }, 5000);
+  }
+  function importData(file){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      let obj = null;
+      try{ obj = JSON.parse(reader.result); }catch(e){}
+      const data = obj && obj.data;
+      const keys = data ? Object.keys(data).filter(k=>k.indexOf("lat.")===0) : [];  // only our keys, whatever else the file claims
+      if(!keys.length){ alert(T().errImportInvalid); return; }
+      if(!confirm(T().confirmImport)) return;
+      keys.forEach(k=>KV.set(k, data[k]));
+      location.reload();   // full re-init: settings, curves, presets, stats, language
+    };
+    reader.readAsText(file);
   }
 
   let progOsc = null, progGain = null;
@@ -2316,6 +2477,13 @@
   function scenarioSupportsLives(scn){
     return scn==="sd_hold" || scn==="sd_speed" || scn==="sd_mixed" || scn==="rhythm";
   }
+  // scenarios that ride the whole Reps engine (armReady/beginRep/loop/...)
+  // instead of the stopwatch-style scenario path — interval keeps its phase
+  // machinery, the CO2/O2 tables just feed a fixed per-round schedule into
+  // holdDurationFor()/restSecsForNext(). See CLAUDE.md.
+  function usesRepsEngine(scn){
+    return scn==="interval" || scn==="co2" || scn==="o2";
+  }
   function applyScenarioVisibility(){
     const sc = $("scenarioSel").value;
     const isScen = goal==="scenario";
@@ -2323,6 +2491,9 @@
     $("sdMixedField").classList.toggle("hidden", !(isScen && sc==="sd_mixed"));
     $("taField").classList.toggle("hidden", !(isScen && sc==="timeattack"));
     $("rrField").classList.toggle("hidden", !(isScen && sc==="rhythm"));
+    $("tableField").classList.toggle("hidden", !(isScen && (sc==="co2" || sc==="o2")));
+    $("co2Field").classList.toggle("hidden", !(isScen && sc==="co2"));
+    $("o2Field").classList.toggle("hidden", !(isScen && sc==="o2"));
     $("ivField").classList.toggle("hidden", !(isScen && sc==="interval"));
     ivApplyPhaseVisibility();
     $("livesField").classList.toggle("hidden", !(isScen && scenarioSupportsLives(sc)));
@@ -2446,6 +2617,18 @@
       if($("penalty").checked && !(num("penaltyX")>=1)) return t.errPenaltyAmount;
       if($("penalty").checked && !(num("lateTol")>=1)) return t.errLateTolMin;
     }
+    if(goal==="scenario" && $("scenarioSel").value === "rhythm"){
+      const w = num("rrWindow");
+      if(!(w>=80 && w<=600)) return t.errRrWindow;
+    }
+    if(goal==="scenario" && ($("scenarioSel").value === "co2" || $("scenarioSel").value === "o2")){
+      const sc = $("scenarioSel").value;
+      const n = num("tableRounds");
+      if(!(n>=2 && n<=10)) return t.errTableInvalid;
+      const vals = sc==="co2" ? [num("co2Hold"), num("co2Rest"), num("co2Dec")]
+                              : [num("o2Hold"), num("o2Inc"), num("o2Rest")];
+      if(vals.some(v=>!(v>=1))) return t.errTableInvalid;
+    }
     if(goal==="scenario" && $("scenarioSel").value === "interval"){
       const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
       const presets = KV.get(K.presets, {});
@@ -2533,6 +2716,7 @@
       cfg.ta_target = Math.min(900, Math.max(10, Math.round(parseFloat($("taTarget").value) || 60)));
       cfg.rr_bpm = Math.min(200, Math.max(20, Math.round(parseFloat($("rrBpm").value) || 45)));
       cfg.rr_step = Math.min(40, Math.max(1, Math.round(parseFloat($("rrStep").value) || 8)));
+      cfg.rr_window = Math.min(600, Math.max(80, Math.round(parseFloat($("rrWindow").value) || 260)));
       cfg.livesOn = $("livesOn").checked;
       cfg.livesCount = Math.min(9, Math.max(1, Math.round(parseFloat($("livesCount").value) || 3)));
       if(cfg.scenario === "interval"){
@@ -2548,6 +2732,23 @@
         applyRepsConfig(cfg, p0);       // phase 1's own preset overrides the baseline
         cfg.iv_savedCurves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
         applyIvPhaseCurve(p0);
+      } else if(cfg.scenario === "co2" || cfg.scenario === "o2"){
+        // CO2/O2 tables ride the reps engine with a fixed per-round schedule.
+        // Forced relaxed: an early release pauses the hold (heldMs keeps
+        // accumulating on re-press), no penalties — predictable table semantics.
+        cfg.strict = false; cfg.penalty = false; cfg.hide = false;
+        const cl = (id,a,b,d)=>Math.min(b, Math.max(a, Math.round(parseFloat($(id).value) || d)));
+        const REST_FLOOR = 3;
+        const n = cl("tableRounds", 2, 10, 8);
+        cfg.tableSchedule = [];   // [i].rest = rest BEFORE round i+1 ([0].rest unused: first rep starts rest-free)
+        if(cfg.scenario === "co2"){
+          const H = cl("co2Hold",1,300,45), R = cl("co2Rest",3,600,90), D = cl("co2Dec",1,60,15);
+          for(let i=0;i<n;i++) cfg.tableSchedule.push({ hold:H, rest: i===0 ? 0 : Math.max(REST_FLOOR, R-(i-1)*D) });
+        } else {
+          const H0 = cl("o2Hold",1,300,30), I = cl("o2Inc",1,60,15), R = cl("o2Rest",3,600,120);
+          for(let i=0;i<n;i++) cfg.tableSchedule.push({ hold: H0+i*I, rest: i===0 ? 0 : R });
+        }
+        cfg.totalReps = n;
       } else {
         cfg.totalReps = null;
       }
@@ -2560,6 +2761,10 @@
   }
 
   function holdDurationFor(cfg){
+    if(cfg.tableSchedule){
+      const i = Math.min(cfg.tableSchedule.length-1, cfg.done || 0);
+      return { secs: cfg.tableSchedule[i].hold, long:true };   // long -> countdown + holdForN subcue show the target
+    }
     if(Math.random()*100 < cfg.chance){
       return { secs: sampleFromCurve("hold", cfg.minHold, cfg.maxHold), long:true };
     }
@@ -2567,6 +2772,10 @@
   }
 
   function restSecsForNext(){
+    if(S.tableSchedule){
+      const i = Math.min(S.tableSchedule.length-1, S.done || 0);   // S.done reps finished -> next rep is index S.done
+      return S.tableSchedule[i].rest;
+    }
     return sampleFromCurve("rest", S.minRest, S.maxRest);
   }
 
@@ -2602,7 +2811,7 @@
 
   function armReady(){
     if(!S) return;
-    if(S.goal === "scenario" && S.scenario !== "interval") return armReadyScenario();
+    if(S.goal === "scenario" && !usesRepsEngine(S.scenario)) return armReadyScenario();
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
     S.spokeHold = false;
@@ -2622,7 +2831,21 @@
     if(S.scenario === "interval"){
       $("swStats").classList.remove("hidden");
       ivUpdatePhaseIndicator();
+    } else if(S.tableSchedule){
+      $("swStats").classList.remove("hidden");
+      tableUpdateStats();
     }
+  }
+
+  // CO2/O2 tables: reuse the shared #swStats slot (like interval's phase
+  // indicator) to show the current round's hold target and the upcoming rest.
+  function tableUpdateStats(){
+    if(!S || !S.tableSchedule) return;
+    const i = Math.min(S.tableSchedule.length-1, S.done || 0);
+    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().tableHoldLbl;
+    $("swRest").textContent = fmtSW(S.tableSchedule[i].hold);
+    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().tableNextRestLbl;
+    $("swLongest").textContent = (i+1 < S.tableSchedule.length) ? fmtSW(S.tableSchedule[i+1].rest) : "–";
   }
 
   // ---------- lives system: survive a fail instead of instant game over ----------
@@ -3201,7 +3424,7 @@
     S.waitingStart = false;
     S.startTime = Date.now();
     S.rr_interval = 60000 / S.rr_bpm;
-    S.rr_window = 260;   // ± timing tolerance (ms) around each beat to count as a hit; not user-configurable, unlike rr_bpm/rr_step
+    if(!S.rr_window) S.rr_window = 260;   // ± timing tolerance (ms) around each beat to count as a hit; set from the rrWindow setting in buildPlan(), 260 is only the fallback
     S.rr_beatsPerLevel = 8;
     S.rr_hits = 0; S.rr_level = 1; S.rr_countIn = 4;
     S.rr_beatTime = Date.now() + 1200;   // lead-in before the first beat
@@ -3327,6 +3550,7 @@
         // fall through into the rest-countdown/beginRep() below, now using the new phase's freshly-applied config
       } else {
         if(S.scenario === "interval") S.scenarioFailMsg = T().ivComplete(S.iv_phasePresets.length);
+        if(S.tableSchedule) S.scenarioFailMsg = T().tableComplete(S.tableSchedule.length, fmtTime(Math.round(S.holdSec||0)));
         return finish();
       }
     }
@@ -3364,6 +3588,7 @@
     setFill(0);
     const n = S.done + 1;
     $("repNow").textContent = n;
+    if(S.tableSchedule) tableUpdateStats();
     let big, sub;
     if(S.hide){
       big = S.words.down; sub = T().pressAndHold;
@@ -3464,7 +3689,7 @@
   function pressStart(pointerId){
     if(!S || !S.armed) return;
     if(holding) return;
-    if(S.goal === "scenario" && S.scenario !== "interval"){
+    if(S.goal === "scenario" && !usesRepsEngine(S.scenario)){
       pressStartStopwatch(pointerId);
       return;
     }
@@ -3496,7 +3721,7 @@
   function pressEnd(pointerId){
     if(!holding) return;
     if(pointerId !== undefined && activePointerId !== null && pointerId !== activePointerId) return;
-    if(S && S.goal === "scenario" && S.scenario !== "interval"){
+    if(S && S.goal === "scenario" && !usesRepsEngine(S.scenario)){
       pressEndStopwatch();
       return;
     }
@@ -3982,6 +4207,13 @@
       KV.del(K.history); KV.del(K.pr); KV.del(K.game); renderStats();
     }
   });
+  $("dataExport").addEventListener("click", exportData);
+  $("dataImport").addEventListener("click", ()=>$("importFile").click());
+  $("importFile").addEventListener("change", ()=>{
+    const f = $("importFile").files && $("importFile").files[0];
+    if(f) importData(f);
+    $("importFile").value = "";
+  });
 
   for(const id of SETTING_IDS){
     const el = $(id); if(!el) continue;
@@ -4082,6 +4314,11 @@
       }
     });
   })();
+
+  // offline support — no-op on file:// or unsupported browsers
+  if("serviceWorker" in navigator){
+    try{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){}
+  }
 
   document.addEventListener("selectstart", e=>{ if(S) e.preventDefault(); });
   document.addEventListener("pointerdown", function prime(){
