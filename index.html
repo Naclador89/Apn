@@ -797,7 +797,7 @@
         </div>
         <div class="field" style="margin-bottom:0">
           <label class="lbl" data-i18n="labelStats">Stats</label>
-          <div id="statsBox" class="hint" style="line-height:1.6">No sessions yet.</div>
+          <div id="statsBox" class="hint" style="line-height:1.6" data-i18n="statsNoSessions">No sessions yet.</div>
           <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="ghost" id="statsClear" data-i18n="btnClearHistory">Clear history</button>
           </div>
@@ -1142,7 +1142,16 @@
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
         labelLivesCount:"Anzahl Leben",
-        statsRank:"Rang", statsStreak:"Streak"
+        statsRank:"Rang", statsStreak:"Streak",
+        statsNoSessions:"Noch keine Sitzungen.",
+        statsTotalSessions:"Sitzungen gesamt", statsLast7:"letzte 7 Tage",
+        statsLongestHold:"Längster Hold (Rekord)", statsTotalHeld:"Gesamte Haltezeit", statsLastSession:"Letzte Sitzung",
+        curveTitleHoldRandom:"Wahrscheinlichkeitskurve langer Hold", curveTitleHoldTiming:"Dauer langer Hold über die Sitzung",
+        curveTitleRestRandom:"Pausen-Wahrscheinlichkeitskurve", curveTitleRestTiming:"Pausendauer über die Sitzung",
+        curveSubHoldRandom:"Höher auf der Kurve = langer Hold hat eher diese Dauer.",
+        curveSubHoldTiming:"X = Sitzungsfortschritt. Y = Dauer des langen Holds zu diesem Zeitpunkt.",
+        curveSubRestRandom:"Höher auf der Kurve = Pause hat eher diese Länge.",
+        curveSubRestTiming:"X = Sitzungsfortschritt. Y = Pausenlänge zu diesem Zeitpunkt."
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1320,6 +1329,15 @@
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
         labelLivesCount:"Number of lives",
         statsRank:"Rank", statsStreak:"Streak",
+        statsNoSessions:"No sessions yet.",
+        statsTotalSessions:"Total sessions", statsLast7:"last 7 days",
+        statsLongestHold:"Longest hold (record)", statsTotalHeld:"Total time held", statsLastSession:"Last session",
+        curveTitleHoldRandom:"Long-hold probability curve", curveTitleHoldTiming:"Long-hold duration over the session",
+        curveTitleRestRandom:"Rest probability curve", curveTitleRestTiming:"Rest duration over the session",
+        curveSubHoldRandom:"Higher on the curve = long hold more likely to be that duration.",
+        curveSubHoldTiming:"X = session progress. Y = long-hold duration at that time.",
+        curveSubRestRandom:"Higher on the curve = rest more likely to be that length.",
+        curveSubRestTiming:"X = session progress. Y = rest length at that time.",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1493,6 +1511,7 @@
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
     if(typeof refreshPresetSelect === "function") refreshPresetSelect();
     if(typeof updateSummaries === "function") updateSummaries();
+    renderStats();   // stats box is runtime-rendered HTML; the data-i18n pass above only covers its empty-state default
     try{ drawCurve("hold"); drawCurve("rest"); }catch(e){}
     if($("appLang")) $("appLang").value = LANG;
   }
@@ -1590,47 +1609,6 @@
     }
   }
 
-  function attachCurveDrawing(which, cv){
-    if(!cv) cv = $(which==="hold" ? "curveHold" : "curveRest");
-    if(!cv) return;
-    let drawing = false, lastIdx = -1, lastVal = 0;
-    const posToIdxVal = (ev)=>{
-      const r = cv.getBoundingClientRect();
-      const x = Math.max(0, Math.min(r.width, ev.clientX - r.left));
-      const y = Math.max(0, Math.min(r.height, ev.clientY - r.top));
-      const idx = Math.max(0, Math.min(CURVE_N-1, Math.round(x/r.width*(CURVE_N-1))));
-      const val = Math.max(0, Math.min(1, 1 - (y/r.height - 0.04)/0.92));
-      return {idx, val};
-    };
-    const write = (idx, val)=>{
-      if(lastIdx < 0){ curves[which][idx] = val; }
-      else {
-        const a = Math.min(lastIdx, idx), b = Math.max(lastIdx, idx);
-        for(let i=a;i<=b;i++){
-          const t = (b===a) ? 1 : (i-a)/(b-a);
-          const v = (lastIdx<=idx) ? (lastVal + (val-lastVal)*t) : (val + (lastVal-val)*t);
-          curves[which][i] = v;
-        }
-      }
-      lastIdx = idx; lastVal = val;
-    };
-    const redraw = ()=>{ drawCurve(which, cv); };
-    cv.addEventListener("pointerdown", e=>{
-      e.preventDefault(); drawing = true; lastIdx = -1;
-      try{ cv.setPointerCapture(e.pointerId); }catch(_){}
-      const {idx,val} = posToIdxVal(e); write(idx,val); redraw();
-    });
-    cv.addEventListener("pointermove", e=>{
-      if(!drawing) return;
-      const {idx,val} = posToIdxVal(e); write(idx,val); redraw();
-    });
-    const stop = ()=>{ if(!drawing) return; drawing = false; lastIdx = -1; saveCurves(); updateSummaries && updateSummaries(); drawCurve(which); };
-    cv.addEventListener("pointerup", stop);
-    cv.addEventListener("pointercancel", stop);
-    cv.addEventListener("lostpointercapture", stop);
-    cv.addEventListener("contextmenu", e=>e.preventDefault());
-  }
-
   let overlayWhich = null;
   function openCurveEditor(which){
     overlayWhich = which;
@@ -1638,25 +1616,19 @@
     refreshCurveOverlayForMode();
     ov.classList.remove("hidden");
     ov.setAttribute("aria-hidden", "false");
-    const big = $("curveBig");
-    if(!big.dataset.wired){
-      attachCurveDrawing("__dyn__", big);
-      big.dataset.wired = "1";
-    }
-    requestAnimationFrame(()=>drawCurve(which, big));
+    requestAnimationFrame(()=>drawCurve(which, $("curveBig")));
   }
   function refreshCurveOverlayForMode(){
     const which = overlayWhich; if(!which) return;
     const isHold = which==="hold";
     const mode = curveMode[which];
+    const t = T();
     $("curveOverlayTitle").textContent = isHold
-      ? (mode==="timing" ? "Long-hold duration over the session" : "Long-hold probability curve")
-      : (mode==="timing" ? "Rest duration over the session" : "Rest probability curve");
+      ? (mode==="timing" ? t.curveTitleHoldTiming : t.curveTitleHoldRandom)
+      : (mode==="timing" ? t.curveTitleRestTiming : t.curveTitleRestRandom);
     $("curveOverlaySub").textContent = mode==="timing"
-      ? (isHold ? "X = session progress. Y = long-hold duration at that time."
-                : "X = session progress. Y = rest length at that time.")
-      : (isHold ? "Higher on the curve = long hold more likely to be that duration."
-                : "Higher on the curve = rest more likely to be that length.");
+      ? (isHold ? t.curveSubHoldTiming : t.curveSubRestTiming)
+      : (isHold ? t.curveSubHoldRandom : t.curveSubRestRandom);
     if(mode==="timing"){
       $("curveBigLo").textContent = "0% · " + (isHold ? num("minHold") : num("minRest")) + "s";
       $("curveBigHi").textContent = "100% · " + (isHold ? num("maxHold") : num("maxRest")) + "s";
@@ -1815,7 +1787,7 @@
     const s = readAll();
     const t = T();
     const setTxt = (id, txt) => { const e = $(id); if(e) e.textContent = txt; };
-    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, interval: t.scenarioInterval };
+    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, timeattack: t.scenarioTimeAttack, rhythm: t.scenarioRhythm, interval: t.scenarioInterval };
     const goalTxt = {
       reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
@@ -1944,8 +1916,11 @@
       } else if(!isSpeed && elapsed > 0){
         pace = Math.round((reps * 60 / elapsed) * 10) / 10;
         paceShown = true; paceKind = "total";
-        // only chase a pace record on sessions substantial enough to be meaningful
-        if(reps >= 5 && elapsed >= 30) tryRecord("pace", pace);
+        // only chase a pace record on sessions substantial enough to be
+        // meaningful, and only where "reps" means genuine press-hold reps —
+        // rhythm taps / mixed action taps would dwarf any real reps pace
+        const repDriven = snap.goal !== "scenario" || snap.scenario === "interval";
+        if(repDriven && reps >= 5 && elapsed >= 30) tryRecord("pace", pace);
       }
     }
 
@@ -2070,7 +2045,8 @@
   function renderStats(){
     const h = KV.get(K.history, []);
     const box = $("statsBox"); if(!box) return;
-    if(!h.length){ box.textContent = "No sessions yet."; return; }
+    const t = T();
+    if(!h.length){ box.textContent = t.statsNoSessions; return; }
     const total = h.length;
     const last = h[h.length-1];
     const week = Date.now() - 7*24*3600*1000;
@@ -2078,7 +2054,6 @@
     const sumHold = h.reduce((a,x)=>a + (x.holdSec||0), 0);
     const bestRep = Math.max(0, ...h.map(x=>x.longestHold||0));
     const fmt = s=>{ s=Math.round(s); const m=Math.floor(s/60); return m? (m+":"+String(s%60).padStart(2,"0")) : (s+" s"); };
-    const t = T();
     const g = loadGame();
     const ri = rankInfo(g.xp);
     let gameLine = `${t.statsRank || "Rank"}: <b>${ri.name}</b> · <b>${g.xp}</b> XP`;
@@ -2087,17 +2062,22 @@
     if(g.rec && g.rec.speedPace > 0) gameLine += ` · ⚡<b>${g.rec.speedPace}</b>/min`;
     box.innerHTML =
       gameLine + `<br>` +
-      `Total sessions: <b>${total}</b> · last 7 days: <b>${recent.length}</b><br>` +
-      `Longest hold (record): <b>${bestRep} s</b><br>` +
-      `Total time held: <b>${fmt(sumHold)}</b><br>` +
-      `Last session: <b>${new Date(last.at).toLocaleString()}</b> · ${last.reps} reps · ${fmt(last.elapsed)}`;
+      `${t.statsTotalSessions}: <b>${total}</b> · ${t.statsLast7}: <b>${recent.length}</b><br>` +
+      `${t.statsLongestHold}: <b>${bestRep} s</b><br>` +
+      `${t.statsTotalHeld}: <b>${fmt(sumHold)}</b><br>` +
+      `${t.statsLastSession}: <b>${new Date(last.at).toLocaleString()}</b> · ${last.reps} ${t.rep} · ${fmt(last.elapsed)}`;
   }
 
-  function populatePresetOptions(sel){
+  // repsTimeOnly: the Interval Sequence phase dropdowns only take presets an
+  // interval phase can actually reproduce (goal "reps" or "time") — a preset
+  // saved while in Scenario mode would silently run as a reps phase with
+  // whatever rep counts happened to be in the form when it was saved.
+  function populatePresetOptions(sel, repsTimeOnly){
     if(!sel) return;
     const prev = sel.value;
     const p = KV.get(K.presets, {});
-    const names = Object.keys(p).sort();
+    let names = Object.keys(p).sort();
+    if(repsTimeOnly) names = names.filter(n => !p[n] || p[n].goal !== "scenario");
     const t = T();
     const tag = n => p[n] && p[n].goal === "time" ? ` (${t.goalTime})` : p[n] && p[n].goal === "reps" ? ` (${t.goalReps})` : "";
     sel.innerHTML = `<option value="">${t.optLoad}</option>` +
@@ -2106,7 +2086,7 @@
   }
   function refreshPresetSelect(){
     populatePresetOptions($("presetSel"));
-    for(let i=1;i<=6;i++) populatePresetOptions($("ivPhasePreset"+i));
+    for(let i=1;i<=6;i++) populatePresetOptions($("ivPhasePreset"+i), true);
   }
   function presetSave(){
     const name = ($("presetName").value || "").trim();
@@ -2341,15 +2321,17 @@
 
   let S = null;
   let holding = false;
+  const SYNTHETIC_POINTER = Symbol("syntheticPointer");  // marks camera-/keyboard-driven holds, which have no pointerId
   let activePointerId = null;  // pointerId that started the current hold;
-                                // null while idle and for camera-/keyboard-driven holds
+                                // null while idle, SYNTHETIC_POINTER for camera-/keyboard-driven holds
   let lastCueKind = "up";
   let curScreenColorState = null;
   let raf = 0;
-  let restTimer = 0;     
-  let reactTimer = 0;    
-  let pendingRelease = false; 
-  let releaseTimer = 0;  
+  let restTimer = 0;
+  let reactTimer = 0;
+  let pendingRelease = false;
+  let releaseTimer = 0;
+  let nextRepTimer = 0;   // completeRep()'s 650ms cue-settle delay before nextRep()
 
   let wakeLock = null;
   async function acquireWake(){
@@ -2420,7 +2402,9 @@
       const presets = KV.get(K.presets, {});
       for(let i=1;i<=n;i++){
         const name = $("ivPhasePreset"+i).value;
-        if(!name || !presets[name]) return t.errIvPhasePreset(i);
+        // a stale selection can still point at a Scenario-mode preset (saved
+        // before the dropdown filter existed) — reject it like a missing one
+        if(!name || !presets[name] || presets[name].goal === "scenario") return t.errIvPhasePreset(i);
       }
     }
     return null;
@@ -2571,7 +2555,6 @@
     if(S.goal === "scenario" && S.scenario !== "interval") return armReadyScenario();
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
-    S.spokeHold = false;
     S.lastSpokenSec = null;
     holding = false;
     applyScreenColor();
@@ -2773,7 +2756,7 @@
 
            if (remain <= 0) {
                if (S.sd_phase === "action") {
-                   if (holding) pressEndStopwatch();
+                   flushPendingRelease();   // count an in-flight or grace-pending tap synchronously, like sd_mixed
                    if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
                        if(tryLoseLife()){
                            // retry: redo the same action phase from scratch, target unchanged
@@ -2907,7 +2890,7 @@
     clearTimeout(releaseTimer); releaseTimer = 0;
     pendingRelease = false;
     holding = true;
-    activePointerId = (pointerId !== undefined) ? pointerId : null;
+    activePointerId = (pointerId !== undefined) ? pointerId : SYNTHETIC_POINTER;
     applyScreenColor();
     $("holdBtn").classList.add("holding");
     progressStart();
@@ -2937,7 +2920,7 @@
     clearInterval(swRestTimer); swRestTimer = 0;
     S.swHoldStartTs = Date.now();
     holding = true;
-    activePointerId = (pointerId !== undefined) ? pointerId : null;
+    activePointerId = (pointerId !== undefined) ? pointerId : SYNTHETIC_POINTER;
     applyScreenColor();
     $("holdBtn").classList.add("holding");
     setCue("up", S.words.down, "");
@@ -3313,10 +3296,13 @@
   function beginRep(){
     if(!S) return;
     if(timeUp()) return finish();
+    // interval time-phase deadline can elapse during the rest countdown too —
+    // advance the phase (or finish) instead of starting one more rep, matching
+    // standalone Time mode's timeUp() check above
+    if(S.scenario === "interval" && S.iv_phaseMode === "time" && S.endAt && Date.now() >= S.endAt) return nextRep(true);
     pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
-    S.spokeHold = false;
     S.lastSpokenSec = null;
     holding = false;
     applyScreenColor();
@@ -3440,7 +3426,7 @@
     clearInterval(reactTimer); reactTimer = 0;
     if(S.subBase) $("subcue").textContent = S.subBase;
     holding = true;
-    activePointerId = (pointerId !== undefined) ? pointerId : null;
+    activePointerId = (pointerId !== undefined) ? pointerId : SYNTHETIC_POINTER;
     applyScreenColor();
     lastTs = 0;
     $("holdBtn").classList.add("holding");
@@ -3454,7 +3440,10 @@
 
   function pressEnd(pointerId){
     if(!holding) return;
-    if(pointerId !== undefined && activePointerId !== null && pointerId !== activePointerId) return;
+    // Only the input that started the hold may end it: a pointerup must match
+    // activePointerId, and camera-/keyboard-driven holds (SYNTHETIC_POINTER)
+    // can only be ended by their own no-argument pressEnd() calls.
+    if(pointerId !== undefined && pointerId !== activePointerId) return;
     if(S && S.goal === "scenario" && S.scenario !== "interval"){
       pressEndStopwatch();
       return;
@@ -3482,7 +3471,6 @@
       if(S.strict){
         S.heldMs = 0;
         S.lastSpokenSec = null;
-        S.spokeHold = false;
         setFill(0);
         $("timer").textContent = "";
         $("btnLab").textContent = T().tooEarlyLab;
@@ -3539,7 +3527,8 @@
     setCue("down", S.words.up, T().release);
     cmd("up");
     $("btnLab").textContent = T().pressHold;
-    setTimeout(()=>{ if(S) nextRep(false); }, 650);   // 650ms: lets the release cue land before the rest countdown starts
+    clearTimeout(nextRepTimer);
+    nextRepTimer = setTimeout(()=>{ nextRepTimer = 0; if(S) nextRep(false); }, 650);   // 650ms: lets the release cue land before the rest countdown starts
   }
 
   // Shared teardown for both finish() (natural session end — recorded) and
@@ -3552,6 +3541,7 @@
     clearInterval(clockTimer); clockTimer = 0;
     clearInterval(swRestTimer); swRestTimer = 0;
     clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
+    clearTimeout(nextRepTimer); nextRepTimer = 0;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
     if (S && S.rr_timer) clearInterval(S.rr_timer);
 
@@ -3799,6 +3789,7 @@
       camDetach();
       $("subcue").textContent = T().camStreamLost;
     } else if(cam.mode === "setup"){
+      stopCamLoop();   // don't keep sampling a dead stream behind the error message
       $("camErr").textContent = T().camStreamLost;
     }
   }
