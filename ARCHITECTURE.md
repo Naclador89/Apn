@@ -758,17 +758,27 @@ extended and the punishment announced.
   per phase from their assigned preset**, like every other difficulty
   field. Hidden for `goal === "scenario"` (`applyGoalVisibility()`);
   `validate()` requires `noisePenaltyX >= 1` when the toggle is on.
-- **Pipeline**: `getUserMedia({audio})` with **`echoCancellation:true`**,
-  `noiseSuppression:false`, `autoGainControl:false` → `AnalyserNode`
-  (fftSize 2048, ~43 ms window) fed from `ensureAudio()`'s shared
-  AudioContext (analyser only, never `ctx.destination` — no feedback
-  loop) → 50 ms `setInterval` (`micTick`) takes the **peak** absolute
-  sample of the window, mapped to 0–100 % via `NOISE_GAIN = 140` (tuned
-  by feel, like `CAM_ADAPT_ALPHA`). AEC is deliberately *on*: without it
-  many devices switch to a distorted communication audio path (see
-  Lifecycle), and it also subtracts the app's own speaker output from the
-  capture. AGC/NS stay off — they would normalize away exactly the loud
-  transients this feature detects.
+- **Pipeline**: `getUserMedia({audio})` with **all three processing
+  constraints off** (`echoCancellation:false`, `noiseSuppression:false`,
+  `autoGainControl:false`) → `AnalyserNode` (fftSize 2048, ~43 ms window)
+  fed from the mic's **own** `AudioContext` (`mic.ctx`, analyser only,
+  never `ctx.destination` — no feedback loop) → 50 ms `setInterval`
+  (`micTick`) takes the **peak** absolute sample of the window, mapped to
+  0–100 % via `NOISE_GAIN = 140` (tuned by feel, like `CAM_ADAPT_ALPHA`).
+  - *Why AEC must stay off*: it was briefly set to `true` on the theory
+    that it preserves the clean audio path. The opposite is true — AEC
+    requires the device's voice-communication capture path, which makes
+    Android/Chrome route **output** to the earpiece/communication speaker.
+    The user reported the result immediately ("klingt entfernt"): all
+    audio, including the OS speech cues, sounds thin and distant. AGC and
+    noise suppression stay off for a different reason — they would
+    normalize away exactly the loud transients this feature detects.
+  - *Why the mic has its own AudioContext*: the shared cue context
+    (`ensureAudio()`) is created once and never closed, and a context that
+    has carried a mic source can stay on the communication route for the
+    rest of the page's life — i.e. the degradation would outlive
+    `micStop()`. `mic.ctx` is created in `micStart()` and `close()`d in
+    `micStop()`, so the cue context is never bound to a mic source at all.
   - *Peak, not RMS*: the original implementation averaged RMS over a
     1024-sample window polled at 100 ms — roughly 80 % of the audio was
     never sampled (short shouts slipped between polls: "sluggish") and RMS
@@ -780,14 +790,24 @@ extended and the punishment announced.
     instantaneous `mic.level`**, never the decayed display value.
 - **Violation** (`noiseViolation()`): fires when `level >= S.noiseThr`
   *and* the session is running past `waitingStart`. Guards:
-  `NOISE_COOLDOWN_MS` (2.5 s — one loud event = one punishment; also
-  covers the app's own short cue beeps) and a `synth.speaking` check so
-  the app's own voice cues are never punished. Effect:
+  `NOISE_COOLDOWN_MS` (2.5 s — one loud event = one punishment), the
+  **blanking window** below, and a `synth.speaking` check as a second
+  line of defense. Effect:
   `applyPenalty(S.noisePenaltyX)` — `applyPenalty(amount)` took an
   optional amount parameter for this, defaulting to `S.penaltyX`, so the
   reps/time/interval-time-phase branch logic is single-sourced — plus
   `cmdNoise()`, a transient `tooLoud` subcue note via `penaltyUnit()`,
   and `flashTolerancePenalty()`.
+- **Blanking window** (`mic.muteUntil`, `micBlank(ms)` /
+  `micBlankUntil(ms)`): with AEC off the mic hears the app's own output, so
+  every cue suspends detection while it sounds. `beep()` blanks for
+  `delay + duration + 250 ms`; `say()` blanks for an **estimate** derived
+  from the text length and speech rate (`min(3000, 600 + chars*90/rate)`)
+  and trims the window to 300 ms on the utterance's `onend`/`onerror`. The
+  estimate is deliberate rather than a flat generous window: some mobile
+  browsers never fire `onend`, which would otherwise leave the detector
+  deaf for seconds after every single cue. The level meter keeps updating
+  during a blank — only the violation check is suspended.
 - **Own cue word**: `cmdNoise()` speaks `S.words.noise` (settings field
   `cmdNoiseWord`, seeded/swapped per language from the language-level
   `cueNoise` entry that all 11 `I18N` languages define, and reachable via
@@ -814,9 +834,14 @@ extended and the punishment announced.
     continues. Stream loss (`micWatchStreamTracks()`, same pattern as the
     camera) disables the feature mid-session with `micStreamLost` rather
     than freezing.
-  - Remaining hardware limit (not fixable in JS): with Bluetooth
-    headphones, *any* mic capture forces the low-quality call profile, so
-    audio quality drops during noise-punishment sessions specifically.
+  - Remaining hardware limit (not fixable in JS): on some devices *any*
+    mic capture switches the audio route regardless of constraints — with
+    Bluetooth headphones this is guaranteed (the HFP call profile). If
+    "distant" audio is ever reported again **while the feature is
+    genuinely in use**, that is the remaining cause; the levers inside the
+    page (constraints, own context, lifecycle) are already exhausted. The
+    verified-good state is: feature off → normal audio, which is what
+    `micSync()` guarantees.
 
 ---
 
@@ -945,6 +970,14 @@ condition instead resets the current phase and lets the player retry.
     from RMS@1024/100 ms to peak@2048/50 ms with `NOISE_GAIN` 320 → 140
     and a peak-hold meter, fixing "sluggish and too insensitive"
     (333 `de`/`en` keys, 52 setting IDs)
+30. Audio-routing fix after the user still heard "entfernt" (distant)
+    audio: (29a)'s `echoCancellation:true` was **the wrong call and is
+    reversed** — AEC forces the voice-communication capture path, which is
+    what moves output to the earpiece speaker. Now all three processing
+    constraints are off, the mic runs on its own `AudioContext` that is
+    closed on stop (a shared context can keep the bad route after the
+    stream ends), and `micBlank()` takes over AEC's self-trigger role with
+    a per-cue blanking window
 
 This narrative explains several of the inconsistencies below: features
 built early (Sudden Death family) predate the i18n retrofit and the

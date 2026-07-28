@@ -277,10 +277,19 @@ Still open, deliberately left as documented rather than fixed:
   disables the feature mid-session instead of freezing (`micStreamLost`).
   **`micSync()` owns the mic lifecycle** — open only during a session that
   actually uses noise punishment, or on the setup screen for the live meter;
-  called from `show()`/the toggle/`applyGoalVisibility()`. This matters:
-  an open mic (and a capture without `echoCancellation`) pushes many devices
-  into a communication audio mode that audibly distorts *all* output
-  including the app's own speech cues, so the mic must never idle open.
+  called from `show()`/the toggle/`applyGoalVisibility()`. This matters: an
+  open mic pushes many devices into a communication audio mode that routes
+  output to the earpiece speaker and makes *all* audio (including the OS
+  speech cues) sound thin and far away, so the mic must never idle open.
+  For the same reason the capture asks for **`echoCancellation:false`** —
+  AEC requires the voice-communication path and is the strongest trigger of
+  that routing switch (briefly setting it `true` caused a user-reported
+  "klingt entfernt" regression; do not turn it back on). The mic also uses
+  its **own** `AudioContext`, closed in `micStop()`, so the shared cue
+  context is never bound to a mic source. Since AEC is off, the mic hears
+  the app's own cues: `micBlank()` suspends detection while a beep or
+  utterance is sounding (window estimated from the text length, trimmed on
+  `onend`).
   Scoped exactly like the other difficulty fields: hidden for scenarios,
   inherited per-phase from presets by Interval Sequence
   (`applyRepsConfig()` carries `noisePenalty`/`noisePenaltyX`/`noiseThr`).

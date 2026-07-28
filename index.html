@@ -2206,10 +2206,17 @@
   function say(text){
     if(!S || !S.sig || !S.sig.speech || !synth) return;
     try{
-      synth.cancel();                 
+      synth.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = speechTag();
       u.rate = (S && S.rate) || 1;
+      // Blank the noise detector for roughly as long as this utterance will
+      // take (~90ms/char at rate 1, capped), then trim the window the moment
+      // it really ends. The estimate matters: some mobile browsers never fire
+      // `onend`, and a flat generous window would leave the detector deaf
+      // after every single cue.
+      micBlank(Math.min(3000, 600 + text.length * 90 / u.rate));
+      u.onend = u.onerror = ()=>{ micBlankUntil(300); };
       synth.speak(u);
     }catch(e){}
   }
@@ -2222,6 +2229,7 @@
   }
   function beep(freq, durMs, delayMs){
     const ctx = ensureAudio(); if(!ctx) return;
+    micBlank((delayMs||0) + durMs + 250);   // don't let our own tone trigger the noise punishment
     try{
       const t0 = ctx.currentTime + (delayMs||0)/1000;
       const osc = ctx.createOscillator(), g = ctx.createGain();
@@ -3970,7 +3978,15 @@
   // RMS over a mostly-quiet window dilutes exactly the short transients this
   // feature is meant to catch.
   const NOISE_COOLDOWN_MS = 2500, NOISE_GAIN = 140;
-  const mic = { stream:null, source:null, analyser:null, data:null, running:false, timer:0, level:0, disp:0, lastPenaltyAt:0 };
+  const mic = { stream:null, ctx:null, source:null, analyser:null, data:null, running:false, timer:0, level:0, disp:0, lastPenaltyAt:0, muteUntil:0 };
+  // Blanking window: the capture runs without echo cancellation (see
+  // micStart for why), so the mic hears the app's own beeps and speech.
+  // Every cue extends this window; detection is suspended while it runs.
+  function micBlank(ms){
+    const until = Date.now() + ms;
+    if(until > mic.muteUntil) mic.muteUntil = until;
+  }
+  function micBlankUntil(ms){ mic.muteUntil = Date.now() + ms; }
   function micSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
   function micWatchStreamTracks(stream){
     stream.getTracks().forEach(track=>{
@@ -3990,25 +4006,29 @@
     if(mic.running) return true;
     $("micErr").textContent = "";
     if(!micSupported()){ $("micErr").textContent = T().micNotSupported; return false; }
-    const ctx = ensureAudio();
-    if(!ctx){ $("micErr").textContent = T().micNotSupported; return false; }
     let stream;
     try{
-      // echoCancellation ON: keeps the device on its clean audio path (an
-      // AEC-less capture pushes many phones into a distorted communication
-      // mode that degrades the app's own speech output) and subtracts the
-      // app's own speaker output from the mic signal (fewer self-triggers).
-      // AGC/noise suppression OFF: they would normalize away exactly the
-      // loud transients this feature is meant to catch.
+      // ALL THREE OFF — echoCancellation especially. AEC requires the
+      // device's voice-communication capture path, which makes Android/Chrome
+      // route audio OUTPUT to the earpiece/communication speaker: everything,
+      // including the OS speech cues, then sounds thin and far away. This was
+      // a real user-reported symptom ("klingt entfernt") caused by briefly
+      // setting it to true; do not turn it back on. AGC/noiseSuppression stay
+      // off because they would normalize away the loud transients we detect.
+      // Trade-off: the mic now hears our own cues -> see micBlank().
       stream = await navigator.mediaDevices.getUserMedia({
-        audio:{ echoCancellation:true, noiseSuppression:false, autoGainControl:false }, video:false
+        audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }, video:false
       });
     }catch(e){ $("micErr").textContent = T().micNoAccess; return false; }
     mic.stream = stream; micWatchStreamTracks(stream);
-    if(ctx.state==="suspended"){ try{ ctx.resume(); }catch(e){} }
     try{
-      mic.source = ctx.createMediaStreamSource(stream);
-      mic.analyser = ctx.createAnalyser();
+      // The mic gets its OWN AudioContext, closed again in micStop(). The
+      // shared cue context (ensureAudio()) is never bound to a mic source:
+      // a context that has carried one can stay on the communication route
+      // for the rest of the page's life, long after the stream is stopped.
+      mic.ctx = new (window.AudioContext||window.webkitAudioContext)();
+      mic.source = mic.ctx.createMediaStreamSource(stream);
+      mic.analyser = mic.ctx.createAnalyser();
       mic.analyser.fftSize = 2048;        // ~43ms window @48kHz; with the 50ms poll below, short shouts can't slip between samples
       mic.source.connect(mic.analyser);   // analyser only — never ctx.destination (no feedback loop)
       mic.data = new Uint8Array(mic.analyser.fftSize);
@@ -4024,6 +4044,10 @@
     try{ if(mic.source) mic.source.disconnect(); }catch(e){}
     mic.source = null; mic.analyser = null; mic.data = null;
     if(mic.stream){ try{ mic.stream.getTracks().forEach(t=>{ t.onended = null; t.stop(); }); }catch(e){} mic.stream = null; }
+    // close the mic's own context too — stopping the tracks alone can leave
+    // the device on the communication audio route (see micStart)
+    if(mic.ctx){ try{ mic.ctx.close(); }catch(e){} mic.ctx = null; }
+    mic.muteUntil = 0;
     const fill = $("noiseBarFill"); if(fill) fill.style.width = "0%";
   }
   function micLevel(){
@@ -4042,8 +4066,9 @@
     const fill = $("noiseBarFill"); if(fill) fill.style.width = mic.disp + "%";
     if(!S || !S.noisePenalty || S.waitingStart) return;   // punish only inside a running session
     if(level < S.noiseThr) return;
+    if(Date.now() < mic.muteUntil) return;                // our own cue is sounding (see micBlank)
     if(Date.now() - mic.lastPenaltyAt < NOISE_COOLDOWN_MS) return;
-    if(S.sig && S.sig.speech && synth && synth.speaking) return;   // never punish the app's own voice cues
+    if(S.sig && S.sig.speech && synth && synth.speaking) return;   // belt-and-braces second guard
     noiseViolation();
   }
   function noiseViolation(){
