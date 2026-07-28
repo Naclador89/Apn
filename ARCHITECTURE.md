@@ -31,7 +31,7 @@ of both `finish()` (`index.html:3565`) and `stopSession()` (`index.html:3621`).
 | `pr` | personal-best snapshot from `getPR()` at session start |
 | `longestHold`, `prBeaten` | running/session PR tracking — spans the **whole** session for every goal, including all phases of an Interval Sequence run (no per-phase reset) |
 | `sig` | `{speech,beep,vibrate}` cue-channel toggles |
-| `words` | `{down,up,hold,penalty,finish}` custom cue text |
+| `words` | `{down,up,hold,penalty,noise,finish}` custom cue text |
 | `rate` | speech rate (0.5–2) |
 | `eyesClosed`, `guardExit`, `screenColor` | display/handling toggles — session-wide even for Interval Sequence; not varied per phase (a deliberate scope limit, see § 3) |
 | `scenario`, `sd_actionMs`, `sd_pauseMs`, `sd_startReps`, `sd_startHold`, `ta_target`, `rr_bpm`, `rr_step`, `livesOn`, `livesCount` | only populated when `goal === "scenario"` |
@@ -476,7 +476,8 @@ Only three `kind` values are ever passed: **`"up"`**, **`"down"`**,
 ### `cmd(kind)` (`index.html:2212`)
 
 A *different*, overlapping vocabulary: `"down"`, `"up"`, `"hold"` (plus
-`cmdCount`, `cmdFinish`, `cmdPenalty`, `cmdPenaltyThenDown` for other cue
+`cmdCount`, `cmdFinish`, `cmdPenalty`, `cmdPenaltyThenDown`, and
+`cmdNoise` — the noise punishment's own word/tone, see § 6 — for other cue
 moments). Dispatches speech/beep/vibrate, each gated by
 `S.sig.speech`/`S.sig.beep`/`S.sig.vibrate`. **`cmd`'s `kind` and
 `setCue`'s `kind` are different enumerations that happen to share two
@@ -527,7 +528,7 @@ through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 `"lat.camOnboarded"` — inconsistent but harmless (all share the `lat.`
 prefix).
 
-`SETTING_IDS` (`index.html:1740`, 51 element IDs — 7 are the Interval
+`SETTING_IDS` (`index.html:1740`, 52 element IDs — 7 are the Interval
 Sequence scenario's per-phase fields: `ivPhaseCount` + `ivPhasePreset1..6`,
 each a `<select>` of saved preset names) + `readAll()`/
 `writeAll()` (`index.html:1751`/`1759`) round-trip the settings form through
@@ -606,7 +607,10 @@ hardcoded-English holdouts, in `renderStats()` and
 punishment feature (`labelNoisePenalty`, `hintNoisePenalty`,
 `sublblNoiseLimit`, `tooLoud`, `micNoAccess`, `micNotSupported`,
 `micStreamLost`, `errNoisePenaltyAmount`, `sumNoise`, `ariaNoisePenaltyX`,
-`ariaNoiseThr`), landing at **331**. `renderStats()` is
+`ariaNoiseThr`), and 2 more with the noise cue word
+(`sublblNoiseWord`, `ariaCmdNoiseWord`), landing at **333** — plus a
+language-level `cueNoise` cue word added to **all 11** languages
+(the `cueDown`…`cueFinish` set lives outside `strings`). `renderStats()` is
 also re-run from `applyRuntimeI18n()` on every language switch, since its
 content is runtime-built HTML the `data-i18n` walker would otherwise reset
 to the empty-state default. The other 9 languages each define only **27**
@@ -638,7 +642,7 @@ it still exists), `updateSummaries()`, and curve redraws.
 | `hideDur` | secChallenge | Hides required hold duration; voice announces it live |
 | `releaseGrace` | secChallenge | Debounce so brief finger lifts don't count as release |
 | `voice`/`beep`/`vibrate` | secSignals | Per-channel cue toggles |
-| `cmdDown/cmdUp/cmdHold/cmdPenaltyWord/cmdFinishWord` | secSignals | Custom cue words (auto-reseeded per language) |
+| `cmdDown/cmdUp/cmdHold/cmdPenaltyWord/cmdNoiseWord/cmdFinishWord` | secSignals | Custom cue words (auto-reseeded per language; `cmdNoiseWord` is the noise-punishment word, see § 6) |
 | `cmdRate` | secSignals | Speech rate, clamped 0.5–2 |
 | `progressTone` | secCoaching | Quiet rising tone during hold |
 | `prAnnounce` | secCoaching | Announces personal-best hold beaten |
@@ -754,14 +758,26 @@ extended and the punishment announced.
   per phase from their assigned preset**, like every other difficulty
   field. Hidden for `goal === "scenario"` (`applyGoalVisibility()`);
   `validate()` requires `noisePenaltyX >= 1` when the toggle is on.
-- **Pipeline**: `getUserMedia({audio})` with `echoCancellation`/
-  `noiseSuppression`/`autoGainControl` all off (browser speech processing
-  would smooth away exactly the transients this feature detects) →
-  `AnalyserNode` (fftSize 1024) fed from `ensureAudio()`'s shared
+- **Pipeline**: `getUserMedia({audio})` with **`echoCancellation:true`**,
+  `noiseSuppression:false`, `autoGainControl:false` → `AnalyserNode`
+  (fftSize 2048, ~43 ms window) fed from `ensureAudio()`'s shared
   AudioContext (analyser only, never `ctx.destination` — no feedback
-  loop) → 100 ms `setInterval` (`micTick`) computes RMS of the
-  time-domain data, mapped to 0–100 % via `NOISE_GAIN` (tuned by feel,
-  like `CAM_ADAPT_ALPHA`).
+  loop) → 50 ms `setInterval` (`micTick`) takes the **peak** absolute
+  sample of the window, mapped to 0–100 % via `NOISE_GAIN = 140` (tuned
+  by feel, like `CAM_ADAPT_ALPHA`). AEC is deliberately *on*: without it
+  many devices switch to a distorted communication audio path (see
+  Lifecycle), and it also subtracts the app's own speaker output from the
+  capture. AGC/NS stay off — they would normalize away exactly the loud
+  transients this feature detects.
+  - *Peak, not RMS*: the original implementation averaged RMS over a
+    1024-sample window polled at 100 ms — roughly 80 % of the audio was
+    never sampled (short shouts slipped between polls: "sluggish") and RMS
+    over a mostly-quiet window diluted transients so far that normal
+    speech only reached ~10–30 % of scale ("insensitive"). Peak +
+    2048/50 ms fixed both.
+  - The meter shows a peak-hold value (`mic.disp`, instant attack, −4
+    per tick decay) so it stays readable; **detection always uses the
+    instantaneous `mic.level`**, never the decayed display value.
 - **Violation** (`noiseViolation()`): fires when `level >= S.noiseThr`
   *and* the session is running past `waitingStart`. Guards:
   `NOISE_COOLDOWN_MS` (2.5 s — one loud event = one punishment; also
@@ -770,19 +786,37 @@ extended and the punishment announced.
   `applyPenalty(S.noisePenaltyX)` — `applyPenalty(amount)` took an
   optional amount parameter for this, defaulting to `S.penaltyX`, so the
   reps/time/interval-time-phase branch logic is single-sourced — plus
-  `cmdPenalty()` (speech gated on `S.sig.speech` — "announced by voice,
-  if parameterized"), a transient `tooLoud` subcue note via
-  `penaltyUnit()`, and `flashTolerancePenalty()`.
-- **Lifecycle**: `micStart()` on toggle-on (the checkbox change is the
-  user gesture that legitimizes the permission prompt + AudioContext
-  resume), on the one-time `pointerdown` primer when settings restored the
-  toggle already-on (no gesture at page load), and at `startSession()` when
-  `S.noisePenalty` (failure there degrades gracefully: `S.noisePenalty`
-  is cleared and `micNoAccess` shown, session continues). `micStop()` on
-  toggle-off only — session end deliberately leaves it running while the
-  toggle is on, so the setup meter stays live. Stream loss
-  (`micWatchStreamTracks()`, same pattern as the camera) disables the
-  feature mid-session with a `micStreamLost` message rather than freezing.
+  `cmdNoise()`, a transient `tooLoud` subcue note via `penaltyUnit()`,
+  and `flashTolerancePenalty()`.
+- **Own cue word**: `cmdNoise()` speaks `S.words.noise` (settings field
+  `cmdNoiseWord`, seeded/swapped per language from the language-level
+  `cueNoise` entry that all 11 `I18N` languages define, and reachable via
+  `cueWord("noise")`) with its own high→low two-tone beep and vibration
+  pattern — deliberately distinct from the early-release penalty cue so
+  the two punishments are distinguishable by ear alone.
+- **Lifecycle** — `micSync()` is the single owner. It computes whether
+  the mic is *needed*: session screen → only if `S && S.noisePenalty`;
+  setup screen → only if the toggle is on and `goal !== "scenario"` (live
+  meter); finish screen → never. Called from `show()` (every screen
+  transition), the toggle's change handler, `applyGoalVisibility()`, and
+  the one-time `pointerdown` primer (covers settings restored with the
+  toggle already on, where no gesture exists at page load). All call sites
+  sit inside user gestures, satisfying permission/AudioContext rules.
+  - *Why this is strict*: an idle-open mic — the previous behavior, which
+    kept the stream alive from toggle-on until toggle-off, including
+    sessions that don't use the feature — pushes many devices (Android
+    audio routing, Bluetooth headsets dropping to the HFP call profile)
+    into a communication audio mode that audibly distorts **all** output,
+    including the app's own speech cues. This was a real user-reported
+    regression, not a theoretical concern.
+  - Permission failure at session start degrades gracefully: `micSync()`
+    clears `S.noisePenalty` and shows `micNoAccess`, the session
+    continues. Stream loss (`micWatchStreamTracks()`, same pattern as the
+    camera) disables the feature mid-session with `micStreamLost` rather
+    than freezing.
+  - Remaining hardware limit (not fixable in JS): with Bluetooth
+    headphones, *any* mic capture forces the low-quality call profile, so
+    audio quality drops during noise-punishment sessions specifically.
 
 ---
 
@@ -902,6 +936,15 @@ condition instead resets the current phase and lets the player retry.
     `applyPenalty(amount)`) and announces via `cmdPenalty()` — with
     cooldown, own-voice-cue guard, stream-loss handling, and per-phase
     inheritance in Interval Sequence (331 `de`/`en` keys, 51 setting IDs)
+29. Noise punishment follow-up after user feedback: (a) distorted speech
+    output fixed — `echoCancellation` turned on and `micSync()` introduced
+    so the mic is only ever open when actually needed (an idle-open mic
+    forces devices into a distorting communication audio mode);
+    (b) own configurable cue word `cmdNoiseWord`/`cueNoise` + `cmdNoise()`
+    instead of reusing the generic penalty cue; (c) detection reworked
+    from RMS@1024/100 ms to peak@2048/50 ms with `NOISE_GAIN` 320 → 140
+    and a peak-hold meter, fixing "sluggish and too insensitive"
+    (333 `de`/`en` keys, 52 setting IDs)
 
 This narrative explains several of the inconsistencies below: features
 built early (Sudden Death family) predate the i18n retrofit and the

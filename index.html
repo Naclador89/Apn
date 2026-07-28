@@ -727,10 +727,14 @@
           </div>
         </div>
         <div class="field">
-          <div class="row">
+          <div class="row3">
             <div>
               <span class="sublbl" data-i18n="sublblPenaltyWord">Penalty word</span>
               <input id="cmdPenaltyWord" type="text" value="Penalty" aria-label="Penalty word" data-i18n-aria="ariaCmdPenaltyWord">
+            </div>
+            <div>
+              <span class="sublbl" data-i18n="sublblNoiseWord">Noise word</span>
+              <input id="cmdNoiseWord" type="text" value="Too loud" aria-label="Noise word" data-i18n-aria="ariaCmdNoiseWord">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblFinishWord">Finish word</span>
@@ -994,7 +998,7 @@
   // ---------- i18n: top-10 most-spoken languages ----------
   const I18N = {
     de: { name:"Deutsch", speech:"de-DE",
-      cueDown:"Halten", cueUp:"Atmen", cueLong:"Weiter so", cuePenalty:"Strafe", cueFinish:"Fertig",
+      cueDown:"Halten", cueUp:"Atmen", cueLong:"Weiter so", cuePenalty:"Strafe", cueNoise:"Zu laut", cueFinish:"Fertig",
       strings:{
         release:"Loslassen", startWithin:s=>`Drücke in ${s}s`,
         swRestLabel:"Pause seit letztem Hold", swLongestLabel:"Längster Hold",
@@ -1046,7 +1050,7 @@
         ariaMinHold:"Minimaler langer Hold", ariaMaxHold:"Maximaler langer Hold", ariaOpenHoldCurve:"Hold-Kurve bearbeiten",
         ariaPenaltyX:"Strafmenge", ariaLateTol:"Erlaubter Spätstart", ariaReleaseGrace:"Loslass-Toleranz",
         ariaCmdDown:"Signalwort Halten", ariaCmdUp:"Signalwort Loslassen", ariaCmdHold:"Signalwort langer Hold",
-        ariaCmdPenaltyWord:"Strafe-Wort", ariaCmdFinishWord:"Fertig-Wort", ariaCmdRate:"Sprechtempo",
+        ariaCmdPenaltyWord:"Strafe-Wort", ariaCmdNoiseWord:"Lärm-Wort", ariaCmdFinishWord:"Fertig-Wort", ariaCmdRate:"Sprechtempo",
         ariaPresetName:"Preset-Name", ariaLoadPreset:"Preset laden", ariaLivesRemaining:"Verbleibende Leben",
         ariaTapSurface:"Tippfläche", ariaCurveMode:"Kurven-Modus", ariaCurvePresets:"Kurven-Vorlagen", ariaDrawCurve:"Wahrscheinlichkeitskurve zeichnen",
         ariaCamRelThr:"Loslass-Schwelle", ariaCamPressThr:"Druck-Schwelle",
@@ -1094,7 +1098,7 @@
         labelVibration:"Vibration", hintVibration:"Vibrationsmuster als Signal. Zum Testen auf den Schalter tippen.",
         labelCueWords:"Eigene Signalwörter",
         sublblStartHold:"Halten", sublblRelease:"Loslassen", sublblLongHold:"Langer Hold",
-        sublblPenaltyWord:"Strafe-Wort", sublblFinishWord:"Fertig-Wort", sublblRate:"Sprechtempo (0,5–2)",
+        sublblPenaltyWord:"Strafe-Wort", sublblNoiseWord:"Lärm-Wort", sublblFinishWord:"Fertig-Wort", sublblRate:"Sprechtempo (0,5–2)",
         uiFeedbackTitle:"Rückmeldung",
         labelProgressTone:"Fortschrittston beim Hold", hintProgressTone:"Ein leiser, langsam ansteigender Ton während des Holds — ideal für den Augen-zu-Modus.",
         labelPrAnnounce:"Bestwert-Ansage", hintPrAnnounce:"Wenn du deinen längsten Hold übertriffst, sagt es die App an.",
@@ -1190,7 +1194,7 @@
       }
     },
     en: { name:"English", speech:"en-US",
-      cueDown:"Hold", cueUp:"Breathe", cueLong:"Keep going", cuePenalty:"Penalty", cueFinish:"Done",
+      cueDown:"Hold", cueUp:"Breathe", cueLong:"Keep going", cuePenalty:"Penalty", cueNoise:"Too loud", cueFinish:"Done",
       strings:{
         release:"Release", startWithin:s=>`Press within ${s}s`,
         swRestLabel:"Rest since last hold", swLongestLabel:"Longest hold",
@@ -1242,7 +1246,7 @@
         ariaMinHold:"Minimum long hold", ariaMaxHold:"Maximum long hold", ariaOpenHoldCurve:"Open hold curve editor",
         ariaPenaltyX:"Penalty amount", ariaLateTol:"Allowed late start", ariaReleaseGrace:"Release tolerance",
         ariaCmdDown:"Start-hold cue word", ariaCmdUp:"Release cue word", ariaCmdHold:"Long-hold cue word",
-        ariaCmdPenaltyWord:"Penalty word", ariaCmdFinishWord:"Finish word", ariaCmdRate:"Speech rate",
+        ariaCmdPenaltyWord:"Penalty word", ariaCmdNoiseWord:"Noise word", ariaCmdFinishWord:"Finish word", ariaCmdRate:"Speech rate",
         ariaPresetName:"Preset name", ariaLoadPreset:"Load preset", ariaLivesRemaining:"Lives remaining",
         ariaTapSurface:"Tap surface", ariaCurveMode:"Curve mode", ariaCurvePresets:"Curve presets", ariaDrawCurve:"Draw probability curve",
         ariaCamRelThr:"Release threshold", ariaCamPressThr:"Press threshold",
@@ -1290,7 +1294,7 @@
         labelVibration:"Vibration", hintVibration:"Vibration patterns as cues. Tap the switch to test.",
         labelCueWords:"Custom cue words",
         sublblStartHold:"Start hold", sublblRelease:"Release", sublblLongHold:"Long hold",
-        sublblPenaltyWord:"Penalty word", sublblFinishWord:"Finish word", sublblRate:"Speech rate (0.5–2)",
+        sublblPenaltyWord:"Penalty word", sublblNoiseWord:"Noise word", sublblFinishWord:"Finish word", sublblRate:"Speech rate (0.5–2)",
         uiFeedbackTitle:"Feedback",
         labelProgressTone:"Hold progress tone", hintProgressTone:"A quiet, slowly rising tone during the hold — great for the eyes-closed mode.",
         labelPrAnnounce:"Personal-best announcement", hintPrAnnounce:"When you beat your longest recorded hold, the app announces it.",
@@ -1386,7 +1390,7 @@
       }
     },
     zh: { name:"中文", speech:"zh-CN",
-      cueDown:"憋气", cueUp:"呼吸", cueLong:"坚持", cuePenalty:"惩罚", cueFinish:"完成",
+      cueDown:"憋气", cueUp:"呼吸", cueLong:"坚持", cuePenalty:"惩罚", cueNoise:"太吵", cueFinish:"完成",
       strings:{ ready:"准备", pressToStart:"按下开始", tapToStart:"任意位置点击",
         release:"松开", startWithin:s=>`${s}秒内按下`,
         swRestLabel:"距上次憋气的休息", swLongestLabel:"最长憋气",
@@ -1398,7 +1402,7 @@
         continueWord:"继续", tooLate:"开始太晚", tooEarly:"过早松开", tooEarlyLab:"过早 —— 重来" }
     },
     hi: { name:"हिन्दी", speech:"hi-IN",
-      cueDown:"रोकें", cueUp:"सांस लें", cueLong:"बनाए रखें", cuePenalty:"दंड", cueFinish:"पूरा",
+      cueDown:"रोकें", cueUp:"सांस लें", cueLong:"बनाए रखें", cuePenalty:"दंड", cueNoise:"बहुत शोर", cueFinish:"पूरा",
       strings:{ ready:"तैयार", pressToStart:"शुरू के लिए दबाएँ", tapToStart:"शुरू करने के लिए कहीं भी टैप",
         release:"छोड़ें", startWithin:s=>`${s} सेकंड में दबाएँ`,
         swRestLabel:"पिछले होल्ड के बाद विश्राम", swLongestLabel:"सबसे लंबा होल्ड",
@@ -1412,7 +1416,7 @@
         tooLate:"बहुत देर से शुरू", tooEarly:"बहुत जल्दी छोड़ा", tooEarlyLab:"बहुत जल्दी — फिर" }
     },
     es: { name:"Español", speech:"es-ES",
-      cueDown:"Aguanta", cueUp:"Respira", cueLong:"Sigue", cuePenalty:"Castigo", cueFinish:"Listo",
+      cueDown:"Aguanta", cueUp:"Respira", cueLong:"Sigue", cuePenalty:"Castigo", cueNoise:"Demasiado ruido", cueFinish:"Listo",
       strings:{ ready:"Listo", pressToStart:"Pulsa para empezar", tapToStart:"Toca cualquier lugar",
         release:"Suelta", startWithin:s=>`Pulsa en ${s}s`,
         swRestLabel:"Descanso desde la última apnea", swLongestLabel:"Apnea más larga",
@@ -1426,7 +1430,7 @@
         tooLate:"Empezaste tarde", tooEarly:"Soltaste demasiado pronto", tooEarlyLab:"Muy pronto — reintenta" }
     },
     fr: { name:"Français", speech:"fr-FR",
-      cueDown:"Bloque", cueUp:"Respire", cueLong:"Continue", cuePenalty:"Pénalité", cueFinish:"Terminé",
+      cueDown:"Bloque", cueUp:"Respire", cueLong:"Continue", cuePenalty:"Pénalité", cueNoise:"Trop fort", cueFinish:"Terminé",
       strings:{ ready:"Prêt", pressToStart:"Appuie pour démarrer", tapToStart:"Touche n’importe où",
         release:"Relâche", startWithin:s=>`Appuie sous ${s}s`,
         swRestLabel:"Repos depuis la dernière apnée", swLongestLabel:"Apnée la plus longue",
@@ -1440,7 +1444,7 @@
         tooLate:"Départ trop tardif", tooEarly:"Relâché trop tôt", tooEarlyLab:"Trop tôt — réessaie" }
     },
     ar: { name:"العربية", speech:"ar-SA",
-      cueDown:"احبس", cueUp:"تنفّس", cueLong:"استمر", cuePenalty:"عقوبة", cueFinish:"انتهى",
+      cueDown:"احبس", cueUp:"تنفّس", cueLong:"استمر", cuePenalty:"عقوبة", cueNoise:"صوت عالٍ", cueFinish:"انتهى",
       strings:{ ready:"مستعد", pressToStart:"اضغط للبدء", tapToStart:"اضغط في أي مكان",
         release:"إفلات", startWithin:s=>`اضغط خلال ${s} ث`,
         swRestLabel:"الراحة منذ آخر حبس", swLongestLabel:"أطول حبس",
@@ -1454,7 +1458,7 @@
         tooLate:"بدأت متأخرًا", tooEarly:"أفلتّ مبكرًا", tooEarlyLab:"مبكر جدًا — أعد" }
     },
     bn: { name:"বাংলা", speech:"bn-BD",
-      cueDown:"ধরুন", cueUp:"শ্বাস নিন", cueLong:"চালিয়ে যান", cuePenalty:"শাস্তি", cueFinish:"শেষ",
+      cueDown:"ধরুন", cueUp:"শ্বাস নিন", cueLong:"চালিয়ে যান", cuePenalty:"শাস্তি", cueNoise:"খুব জোরে", cueFinish:"শেষ",
       strings:{ ready:"প্রস্তুত", pressToStart:"শুরু করতে চাপুন", tapToStart:"যেকোনো জায়গায় ট্যাপ",
         release:"ছাড়ুন", startWithin:s=>`${s} সেকেন্ডে চাপুন`,
         swRestLabel:"শেষ হোল্ডের পর বিশ্রাম", swLongestLabel:"সবচেয়ে দীর্ঘ হোল্ড",
@@ -1468,7 +1472,7 @@
         tooLate:"দেরি করে শুরু", tooEarly:"খুব দ্রুত ছাড়া", tooEarlyLab:"দ্রুত হয়েছে — আবার" }
     },
     pt: { name:"Português", speech:"pt-BR",
-      cueDown:"Segure", cueUp:"Respire", cueLong:"Continue", cuePenalty:"Penalidade", cueFinish:"Pronto",
+      cueDown:"Segure", cueUp:"Respire", cueLong:"Continue", cuePenalty:"Penalidade", cueNoise:"Muito alto", cueFinish:"Pronto",
       strings:{ ready:"Pronto", pressToStart:"Pressione para iniciar", tapToStart:"Toque em qualquer lugar",
         release:"Solte", startWithin:s=>`Pressione em ${s}s`,
         swRestLabel:"Descanso desde a última apneia", swLongestLabel:"Apneia mais longa",
@@ -1482,7 +1486,7 @@
         tooLate:"Início atrasado", tooEarly:"Soltou cedo demais", tooEarlyLab:"Cedo demais — tente de novo" }
     },
     ru: { name:"Русский", speech:"ru-RU",
-      cueDown:"Задержи", cueUp:"Дыши", cueLong:"Держи", cuePenalty:"Штраф", cueFinish:"Готово",
+      cueDown:"Задержи", cueUp:"Дыши", cueLong:"Держи", cuePenalty:"Штраф", cueNoise:"Слишком громко", cueFinish:"Готово",
       strings:{ ready:"Готов", pressToStart:"Нажми для старта", tapToStart:"Тапни где угодно",
         release:"Отпусти", startWithin:s=>`Нажми за ${s}с`,
         swRestLabel:"Отдых с последней задержки", swLongestLabel:"Самая долгая задержка",
@@ -1496,7 +1500,7 @@
         tooLate:"Слишком поздно начал", tooEarly:"Отпустил слишком рано", tooEarlyLab:"Рано — повтор" }
     },
     ur: { name:"اردو", speech:"ur-PK",
-      cueDown:"سانس روکیں", cueUp:"سانس لیں", cueLong:"جاری رکھیں", cuePenalty:"سزا", cueFinish:"مکمل",
+      cueDown:"سانس روکیں", cueUp:"سانس لیں", cueLong:"جاری رکھیں", cuePenalty:"سزا", cueNoise:"بہت شور", cueFinish:"مکمل",
       strings:{ ready:"تیار", pressToStart:"شروع کرنے کے لیے دبائیں", tapToStart:"کہیں بھی ٹیپ کریں",
         release:"چھوڑیں", startWithin:s=>`${s} سیکنڈ میں دبائیں`,
         swRestLabel:"آخری روک کے بعد آرام", swLongestLabel:"سب سے لمبی روک",
@@ -1515,7 +1519,8 @@
   const cueWord = (kind) => {
     const L = I18N[LANG] || I18N.en;
     return kind==="down" ? L.cueDown : kind==="up" ? L.cueUp : kind==="long" ? L.cueLong :
-           kind==="penalty" ? L.cuePenalty : kind==="finish" ? L.cueFinish : "";
+           kind==="penalty" ? L.cuePenalty : kind==="noise" ? L.cueNoise :
+           kind==="finish" ? L.cueFinish : "";
   };
   const speechTag = () => (I18N[LANG] || I18N.en).speech;
 
@@ -1790,7 +1795,7 @@
     "strict","penalty","penaltyX","lateTol","hideDur",
     "noisePenalty","noisePenaltyX","noiseThr",
     "voice","beep","vibrate","eyesClosed","guardExit","screenColor","cameraControl",
-    "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdFinishWord","cmdRate",
+    "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdNoiseWord","cmdFinishWord","cmdRate",
     "appLang",
     "progressTone","prAnnounce",
   ];
@@ -2288,6 +2293,15 @@
     if(S.sig.beep){ beep(320,150,0); beep(220,200,170); }
     if(S.sig.vibrate) vibrate([300,120,300]);
   }
+  // Noise punishment gets its own spoken word (S.words.noise) and a distinct
+  // rising-then-falling two-tone, so it's not confused with the early-release
+  // penalty cue.
+  function cmdNoise(){
+    if(!S) return;
+    if(S.sig.speech) say(S.words.noise);
+    if(S.sig.beep){ beep(880,120,0); beep(300,220,130); }
+    if(S.sig.vibrate) vibrate([200,90,200,90,200]);
+  }
   function cmdPenaltyThenDown(){
     if(!S) return;
     if(S.sig.speech) say(S.words.penalty + ". " + S.words.down);
@@ -2305,6 +2319,7 @@
     ["fBase","fChance","fHolds","fRest"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
     ["fStrict","fPenaltyToggle","penaltyValField","fHideDur","fNoisePenaltyToggle"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
     $("noisePenaltyValField").classList.toggle("hidden", isScenario || !$("noisePenalty").checked);
+    micSync();   // meter stops when the goal switches to scenario, resumes when back
     applyScenarioVisibility();
     const penaltyAmountLbl = (goal==="time") ? (T().penaltySeconds || "Penalty amount (+seconds)")
                                              : (T().penaltyReps || "Penalty amount (+reps)");
@@ -2521,6 +2536,7 @@
         up:   ($("cmdUp").value || "").trim() || "Breathe",
         hold: ($("cmdHold").value || "").trim() || "Keep going",
         penalty: ($("cmdPenaltyWord").value || "").trim() || "Penalty",
+        noise: ($("cmdNoiseWord").value || "").trim() || "Too loud",
         finish: ($("cmdFinishWord").value || "").trim() || "Done",
       },
       rate: Math.min(2, Math.max(0.5, parseFloat($("cmdRate").value) || 1)),
@@ -2578,6 +2594,7 @@
     $("setup").classList.toggle("hidden", which!=="setup");
     $("session").classList.toggle("hidden", which!=="session");
     $("finish").classList.toggle("hidden", which!=="finish");
+    micSync();   // mic follows the visible screen (see micSync for why)
   }
 
   function startSession(){
@@ -2596,12 +2613,7 @@
     $("repTotalWrap").style.display = S.totalReps ? "" : "none";
     $("repTotal").textContent = S.totalReps || "";
     $("repNow").textContent = "0";
-    armReady();
-    if(S.noisePenalty){
-      micStart().then(ok=>{
-        if(!ok && S){ S.noisePenalty = false; $("subcue").textContent = T().micNoAccess; }
-      });
-    }
+    armReady();   // (mic lifecycle handled by show("session") → micSync() above)
   }
 
   function fmtSW(s){
@@ -3952,11 +3964,13 @@
   // NOISE_COOLDOWN_MS: one loud event = one punishment; further violations
   // are ignored for this long so a single shout can't stack several penalties
   // (also covers the app's own short cue beeps).
-  // NOISE_GAIN maps the analyser's RMS (0..~1 full scale) onto the 0-100%
-  // meter/limit scale — tuned by feel (like CAM_ADAPT_ALPHA) so normal
-  // speech lands mid-scale.
-  const NOISE_COOLDOWN_MS = 2500, NOISE_GAIN = 320;
-  const mic = { stream:null, source:null, analyser:null, data:null, running:false, timer:0, level:0, lastPenaltyAt:0 };
+  // NOISE_GAIN maps the analyser's peak amplitude (0..1 full scale) onto the
+  // 0-100% meter/limit scale — tuned by feel (like CAM_ADAPT_ALPHA) so normal
+  // speech peaks land mid-scale and a shout reaches the top. Peak, not RMS:
+  // RMS over a mostly-quiet window dilutes exactly the short transients this
+  // feature is meant to catch.
+  const NOISE_COOLDOWN_MS = 2500, NOISE_GAIN = 140;
+  const mic = { stream:null, source:null, analyser:null, data:null, running:false, timer:0, level:0, disp:0, lastPenaltyAt:0 };
   function micSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
   function micWatchStreamTracks(stream){
     stream.getTracks().forEach(track=>{
@@ -3980,10 +3994,14 @@
     if(!ctx){ $("micErr").textContent = T().micNotSupported; return false; }
     let stream;
     try{
-      // raw signal: the browser's speech-oriented processing would smooth away
-      // exactly the loud transients this feature is meant to catch
+      // echoCancellation ON: keeps the device on its clean audio path (an
+      // AEC-less capture pushes many phones into a distorted communication
+      // mode that degrades the app's own speech output) and subtracts the
+      // app's own speaker output from the mic signal (fewer self-triggers).
+      // AGC/noise suppression OFF: they would normalize away exactly the
+      // loud transients this feature is meant to catch.
       stream = await navigator.mediaDevices.getUserMedia({
-        audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }, video:false
+        audio:{ echoCancellation:true, noiseSuppression:false, autoGainControl:false }, video:false
       });
     }catch(e){ $("micErr").textContent = T().micNoAccess; return false; }
     mic.stream = stream; micWatchStreamTracks(stream);
@@ -3991,12 +4009,13 @@
     try{
       mic.source = ctx.createMediaStreamSource(stream);
       mic.analyser = ctx.createAnalyser();
-      mic.analyser.fftSize = 1024;
+      mic.analyser.fftSize = 2048;        // ~43ms window @48kHz; with the 50ms poll below, short shouts can't slip between samples
       mic.source.connect(mic.analyser);   // analyser only — never ctx.destination (no feedback loop)
       mic.data = new Uint8Array(mic.analyser.fftSize);
     }catch(e){ micStop(); $("micErr").textContent = T().micNotSupported; return false; }
     mic.running = true;
-    mic.timer = setInterval(micTick, 100);
+    mic.disp = 0;
+    mic.timer = setInterval(micTick, 50);
     return true;
   }
   function micStop(){
@@ -4010,15 +4029,17 @@
   function micLevel(){
     if(!mic.analyser) return 0;
     mic.analyser.getByteTimeDomainData(mic.data);
-    let sum = 0;
-    for(let i=0;i<mic.data.length;i++){ const v = (mic.data[i]-128)/128; sum += v*v; }
-    const rms = Math.sqrt(sum/mic.data.length);
-    return Math.min(100, Math.round(rms * NOISE_GAIN));
+    let peak = 0;
+    for(let i=0;i<mic.data.length;i++){ const v = Math.abs(mic.data[i]-128)/128; if(v>peak) peak = v; }
+    return Math.min(100, Math.round(peak * NOISE_GAIN));
   }
   function micTick(){
     if(!mic.running) return;
     const level = mic.level = micLevel();
-    const fill = $("noiseBarFill"); if(fill) fill.style.width = level + "%";
+    // meter shows a peak-hold value (instant attack, slow decay) so it's
+    // readable; detection below always uses the instantaneous level
+    mic.disp = Math.max(level, mic.disp - 4);
+    const fill = $("noiseBarFill"); if(fill) fill.style.width = mic.disp + "%";
     if(!S || !S.noisePenalty || S.waitingStart) return;   // punish only inside a running session
     if(level < S.noiseThr) return;
     if(Date.now() - mic.lastPenaltyAt < NOISE_COOLDOWN_MS) return;
@@ -4028,7 +4049,7 @@
   function noiseViolation(){
     mic.lastPenaltyAt = Date.now();
     applyPenalty(S.noisePenaltyX);
-    cmdPenalty();   // "announced by voice, if parameterized": speech is gated on S.sig.speech inside
+    cmdNoise();   // "announced by voice, if parameterized": speech is gated on S.sig.speech inside
     // transient note — the engine's next subcue write (rest tick, cue) may
     // overwrite it, which is fine; flash + voice are the primary channels
     $("subcue").textContent = T().tooLoud + " · " + penaltyUnit(S.noisePenaltyX);
@@ -4040,18 +4061,41 @@
     const m = $("noiseMark"); if(m) m.style.left = v + "%";
     const lbl = $("noiseThrVal"); if(lbl) lbl.textContent = v;
   }
+  // Central mic lifecycle: the mic is open ONLY while actually needed —
+  // during a session WITH noise punishment, or on the setup screen while the
+  // toggle is on (live meter for placing the limit). Everything else closes
+  // the stream. This matters beyond battery: an open mic pushes many devices
+  // (Android audio routing, Bluetooth headsets falling back to the call
+  // profile) into a communication audio mode that audibly degrades ALL
+  // output including the app's speech cues — so sessions without noise
+  // punishment must never hold the mic open. Called from show() (every
+  // screen transition), the toggle handler, and applyGoalVisibility().
+  function micSync(){
+    const sessionVisible = !$("session").classList.contains("hidden");
+    const setupVisible = !$("setup").classList.contains("hidden");
+    const want = sessionVisible ? !!(S && S.noisePenalty)
+               : setupVisible ? (!!$("noisePenalty") && $("noisePenalty").checked && goal !== "scenario")
+               : false;
+    if(want && !mic.running){
+      micStart().then(ok=>{
+        if(!ok && S && S.noisePenalty){
+          S.noisePenalty = false;   // degrade gracefully: session continues without the punishment
+          $("subcue").textContent = T().micNoAccess;
+        }
+      });
+    } else if(!want && mic.running){
+      micStop();
+    }
+  }
   (function wireMic(){
     const tog = $("noisePenalty"); if(!tog) return;
     tog.addEventListener("change", ()=>{
       $("noisePenaltyValField").classList.toggle("hidden", goal==="scenario" || !tog.checked);
-      if(tog.checked) micStart(); else micStop();
+      micSync();
     });
     const thr = $("noiseThr");
     if(thr) thr.addEventListener("input", updateNoiseMark);
     updateNoiseMark();
-    // Note: when settings restore the toggle already-on at page load, the mic
-    // is NOT opened immediately (no user gesture yet) — the first pointerdown
-    // primer below or session start opens it instead.
   })();
 
   const btn = $("holdBtn");
@@ -4129,6 +4173,7 @@
       swap("cmdUp", prev.cueUp, nx.cueUp);
       swap("cmdHold", prev.cueLong, nx.cueLong);
       swap("cmdPenaltyWord", prev.cuePenalty, nx.cuePenalty);
+      swap("cmdNoiseWord", prev.cueNoise, nx.cueNoise);
       swap("cmdFinishWord", prev.cueFinish, nx.cueFinish);
       setLang(newLang);
       saveSettingsNow();
@@ -4142,6 +4187,7 @@
     seed("cmdUp", lg.cueUp);
     seed("cmdHold", lg.cueLong);
     seed("cmdPenaltyWord", lg.cuePenalty);
+    seed("cmdNoiseWord", lg.cueNoise);
     seed("cmdFinishWord", lg.cueFinish);
     applyRuntimeI18n();
 
@@ -4210,9 +4256,9 @@
   document.addEventListener("pointerdown", function prime(){
     if(synth){ try{ const u=new SpeechSynthesisUtterance(""); synth.speak(u); synth.cancel(); }catch(e){} }
     const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
-    // settings restored with noise punishment already on: this first gesture
-    // is the earliest moment the mic (and its live meter) may be opened
-    if($("noisePenalty") && $("noisePenalty").checked) micStart();
+    // settings restored with noise punishment already on: the AudioContext
+    // resume above unfreezes the analyser, and micSync (re)opens the meter
+    micSync();
     document.removeEventListener("pointerdown", prime);
   }, {once:true});
 })();

@@ -185,7 +185,7 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 51 element
+**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 52 element
 IDs — 7 of them are the Interval Sequence scenario's per-phase fields,
 `ivPhaseCount` + `ivPhasePreset1..6`, each a `<select>` of saved preset
 names rather than a raw numeric field) + `KV`/`readAll()`/`writeAll()`
@@ -265,13 +265,22 @@ Still open, deliberately left as documented rather than fixed:
   `camStreamLost` message instead of silently freezing.
 - Noise punishment (microphone, `mic` module right after the camera block):
   a Difficulty-panel toggle + amount + limit slider with live level meter.
-  If the mic's RMS level crosses the limit while a session is running past
-  its first press, the session is extended via `applyPenalty(S.noisePenaltyX)`
-  (same branch logic as the early-release penalty, so it works for
-  reps/time/interval time-phases alike) and announced via `cmdPenalty()`
-  (speech gated on the Voice-cues toggle). 2.5 s cooldown per violation; the
-  app's own speech is never punished (`synth.speaking` guard); stream loss
+  If the mic's **peak** level (not RMS — peak catches short transients;
+  50 ms poll over a 2048-sample window) crosses the limit while a session
+  is running past its first press, the session is extended via
+  `applyPenalty(S.noisePenaltyX)` (same branch logic as the early-release
+  penalty, so it works for reps/time/interval time-phases alike) and
+  announced via `cmdNoise()` — its own configurable cue word
+  (`cmdNoiseWord`, `S.words.noise`, `cueNoise` per language), distinct from
+  the early-release penalty word. 2.5 s cooldown per violation; the app's
+  own speech is never punished (`synth.speaking` guard); stream loss
   disables the feature mid-session instead of freezing (`micStreamLost`).
+  **`micSync()` owns the mic lifecycle** — open only during a session that
+  actually uses noise punishment, or on the setup screen for the live meter;
+  called from `show()`/the toggle/`applyGoalVisibility()`. This matters:
+  an open mic (and a capture without `echoCancellation`) pushes many devices
+  into a communication audio mode that audibly distorts *all* output
+  including the app's own speech cues, so the mic must never idle open.
   Scoped exactly like the other difficulty fields: hidden for scenarios,
   inherited per-phase from presets by Interval Sequence
   (`applyRepsConfig()` carries `noisePenalty`/`noisePenaltyX`/`noiseThr`).
