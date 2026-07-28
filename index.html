@@ -643,6 +643,31 @@
           <div class="hint" id="lateTolHint" data-i18n="hintLateStart">If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.</div>
         </div>
 
+        <div class="field toggle" id="fNoisePenaltyToggle">
+          <div>
+            <label class="lbl" for="noisePenalty" data-i18n="labelNoisePenalty">Noise punishment (microphone)</label>
+            <div class="hint" style="margin-top:2px" data-i18n="hintNoisePenalty">If sound rises above the limit during the session, the session is extended. Set the limit with the slider — the meter shows the current level.</div>
+          </div>
+          <label class="switch"><input id="noisePenalty" type="checkbox"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="field hidden" id="noisePenaltyValField">
+          <div class="row">
+            <div>
+              <span class="sublbl" id="noisePenaltyLbl">Penalty amount (+reps)</span>
+              <input id="noisePenaltyX" type="number" min="1" value="1" aria-label="Noise penalty amount" data-i18n-aria="ariaNoisePenaltyX">
+            </div>
+            <div>
+              <span class="sublbl"><span data-i18n="sublblNoiseLimit">Noise limit</span> <b id="noiseThrVal">60</b>%</span>
+              <input id="noiseThr" type="range" min="1" max="100" value="60" aria-label="Noise limit" data-i18n-aria="ariaNoiseThr" style="margin-top:14px;accent-color:var(--rise)">
+            </div>
+          </div>
+          <div class="camBar" id="noiseBar" style="margin-top:10px" aria-hidden="true">
+            <div class="camBarFill" id="noiseBarFill"></div>
+            <span class="camMark camMarkPress" id="noiseMark"></span>
+          </div>
+          <div class="hint" id="micErr" style="color:var(--bad);min-height:0"></div>
+        </div>
+
         <div class="field toggle" id="fHideDur">
           <div>
             <label class="lbl" for="hideDur" data-i18n="labelHideDur">Hide required hold time</label>
@@ -1151,7 +1176,17 @@
         curveSubHoldRandom:"Höher auf der Kurve = langer Hold hat eher diese Dauer.",
         curveSubHoldTiming:"X = Sitzungsfortschritt. Y = Dauer des langen Holds zu diesem Zeitpunkt.",
         curveSubRestRandom:"Höher auf der Kurve = Pause hat eher diese Länge.",
-        curveSubRestTiming:"X = Sitzungsfortschritt. Y = Pausenlänge zu diesem Zeitpunkt."
+        curveSubRestTiming:"X = Sitzungsfortschritt. Y = Pausenlänge zu diesem Zeitpunkt.",
+        labelNoisePenalty:"Lärm-Strafe (Mikrofon)",
+        hintNoisePenalty:"Steigt der Lärmpegel während der Sitzung über das Limit, wird die Sitzung verlängert. Limit per Regler einstellen — der Balken zeigt den aktuellen Pegel.",
+        sublblNoiseLimit:"Lärm-Limit",
+        tooLoud:"Zu laut",
+        micNoAccess:"Kein Mikrofonzugriff — Berechtigung erteilen (und per HTTPS ausliefern).",
+        micNotSupported:"Mikrofon wird auf diesem Gerät/Browser nicht unterstützt.",
+        micStreamLost:"Mikrofon-Signal verloren (Berechtigung entzogen oder Gerät getrennt) — Lärm-Strafe deaktiviert.",
+        errNoisePenaltyAmount:"Bitte eine gültige Lärm-Strafmenge eingeben (mind. 1).",
+        sumNoise:x=>`Lärm +${x}`,
+        ariaNoisePenaltyX:"Lärm-Strafmenge", ariaNoiseThr:"Lärm-Limit"
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1338,6 +1373,16 @@
         curveSubHoldTiming:"X = session progress. Y = long-hold duration at that time.",
         curveSubRestRandom:"Higher on the curve = rest more likely to be that length.",
         curveSubRestTiming:"X = session progress. Y = rest length at that time.",
+        labelNoisePenalty:"Noise punishment (microphone)",
+        hintNoisePenalty:"If sound rises above the limit during the session, the session is extended. Set the limit with the slider — the meter shows the current level.",
+        sublblNoiseLimit:"Noise limit",
+        tooLoud:"Too loud",
+        micNoAccess:"No microphone access — grant permission (and serve over HTTPS).",
+        micNotSupported:"Microphone is not supported on this device or browser.",
+        micStreamLost:"Microphone signal lost (permission revoked or device disconnected) — noise punishment disabled.",
+        errNoisePenaltyAmount:"Please enter a valid noise penalty amount (min 1).",
+        sumNoise:x=>`noise +${x}`,
+        ariaNoisePenaltyX:"Noise penalty amount", ariaNoiseThr:"Noise limit",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1743,6 +1788,7 @@
     "ivPhasePreset1","ivPhasePreset2","ivPhasePreset3","ivPhasePreset4","ivPhasePreset5","ivPhasePreset6",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
+    "noisePenalty","noisePenaltyX","noiseThr",
     "voice","beep","vibrate","eyesClosed","guardExit","screenColor","cameraControl",
     "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdFinishWord","cmdRate",
     "appLang",
@@ -1805,6 +1851,7 @@
     if(goal!=="scenario"){
       if(s.strict) ch.push(t.sumStrict);
       if(s.penalty) ch.push(t.sumPenalty(s.penaltyX));
+      if(s.noisePenalty) ch.push(t.sumNoise(s.noisePenaltyX));
       if(s.hideDur) ch.push(t.sumHidden);
     }
     setTxt("sumChallenge", ch.length ? ch.join(" · ") : t.sumRelaxed);
@@ -2256,10 +2303,13 @@
     $("scenarioField").classList.toggle("hidden", !isScenario);
     $("secTiming").classList.toggle("hidden", isScenario);   // whole Timing panel is irrelevant for scenarios
     ["fBase","fChance","fHolds","fRest"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
-    ["fStrict","fPenaltyToggle","penaltyValField","fHideDur"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
+    ["fStrict","fPenaltyToggle","penaltyValField","fHideDur","fNoisePenaltyToggle"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
+    $("noisePenaltyValField").classList.toggle("hidden", isScenario || !$("noisePenalty").checked);
     applyScenarioVisibility();
-    $("penaltyLbl").textContent = (goal==="time") ? (T().penaltySeconds || "Penalty amount (+seconds)")
-                                                  : (T().penaltyReps || "Penalty amount (+reps)");
+    const penaltyAmountLbl = (goal==="time") ? (T().penaltySeconds || "Penalty amount (+seconds)")
+                                             : (T().penaltyReps || "Penalty amount (+reps)");
+    $("penaltyLbl").textContent = penaltyAmountLbl;
+    $("noisePenaltyLbl").textContent = penaltyAmountLbl;
   }
   // scenarios that have a "fail" concept the lives system can apply to
   function scenarioSupportsLives(scn){
@@ -2396,6 +2446,7 @@
     if(goal!=="scenario"){
       if($("penalty").checked && !(num("penaltyX")>=1)) return t.errPenaltyAmount;
       if($("penalty").checked && !(num("lateTol")>=1)) return t.errLateTolMin;
+      if($("noisePenalty").checked && !(num("noisePenaltyX")>=1)) return t.errNoisePenaltyAmount;
     }
     if(goal==="scenario" && $("scenarioSel").value === "interval"){
       const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
@@ -2437,6 +2488,9 @@
     cfg.penaltyX     = n("penaltyX") || 0;
     cfg.lateTol      = n("lateTol") || 0;
     cfg.hide         = !!src.hideDur;
+    cfg.noisePenalty  = !!src.noisePenalty;
+    cfg.noisePenaltyX = Math.max(1, n("noisePenaltyX") || 1);
+    cfg.noiseThr      = Math.min(100, Math.max(1, n("noiseThr") || 60));
     if(src.goal === "time"){
       cfg.iv_phaseMode = "time";
       cfg.totalMin     = fn("totalMin");
@@ -2542,7 +2596,12 @@
     $("repTotalWrap").style.display = S.totalReps ? "" : "none";
     $("repTotal").textContent = S.totalReps || "";
     $("repNow").textContent = "0";
-    armReady();   
+    armReady();
+    if(S.noisePenalty){
+      micStart().then(ok=>{
+        if(!ok && S){ S.noisePenalty = false; $("subcue").textContent = T().micNoAccess; }
+      });
+    }
   }
 
   function fmtSW(s){
@@ -3488,21 +3547,26 @@
     }
   }
 
-  function applyPenalty(){
+  // amount defaults to the early-release penalty (S.penaltyX); the noise
+  // punishment passes its own S.noisePenaltyX through the same branch logic.
+  function applyPenalty(amount){
     if(!S) return;
+    const x = (amount != null) ? amount : S.penaltyX;
     if(S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time")){
-      S.endAt += S.penaltyX*1000;
+      S.endAt += x*1000;
     } else if(S.totalReps != null){
-      S.totalReps += S.penaltyX;
+      S.totalReps += x;
       $("repTotal").textContent = S.totalReps;
     }
   }
 
+  function penaltyUnit(x){
+    const isTimed = S && (S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time"));
+    return isTimed ? `+${x}s` : `+${x} reps`;
+  }
   function penaltyNote(base){
     if(!S || !S.penalty) return base;
-    const isTimed = S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time");
-    const unit = isTimed ? `+${S.penaltyX}s` : `+${S.penaltyX} reps`;
-    return base + " · " + unit;
+    return base + " · " + penaltyUnit(S.penaltyX);
   }
 
   function completeRep(){
@@ -3880,6 +3944,116 @@
     }
   })();
 
+  // ================= microphone noise punishment =====================
+  // If the sound level rises above the user-set limit while a session is
+  // running, the session is extended (reps or seconds) via the same branch
+  // logic as the early-release penalty, and announced through cmdPenalty()
+  // (speech gated on the Voice-cues toggle).
+  // NOISE_COOLDOWN_MS: one loud event = one punishment; further violations
+  // are ignored for this long so a single shout can't stack several penalties
+  // (also covers the app's own short cue beeps).
+  // NOISE_GAIN maps the analyser's RMS (0..~1 full scale) onto the 0-100%
+  // meter/limit scale — tuned by feel (like CAM_ADAPT_ALPHA) so normal
+  // speech lands mid-scale.
+  const NOISE_COOLDOWN_MS = 2500, NOISE_GAIN = 320;
+  const mic = { stream:null, source:null, analyser:null, data:null, running:false, timer:0, level:0, lastPenaltyAt:0 };
+  function micSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
+  function micWatchStreamTracks(stream){
+    stream.getTracks().forEach(track=>{
+      track.onended = ()=>{ if(mic.stream === stream) micHandleStreamLoss(); };
+    });
+  }
+  function micHandleStreamLoss(){
+    micStop();
+    if(S && S.noisePenalty){
+      S.noisePenalty = false;             // keep the session running, just without the punishment
+      $("subcue").textContent = T().micStreamLost;
+    } else {
+      $("micErr").textContent = T().micStreamLost;
+    }
+  }
+  async function micStart(){
+    if(mic.running) return true;
+    $("micErr").textContent = "";
+    if(!micSupported()){ $("micErr").textContent = T().micNotSupported; return false; }
+    const ctx = ensureAudio();
+    if(!ctx){ $("micErr").textContent = T().micNotSupported; return false; }
+    let stream;
+    try{
+      // raw signal: the browser's speech-oriented processing would smooth away
+      // exactly the loud transients this feature is meant to catch
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }, video:false
+      });
+    }catch(e){ $("micErr").textContent = T().micNoAccess; return false; }
+    mic.stream = stream; micWatchStreamTracks(stream);
+    if(ctx.state==="suspended"){ try{ ctx.resume(); }catch(e){} }
+    try{
+      mic.source = ctx.createMediaStreamSource(stream);
+      mic.analyser = ctx.createAnalyser();
+      mic.analyser.fftSize = 1024;
+      mic.source.connect(mic.analyser);   // analyser only — never ctx.destination (no feedback loop)
+      mic.data = new Uint8Array(mic.analyser.fftSize);
+    }catch(e){ micStop(); $("micErr").textContent = T().micNotSupported; return false; }
+    mic.running = true;
+    mic.timer = setInterval(micTick, 100);
+    return true;
+  }
+  function micStop(){
+    mic.running = false;
+    clearInterval(mic.timer); mic.timer = 0;
+    try{ if(mic.source) mic.source.disconnect(); }catch(e){}
+    mic.source = null; mic.analyser = null; mic.data = null;
+    if(mic.stream){ try{ mic.stream.getTracks().forEach(t=>{ t.onended = null; t.stop(); }); }catch(e){} mic.stream = null; }
+    const fill = $("noiseBarFill"); if(fill) fill.style.width = "0%";
+  }
+  function micLevel(){
+    if(!mic.analyser) return 0;
+    mic.analyser.getByteTimeDomainData(mic.data);
+    let sum = 0;
+    for(let i=0;i<mic.data.length;i++){ const v = (mic.data[i]-128)/128; sum += v*v; }
+    const rms = Math.sqrt(sum/mic.data.length);
+    return Math.min(100, Math.round(rms * NOISE_GAIN));
+  }
+  function micTick(){
+    if(!mic.running) return;
+    const level = mic.level = micLevel();
+    const fill = $("noiseBarFill"); if(fill) fill.style.width = level + "%";
+    if(!S || !S.noisePenalty || S.waitingStart) return;   // punish only inside a running session
+    if(level < S.noiseThr) return;
+    if(Date.now() - mic.lastPenaltyAt < NOISE_COOLDOWN_MS) return;
+    if(S.sig && S.sig.speech && synth && synth.speaking) return;   // never punish the app's own voice cues
+    noiseViolation();
+  }
+  function noiseViolation(){
+    mic.lastPenaltyAt = Date.now();
+    applyPenalty(S.noisePenaltyX);
+    cmdPenalty();   // "announced by voice, if parameterized": speech is gated on S.sig.speech inside
+    // transient note — the engine's next subcue write (rest tick, cue) may
+    // overwrite it, which is fine; flash + voice are the primary channels
+    $("subcue").textContent = T().tooLoud + " · " + penaltyUnit(S.noisePenaltyX);
+    flashTolerancePenalty();
+  }
+  function updateNoiseMark(){
+    const thr = $("noiseThr"); if(!thr) return;
+    const v = Math.min(100, Math.max(1, parseInt(thr.value,10) || 60));
+    const m = $("noiseMark"); if(m) m.style.left = v + "%";
+    const lbl = $("noiseThrVal"); if(lbl) lbl.textContent = v;
+  }
+  (function wireMic(){
+    const tog = $("noisePenalty"); if(!tog) return;
+    tog.addEventListener("change", ()=>{
+      $("noisePenaltyValField").classList.toggle("hidden", goal==="scenario" || !tog.checked);
+      if(tog.checked) micStart(); else micStop();
+    });
+    const thr = $("noiseThr");
+    if(thr) thr.addEventListener("input", updateNoiseMark);
+    updateNoiseMark();
+    // Note: when settings restore the toggle already-on at page load, the mic
+    // is NOT opened immediately (no user gesture yet) — the first pointerdown
+    // primer below or session start opens it instead.
+  })();
+
   const btn = $("holdBtn");
   btn.addEventListener("pointerdown", e=>{
     e.preventDefault();
@@ -4036,6 +4210,9 @@
   document.addEventListener("pointerdown", function prime(){
     if(synth){ try{ const u=new SpeechSynthesisUtterance(""); synth.speak(u); synth.cancel(); }catch(e){} }
     const ac = ensureAudio(); if(ac && ac.state==="suspended"){ try{ ac.resume(); }catch(e){} }
+    // settings restored with noise punishment already on: this first gesture
+    // is the earliest moment the mic (and its live meter) may be opened
+    if($("noisePenalty") && $("noisePenalty").checked) micStart();
     document.removeEventListener("pointerdown", prime);
   }, {once:true});
 })();

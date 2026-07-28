@@ -24,7 +24,7 @@ of both `finish()` (`index.html:3565`) and `stopSession()` (`index.html:3621`).
 | Field | Purpose |
 |---|---|
 | `goal` | `"reps"` / `"time"` / `"scenario"` |
-| `base`, `chance`, `minHold`, `maxHold`, `minRest`, `maxRest`, `releaseGrace`, `strict`, `penalty`, `penaltyX`, `lateTol`, `hide` | the shared hold/rest/strict/penalty difficulty field set, populated by the shared helper `applyRepsConfig(cfg, src)` (`index.html:2425`) — used both for the plain baseline (`applyRepsConfig(cfg, readAll())`) and, for Interval Sequence, re-applied per phase from a saved preset object (see `iv_*` below and § 3) |
+| `base`, `chance`, `minHold`, `maxHold`, `minRest`, `maxRest`, `releaseGrace`, `strict`, `penalty`, `penaltyX`, `lateTol`, `hide`, `noisePenalty`, `noisePenaltyX`, `noiseThr` | the shared hold/rest/strict/penalty difficulty field set (including the microphone noise punishment's toggle/amount/limit), populated by the shared helper `applyRepsConfig(cfg, src)` (`index.html:2425`) — used both for the plain baseline (`applyRepsConfig(cfg, readAll())`) and, for Interval Sequence, re-applied per phase from a saved preset object (see `iv_*` below and § 3) |
 | `iv_phaseMode`, `totalReps` / `totalMin` | also set by `applyRepsConfig()`: reads `src.goal` and sets `iv_phaseMode` to `"time"` (with `totalMin` and `totalReps=null`) or `"reps"` (with `totalReps` rolled via `rand(minReps,maxReps)`) — this is what lets an Interval Sequence phase be either rep-count- or duration-driven; harmless/unused for non-interval sessions |
 | `armed` | whether input is currently accepted |
 | `progressTone`, `prAnnounce` | feedback toggles |
@@ -132,6 +132,7 @@ Declared near `let S = null;` (`index.html:2322` onward) unless noted:
 | `lastTs` | last RAF timestamp for `loop()`'s delta-time integration (reps/time only — `stopwatchHoldLoop` reads `Date.now()` directly instead, an inconsistent timing strategy between the two paths) |
 | `keyHeld` | space/enter key debounce |
 | `cam` (`index.html:3632`) | camera-control module state — see § Camera control subsystem |
+| `mic` (module block right after the camera one) | microphone noise-punishment state (`stream`, `analyser`, `level`, `lastPenaltyAt`, …) — see § Camera control subsystem → Microphone noise punishment |
 
 ---
 
@@ -526,7 +527,7 @@ through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 `"lat.camOnboarded"` — inconsistent but harmless (all share the `lat.`
 prefix).
 
-`SETTING_IDS` (`index.html:1740`, 48 element IDs — 7 are the Interval
+`SETTING_IDS` (`index.html:1740`, 51 element IDs — 7 are the Interval
 Sequence scenario's per-phase fields: `ivPhaseCount` + `ivPhasePreset1..6`,
 each a `<select>` of saved preset names) + `readAll()`/
 `writeAll()` (`index.html:1751`/`1759`) round-trip the settings form through
@@ -601,7 +602,11 @@ the code-review pass (`statsNoSessions`, `statsTotalSessions`, `statsLast7`,
 `curveTitleHold/Rest` × `Random/Timing` and `curveSubHold/Rest` ×
 `Random/Timing` for the curve-editor overlay — both areas were the last
 hardcoded-English holdouts, in `renderStats()` and
-`refreshCurveOverlayForMode()`), landing at **320**. `renderStats()` is
+`refreshCurveOverlayForMode()`), landing at 320, then up 11 with the noise
+punishment feature (`labelNoisePenalty`, `hintNoisePenalty`,
+`sublblNoiseLimit`, `tooLoud`, `micNoAccess`, `micNotSupported`,
+`micStreamLost`, `errNoisePenaltyAmount`, `sumNoise`, `ariaNoisePenaltyX`,
+`ariaNoiseThr`), landing at **331**. `renderStats()` is
 also re-run from `applyRuntimeI18n()` on every language switch, since its
 content is runtime-built HTML the `data-i18n` walker would otherwise reset
 to the empty-state default. The other 9 languages each define only **27**
@@ -730,6 +735,55 @@ modes and calling `startSession()` again. Camera flip forces recalibration
   `camFlip()`'s restart) by checking `cam.stream === stream` before
   reacting.
 
+### Microphone noise punishment (sibling sensor subsystem)
+
+Module block directly after the camera one (`const mic = {...}`,
+`micStart()`/`micStop()`/`micTick()`/`noiseViolation()` etc.). A
+Difficulty-panel feature, **not** an input source: if the mic's level
+crosses a user-set limit while a session is running, the session is
+extended and the punishment announced.
+
+- **Settings** (in `#secChallenge`, after the early-release penalty block):
+  toggle `#noisePenalty`, amount `#noisePenaltyX` (own field, independent
+  of `penaltyX`; its `#noisePenaltyLbl` flips between "+reps"/"+seconds"
+  with the goal, same pattern as `#penaltyLbl`), limit slider `#noiseThr`
+  (1–100 %), and a live level meter reusing the camera-bar CSS
+  (`#noiseBarFill` + `#noiseMark` at the limit). All three IDs are in
+  `SETTING_IDS` and `applyRepsConfig()` — so standalone Reps/Time reads
+  the live form, and **Interval Sequence phases inherit the noise settings
+  per phase from their assigned preset**, like every other difficulty
+  field. Hidden for `goal === "scenario"` (`applyGoalVisibility()`);
+  `validate()` requires `noisePenaltyX >= 1` when the toggle is on.
+- **Pipeline**: `getUserMedia({audio})` with `echoCancellation`/
+  `noiseSuppression`/`autoGainControl` all off (browser speech processing
+  would smooth away exactly the transients this feature detects) →
+  `AnalyserNode` (fftSize 1024) fed from `ensureAudio()`'s shared
+  AudioContext (analyser only, never `ctx.destination` — no feedback
+  loop) → 100 ms `setInterval` (`micTick`) computes RMS of the
+  time-domain data, mapped to 0–100 % via `NOISE_GAIN` (tuned by feel,
+  like `CAM_ADAPT_ALPHA`).
+- **Violation** (`noiseViolation()`): fires when `level >= S.noiseThr`
+  *and* the session is running past `waitingStart`. Guards:
+  `NOISE_COOLDOWN_MS` (2.5 s — one loud event = one punishment; also
+  covers the app's own short cue beeps) and a `synth.speaking` check so
+  the app's own voice cues are never punished. Effect:
+  `applyPenalty(S.noisePenaltyX)` — `applyPenalty(amount)` took an
+  optional amount parameter for this, defaulting to `S.penaltyX`, so the
+  reps/time/interval-time-phase branch logic is single-sourced — plus
+  `cmdPenalty()` (speech gated on `S.sig.speech` — "announced by voice,
+  if parameterized"), a transient `tooLoud` subcue note via
+  `penaltyUnit()`, and `flashTolerancePenalty()`.
+- **Lifecycle**: `micStart()` on toggle-on (the checkbox change is the
+  user gesture that legitimizes the permission prompt + AudioContext
+  resume), on the one-time `pointerdown` primer when settings restored the
+  toggle already-on (no gesture at page load), and at `startSession()` when
+  `S.noisePenalty` (failure there degrades gracefully: `S.noisePenalty`
+  is cleared and `micNoAccess` shown, session continues). `micStop()` on
+  toggle-off only — session end deliberately leaves it running while the
+  toggle is on, so the setup meter stays live. Stream loss
+  (`micWatchStreamTracks()`, same pattern as the camera) disables the
+  feature mid-session with a `micStreamLost` message rather than freezing.
+
 ---
 
 ## 7. Lives system
@@ -842,6 +896,12 @@ condition instead resets the current phase and lets the player retry.
     guard for camera/keyboard holds, `nextRepTimer` tracked, interval
     time-phase deadline re-checked in `beginRep()`, dead `S.spokeHold`
     removed, camera setup loop stopped on stream loss
+28. Microphone noise punishment added (Difficulty panel): user-set noise
+    limit with live level meter; crossing it during a running session
+    extends the session (own amount field, reps or seconds via
+    `applyPenalty(amount)`) and announces via `cmdPenalty()` — with
+    cooldown, own-voice-cue guard, stream-loss handling, and per-phase
+    inheritance in Interval Sequence (331 `de`/`en` keys, 51 setting IDs)
 
 This narrative explains several of the inconsistencies below: features
 built early (Sudden Death family) predate the i18n retrofit and the

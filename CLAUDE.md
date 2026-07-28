@@ -185,7 +185,7 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 48 element
+**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 51 element
 IDs — 7 of them are the Interval Sequence scenario's per-phase fields,
 `ivPhaseCount` + `ivPhasePreset1..6`, each a `<select>` of saved preset
 names rather than a raw numeric field) + `KV`/`readAll()`/`writeAll()`
@@ -255,7 +255,7 @@ Still open, deliberately left as documented rather than fixed:
 - 9 of 11 `I18N` languages are intentional stubs, gated off by
   `SUPPORTED_LANGS`.
 
-## Camera control & Lives system (one-liners — see `ARCHITECTURE.md` for detail)
+## Camera control, Noise punishment & Lives system (one-liners — see `ARCHITECTURE.md` for detail)
 
 - Camera control (`index.html:3632` on) drives the exact same
   `pressStart()`/`pressEnd()` as touch/keyboard via `camOnPress()`/
@@ -263,6 +263,18 @@ Still open, deliberately left as documented rather than fixed:
   session type. Mid-session stream loss (permission revoked, device
   unplugged) is now detected (`camWatchStreamTracks()`) and surfaced with a
   `camStreamLost` message instead of silently freezing.
+- Noise punishment (microphone, `mic` module right after the camera block):
+  a Difficulty-panel toggle + amount + limit slider with live level meter.
+  If the mic's RMS level crosses the limit while a session is running past
+  its first press, the session is extended via `applyPenalty(S.noisePenaltyX)`
+  (same branch logic as the early-release penalty, so it works for
+  reps/time/interval time-phases alike) and announced via `cmdPenalty()`
+  (speech gated on the Voice-cues toggle). 2.5 s cooldown per violation; the
+  app's own speech is never punished (`synth.speaking` guard); stream loss
+  disables the feature mid-session instead of freezing (`micStreamLost`).
+  Scoped exactly like the other difficulty fields: hidden for scenarios,
+  inherited per-phase from presets by Interval Sequence
+  (`applyRepsConfig()` carries `noisePenalty`/`noisePenaltyX`/`noiseThr`).
 - Lives system (`tryLoseLife()`, `index.html:2600`) is wired into exactly
   `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack`/
   `interval` have no fail condition, so lives are structurally inapplicable
