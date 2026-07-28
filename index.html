@@ -180,6 +180,11 @@
   .switch input:checked + .track .knob{transform:translateX(20px);background:var(--rise)}
   .switch input:focus-visible + .track{outline:2px solid var(--rise);outline-offset:2px}
 
+  /* a field whose feature is currently unavailable (see noiseAvailable()) */
+  .fieldDisabled > div:first-child{opacity:.5}
+  .fieldDisabled .switch{opacity:.4;pointer-events:none}
+  .fieldDisabled #noiseVoiceHint{opacity:1}
+
   /* advanced-settings toggle */
   .advToggle{
     width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -646,7 +651,8 @@
         <div class="field toggle" id="fNoisePenaltyToggle">
           <div>
             <label class="lbl" for="noisePenalty" data-i18n="labelNoisePenalty">Noise punishment (microphone)</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintNoisePenalty">If sound rises above the limit during the session, the session is extended. Set the limit with the slider — the meter shows the current level.</div>
+            <div class="hint" style="margin-top:2px" data-i18n="hintNoisePenalty">If sound rises above the limit during the session, the session is extended. Only available while voice cues are off.</div>
+            <div class="hint hidden" id="noiseVoiceHint" style="margin-top:4px;color:var(--rise)" data-i18n="hintNoiseNeedsVoiceOff">Only available while voice cues are off — an open microphone makes the spoken cues sound distant on many devices.</div>
           </div>
           <label class="switch"><input id="noisePenalty" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -1183,6 +1189,7 @@
         curveSubRestTiming:"X = Sitzungsfortschritt. Y = Pausenlänge zu diesem Zeitpunkt.",
         labelNoisePenalty:"Lärm-Strafe (Mikrofon)",
         hintNoisePenalty:"Steigt der Lärmpegel während der Sitzung über das Limit, wird die Sitzung verlängert. Limit per Regler einstellen — der Balken zeigt den aktuellen Pegel.",
+        hintNoiseNeedsVoiceOff:"Nur verfügbar, wenn die Sprachansagen aus sind — ein offenes Mikrofon lässt die Ansagen auf vielen Geräten entfernt klingen.",
         sublblNoiseLimit:"Lärm-Limit",
         tooLoud:"Zu laut",
         micNoAccess:"Kein Mikrofonzugriff — Berechtigung erteilen (und per HTTPS ausliefern).",
@@ -1379,6 +1386,7 @@
         curveSubRestTiming:"X = session progress. Y = rest length at that time.",
         labelNoisePenalty:"Noise punishment (microphone)",
         hintNoisePenalty:"If sound rises above the limit during the session, the session is extended. Set the limit with the slider — the meter shows the current level.",
+        hintNoiseNeedsVoiceOff:"Only available while voice cues are off — an open microphone makes the spoken cues sound distant on many devices.",
         sublblNoiseLimit:"Noise limit",
         tooLoud:"Too loud",
         micNoAccess:"No microphone access — grant permission (and serve over HTTPS).",
@@ -2326,8 +2334,7 @@
     $("secTiming").classList.toggle("hidden", isScenario);   // whole Timing panel is irrelevant for scenarios
     ["fBase","fChance","fHolds","fRest"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
     ["fStrict","fPenaltyToggle","penaltyValField","fHideDur","fNoisePenaltyToggle"].forEach(id=>$(id).classList.toggle("hidden", isScenario));
-    $("noisePenaltyValField").classList.toggle("hidden", isScenario || !$("noisePenalty").checked);
-    micSync();   // meter stops when the goal switches to scenario, resumes when back
+    syncNoiseAvailability();   // greys out / switches off the noise punishment and syncs the mic
     applyScenarioVisibility();
     const penaltyAmountLbl = (goal==="time") ? (T().penaltySeconds || "Penalty amount (+seconds)")
                                              : (T().penaltyReps || "Penalty amount (+reps)");
@@ -2514,6 +2521,13 @@
     cfg.noisePenalty  = !!src.noisePenalty;
     cfg.noisePenaltyX = Math.max(1, n("noisePenaltyX") || 1);
     cfg.noiseThr      = Math.min(100, Math.max(1, n("noiseThr") || 60));
+    // Voice cues and the mic can't coexist (audio-route conflict, see
+    // noiseAvailable()). The form already prevents the combination, but a
+    // stale settings blob or an Interval-Sequence preset saved before this
+    // rule can still carry noisePenalty:true — cfg.sig is set before this
+    // helper runs in buildPlan() and lives on S in ivAdvancePhase(), so this
+    // one line covers the baseline and every phase.
+    if(cfg.sig && cfg.sig.speech) cfg.noisePenalty = false;
     if(src.goal === "time"){
       cfg.iv_phaseMode = "time";
       cfg.totalMin     = fn("totalMin");
@@ -4099,7 +4113,7 @@
     const sessionVisible = !$("session").classList.contains("hidden");
     const setupVisible = !$("setup").classList.contains("hidden");
     const want = sessionVisible ? !!(S && S.noisePenalty)
-               : setupVisible ? (!!$("noisePenalty") && $("noisePenalty").checked && goal !== "scenario")
+               : setupVisible ? (!!$("noisePenalty") && $("noisePenalty").checked && noiseAvailable())
                : false;
     if(want && !mic.running){
       micStart().then(ok=>{
@@ -4112,12 +4126,42 @@
       micStop();
     }
   }
+  // The noise punishment and the voice cues fight over the device's audio
+  // route: holding a mic open makes many devices route output to the
+  // communication speaker, so the spoken cues sound distant (a real, reported
+  // symptom that no in-page setting could fix — see ARCHITECTURE.md § 6).
+  // The product-level resolution: offer the feature only while voice cues
+  // are off. Also scoped out for scenarios, like the other difficulty fields.
+  function noiseAvailable(){
+    return goal !== "scenario" && !!$("voice") && !$("voice").checked;
+  }
+  // Reflects noiseAvailable() into the form: greys the toggle out, shows the
+  // explaining hint, and switches an already-enabled noise punishment OFF
+  // (persisted, so the form always shows the truth after a reload).
+  function syncNoiseAvailability(){
+    const tog = $("noisePenalty"); if(!tog) return;
+    const ok = noiseAvailable();
+    const row = $("fNoisePenaltyToggle");
+    if(row) row.classList.toggle("fieldDisabled", !ok);
+    tog.disabled = !ok;
+    const hint = $("noiseVoiceHint");
+    // the hint only explains the voice-cue conflict, not the scenario scoping
+    // (there the whole block is hidden anyway)
+    if(hint) hint.classList.toggle("hidden", ok || goal === "scenario");
+    let turnedOff = false;
+    if(!ok && tog.checked){ tog.checked = false; turnedOff = true; }
+    $("noisePenaltyValField").classList.toggle("hidden", !ok || !tog.checked);
+    micSync();
+    if(turnedOff){ saveSettingsNow(); updateSummaries(); }
+  }
   (function wireMic(){
     const tog = $("noisePenalty"); if(!tog) return;
     tog.addEventListener("change", ()=>{
-      $("noisePenaltyValField").classList.toggle("hidden", goal==="scenario" || !tog.checked);
+      $("noisePenaltyValField").classList.toggle("hidden", !noiseAvailable() || !tog.checked);
       micSync();
     });
+    const voice = $("voice");
+    if(voice) voice.addEventListener("change", syncNoiseAvailability);
     const thr = $("noiseThr");
     if(thr) thr.addEventListener("input", updateNoiseMark);
     updateNoiseMark();

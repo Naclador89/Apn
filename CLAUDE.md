@@ -265,6 +265,16 @@ Still open, deliberately left as documented rather than fixed:
   `camStreamLost` message instead of silently freezing.
 - Noise punishment (microphone, `mic` module right after the camera block):
   a Difficulty-panel toggle + amount + limit slider with live level meter.
+  **Only offered while the Voice-cues toggle is off** (`noiseAvailable()`;
+  greyed out + `hintNoiseNeedsVoiceOff` otherwise, and switching voice cues
+  on auto-unchecks it via `syncNoiseAvailability()`). Reason: an open mic
+  routes output to the communication speaker on many devices, which made
+  the spoken cues sound distant — a product-level resolution of a conflict
+  no in-page audio setting could fix. Consequence: a violation is announced
+  by **beep/vibration only** (`cmdNoise()` still speaks `S.words.noise`,
+  but `say()` no-ops while voice cues are off). `applyRepsConfig()` re-checks
+  the rule (`cfg.sig.speech → noisePenalty = false`) so a stale settings
+  blob or an Interval phase preset can't smuggle it back in.
   If the mic's **peak** level (not RMS — peak catches short transients;
   50 ms poll over a 2048-sample window) crosses the limit while a session
   is running past its first press, the session is extended via

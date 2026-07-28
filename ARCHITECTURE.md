@@ -747,6 +747,30 @@ Difficulty-panel feature, **not** an input source: if the mic's level
 crosses a user-set limit while a session is running, the session is
 extended and the punishment announced.
 
+- **Availability rule — the feature requires voice cues to be OFF**
+  (`noiseAvailable()`: `goal !== "scenario" && !$("voice").checked`). The
+  mic and the spoken cues cannot coexist: holding a capture open routes
+  output to the communication speaker on many devices, so the speech sounds
+  distant, and no in-page setting fixes it (constraints, own context and
+  lifecycle were all tried first — see the Pipeline notes). This is the
+  product-level resolution the user chose instead.
+  - `syncNoiseAvailability()` reflects the rule into the form: greys
+    `#fNoisePenaltyToggle` (`.fieldDisabled`), sets `disabled` on the
+    checkbox, shows `#noiseVoiceHint`, and — if the feature was already
+    enabled — **switches it off and persists that** (`saveSettingsNow()`),
+    so the form never shows a state that isn't in effect. Called from
+    `applyGoalVisibility()` (covers the scenario scoping and language
+    switches) and from a `change` listener on `#voice`.
+  - `applyRepsConfig()` re-checks it at runtime
+    (`if(cfg.sig && cfg.sig.speech) cfg.noisePenalty = false;`) because a
+    stale `localStorage` blob or an Interval-Sequence **phase preset** can
+    still carry `noisePenalty:true` while the session's `sig.speech` is on —
+    the preset stores the difficulty fields, `sig` comes from the live form.
+  - **Consequence for the announcement**: with voice cues necessarily off,
+    `cmdNoise()`'s `say(S.words.noise)` no-ops, so a violation is announced
+    by its beep and vibration pattern only. The `cmdNoiseWord` setting is
+    kept (it costs nothing and stays correct if the two ever coexist again)
+    but has no audible effect under the current rule.
 - **Settings** (in `#secChallenge`, after the early-release penalty block):
   toggle `#noisePenalty`, amount `#noisePenaltyX` (own field, independent
   of `penaltyX`; its `#noisePenaltyLbl` flips between "+reps"/"+seconds"
@@ -836,12 +860,12 @@ extended and the punishment announced.
     than freezing.
   - Remaining hardware limit (not fixable in JS): on some devices *any*
     mic capture switches the audio route regardless of constraints — with
-    Bluetooth headphones this is guaranteed (the HFP call profile). If
-    "distant" audio is ever reported again **while the feature is
-    genuinely in use**, that is the remaining cause; the levers inside the
-    page (constraints, own context, lifecycle) are already exhausted. The
-    verified-good state is: feature off → normal audio, which is what
-    `micSync()` guarantees.
+    Bluetooth headphones this is guaranteed (the HFP call profile). Since
+    the page-side levers (constraints, own context, lifecycle) were
+    exhausted without fixing it, the conflict is now resolved at the
+    product level instead: the feature is only offered while voice cues
+    are off (see the Availability rule above), so nothing that must sound
+    good is playing while the mic is open.
 
 ---
 
@@ -978,6 +1002,13 @@ condition instead resets the current phase and lets the player retry.
     closed on stop (a shared context can keep the bad route after the
     stream ends), and `micBlank()` takes over AEC's self-trigger role with
     a per-cue blanking window
+31. Noise punishment gated on "voice cues off" (`noiseAvailable()` +
+    `syncNoiseAvailability()` + an `applyRepsConfig()` re-check): the mic
+    and the spoken cues cannot share the device's audio route, so the
+    feature is greyed out with an explaining hint while voice cues are on
+    and auto-switches off if they are enabled. Trade-off accepted by the
+    user: violations are announced by beep/vibration only
+    (334 `de`/`en` keys)
 
 This narrative explains several of the inconsistencies below: features
 built early (Sudden Death family) predate the i18n retrofit and the
