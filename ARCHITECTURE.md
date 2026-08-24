@@ -35,7 +35,7 @@ of both `finish()` (`index.html:3565`) and `stopSession()` (`index.html:3621`).
 | `rate` | speech rate (0.5–2) |
 | `eyesClosed`, `guardExit`, `screenColor` | display/handling toggles — session-wide even for Interval Sequence; not varied per phase (a deliberate scope limit, see § 3) |
 | `scenario`, `sd_actionMs`, `sd_pauseMs`, `sd_startReps`, `sd_startHold`, `ta_target`, `rr_bpm`, `rr_step`, `livesOn`, `livesCount` | only populated when `goal === "scenario"` |
-| `iv_phasePresets`, `iv_phaseIdx`, `iv_totalDone`, `iv_savedCurves` | only populated when `scenario === "interval"` — see § 3 |
+| `iv_phasePresets`, `iv_phaseObjs`, `iv_phaseIdx`, `iv_totalDone`, `iv_savedCurves`, `iv_breathe` | only populated when `scenario === "interval"` — see § 3 |
 
 Note: `totalReps`/`totalMin` above are set by `applyRepsConfig()` per the
 `iv_phaseMode` row, then `buildPlan()` immediately overrides them again for
@@ -98,7 +98,12 @@ function first needs them — this is most of the state):
 - `S.reactLeft` — late-start countdown, set in `startReactionWindow()`
   (`index.html:3329`).
 - `S.iv_*` (Interval Sequence, `iv_` prefix) — `iv_phasePresets` (array of
-  saved preset names, one per phase, set in `buildPlan()`), `iv_phaseIdx`
+  phase names, one per phase, set in `buildPlan()` — saved preset names for
+  a hand-assembled sequence, the built-in level's own phase labels
+  otherwise), `iv_phaseObjs` (the built-in level's phase config objects, or
+  `null` for the hand-assembled path — the two are told apart by
+  `ivPhaseSrc()`), `iv_breathe` (current phase is breathe-only, re-set every
+  phase by `applyRepsConfig()`), `iv_phaseIdx`
   (0-based current phase, also set in `buildPlan()`), `iv_totalDone`
   (cross-phase cumulative rep count, see the `S.done` bullet above),
   `iv_savedCurves` (snapshot of the user's real global probability-curve
@@ -312,10 +317,18 @@ on `S.goal === "time"` (`timeUp()`, `sessionProgress()`, `applyPenalty()`,
 `S.scenario === "interval" && S.iv_phaseMode === "time"` branch instead —
 see "Time-based phases" below.
 
-**Phase configuration — presets, not a duplicate settings UI.** Each phase
-(2–6, `S.iv_phasePresets`) is configured by picking one of the user's saved
-**presets** from a dropdown (`ivPhasePreset1..6` in the settings form,
-`SETTING_IDS`). A preset already captures the entire Reps- or Time-mode
+**Two ways to fill the phases.** A `#ivLevelSel` dropdown at the top of the
+Interval panel picks either one of five **built-in levels** (`IV_LEVELS`,
+default `l2`) or `custom`, the hand-assembled path described next. The two
+converge immediately: both end up as a list of phase names in
+`S.iv_phasePresets` plus a way to resolve each phase's settings object, and
+everything downstream is identical. See "Built-in levels" below.
+
+**Phase configuration — presets, not a duplicate settings UI.** For the
+`custom` path, each phase (2–8, `S.iv_phasePresets`) is configured by
+picking one of the user's saved **presets** from a dropdown
+(`ivPhasePreset1..8` in the settings form, `SETTING_IDS`; the cap lives in
+`IV_MAX_PHASES` and is enforced by `ivPhaseCountValue()`). A preset already captures the entire Reps- or Time-mode
 difficulty field set via `readAll()` (including which of the two goals it
 was saved under), plus (as of the curve-capture rework) the
 probability-curve shape (see below) — so assigning a preset to a phase slot
@@ -335,15 +348,22 @@ condition (rejects a phase whose preset has `.goal === "scenario"`, reusing
 filter existed. The main `#presetSel` dropdown is unfiltered.
 
 **Mechanics:**
-- `buildPlan()` (`index.html:2451`) resolves phase 1's preset
-  (`KV.get(K.presets,{})[S.iv_phasePresets[0]]`), applies it via
+- `ivPhaseSrc(st, idx)` is the single resolution point for "what are this
+  phase's settings": a built-in level carries its phase objects on
+  `st.iv_phaseObjs` and is read straight out of that array; otherwise the
+  name in `st.iv_phasePresets[idx]` is looked up in `KV.get(K.presets)`.
+  `st` is the live `S` at runtime, or the half-built `cfg` inside
+  `buildPlan()` — both carry the same two fields by then.
+- `buildPlan()` (`index.html:2451`) resolves phase 1's config
+  (`ivPhaseSrc(cfg, 0)`), applies it via
   `applyRepsConfig(cfg, p0)` (`index.html:2425` — the same helper used for
   the plain baseline), snapshots the real global curve state into
   `cfg.iv_savedCurves`, then swaps in phase 1's curve via
   `applyIvPhaseCurve(p0)` (`index.html:1542`).
 - `ivAdvancePhase()` (`index.html:3248`), called from `nextRep()`'s
   end-of-session check (`index.html:3269`): increments `S.iv_phaseIdx`; if
-  phases remain, resolves the next preset, re-applies it onto the *live*
+  phases remain, resolves the next config via `ivPhaseSrc(S,
+  S.iv_phaseIdx)`, re-applies it onto the *live*
   `S` via `applyRepsConfig(S, p)`, swaps its curve via
   `applyIvPhaseCurve(p)`, resets `S.done` to `0` (per-phase — see § 1) and
   `S.iv_phaseStartAt` to the current time, sets `S.endAt` for a time-based
@@ -407,6 +427,104 @@ collide:
 - `$("repTotalWrap")`'s visibility (toggled in `startSession()` and
   `ivAdvancePhase()` alike, both keyed off `S.totalReps`) already hides
   correctly for a time-based phase for free, matching standalone Time mode.
+
+**Built-in levels (`IV_LEVELS`, `index.html` next to `applyIvPhaseCurve`).**
+Five ready-made sequences, `l1`–`l5` (Beginner → Ultra Extreme), selected via
+`#ivLevelSel`; `l2` is the markup default. Each level is
+`{ nameKey, phases: [...] }` where `nameKey` indexes the localized title
+(`ivLevel1`..`ivLevel5`) and each phase is a plain object **shaped exactly
+like `readAll()`'s output — i.e. exactly like a saved preset**, so
+`applyRepsConfig()`/`applyIvPhaseCurve()` consume it unchanged and a built-in
+level rides the identical per-phase machinery. Only the fields
+`applyRepsConfig()` actually reads are present; cues, signals and display
+stay session-global. Phase labels are the author's own proper names and are
+deliberately **not** translated — only the level titles are.
+
+Three builders construct them, all on top of `IV_PHASE_BASE` (the form's own
+difficulty defaults, `goal:"time"`, plus `ivSecs`/`totalMin: secs/60` —
+fractional minutes are fine, `applyRepsConfig()` reads `totalMin` with
+`parseFloat`):
+- `ivPh(label, secs, hold, rest)` — fixed phase. Note `holdChance: 100` with
+  `minHold === maxHold`: that combination is what puts the **seconds
+  countdown** on screen, because `holdDurationFor()` only sets `long:true` on
+  the long-hold branch, and `sampleFromCurve()` short-circuits to `min` when
+  `max` isn't greater than `min`. A `baseHold`-driven phase would run the
+  same duration with no visible target.
+- `ivMix(label, secs, holds[], rests[])` — the "Flow"/"Chaos" phases, which
+  in the source spec are *ordered* HOLD/BREATHE cycles (e.g. Ultra Chaos:
+  5/1, 20/3, 3/1, 25/4). The engine draws one hold and one rest per rep and
+  has no notion of an ordered pattern, so these are approximated as a random
+  draw over exactly the cycle's values, via a synthesized probability curve
+  (`ivCurveFor`, below): every value the author specified still occurs, with
+  its cycle frequency intact; only the pairing/order is randomized.
+- `ivBreathe(label, secs)` — breathe-only phase, see below.
+
+`ivCurveFor(vals, min, max)` builds a `CURVE_N`-length weight array with one
+narrow spike per target value at
+`Math.round((v-min)/(max-min)*(CURVE_N-1))`. `sampleFromCurve()` picks a
+bucket by weight, jitters inside it (`t = (i+random)/CURVE_N`) and rounds
+`min + t*(max-min)`; with 60 buckets a single bucket is far narrower than
+1 s for any range used here, so a spike decodes back to its own integer.
+A value listed twice gets weight 2 — which is how, e.g., Level 4/5's
+`[1,3,1,4]` breathe cycle keeps its 50 % share of 1 s breaths.
+
+The table itself is the source of truth for the actual numbers — only the
+shape is summarized here:
+
+| Key | Title | Phases | Flow phase | Cool-down | Total |
+|---|---|---|---|---|---|
+| `l1` | Beginner | 6 | `[2,3]`/`[4,5]` | breathe-only 30 s | 7:00 |
+| `l2` | Advanced *(default)* | 6 | `[4,6]`/`[3,4]` | 60 s hold phase | 8:00 |
+| `l3` | Pro | 7 | `[3,8,2,12]`/`[2,3,1,4]` | breathe-only 30 s | 9:15 |
+| `l4` | Extreme | 7 | `[4,12,2,18]`/`[1,3,1,4]` | breathe-only 45 s | 11:15 |
+| `l5` | Ultra Extreme | 7 | `[5,20,3,25]`/`[1,3,1,4]` | breathe-only 60 s | 12:30 |
+
+Totals are the sum of the phase durations; an actual run overshoots slightly
+because a phase only ends at a rep boundary.
+
+Because `iv_phasePresets` is just an array of names, built-in levels are not
+bound by `IV_MAX_PHASES` — but all five stay within it (max 7 phases), so
+any of them can also be rebuilt by hand. `validate()` skips the
+preset-presence checks entirely when a level is selected
+(`!ivSelectedLevel()`), so a built-in level starts with an empty preset
+store. `ivUpdatePhaseIndicator()` labels the second `#swStats` slot
+`ivStepLabel` ("Section") for a built-in level and `ivPresetLabel`
+("Preset") for a hand-assembled one.
+
+UI plumbing: `ivApplyLevelVisibility()` swaps the manual
+`#ivPhaseCountField` (with its phase rows) for the read-only
+`#ivLevelInfo` listing, rendered by `ivRenderLevelInfo()` from the table
+(phase name, duration, hold/breathe span or "breathe only", plus the level
+total via `fmtTime()`). It is runtime HTML the `data-i18n` pass can't reach,
+so `applyRuntimeI18n()` re-renders it on a language switch — the same
+pattern `renderStats()` follows.
+
+**Breathe-only phases (`S.iv_breathe`).** Level 1/3/4/5 end on a free-
+breathing cool-down with no press at all. `applyRepsConfig()` carries
+`cfg.iv_breathe = !!src.breathe`; `nextRep()` then spends the phase's whole
+remaining duration in the rest countdown it already has —
+`restSecs = ceil((S.endAt - now)/1000)` instead of `restSecsForNext()`,
+`restMs` forced even when `first` — and calls `nextRep(false)` instead of
+`beginRep()` when it elapses, so the phase-end check at the top of
+`nextRep()` advances (or finishes). The cue uses `S.words.up` with the phase
+name, `cmd("up")` announces it once, `#btnLab` reads "Breathe" and
+`#repCount` is hidden for the duration (restored in `beginRep()` and
+`startSession()`). A breathe-only phase is **never valid as phase 1**: the
+session still needs a first press to boot (`bootFirstPress()`), which only
+`beginRep()` waits for — every built-in level therefore starts with a hold
+phase.
+
+**Settings migration.** `ivLevelSel` is in `SETTING_IDS`, so it round-trips
+like every other field. A settings blob written *before* built-in levels
+existed has no `ivLevelSel`, and `writeAll()` would then leave the markup
+default (`l2`) in place, silently replacing a sequence the user had
+assembled by hand. The init path therefore sets `saved.ivLevelSel =
+"custom"` when the key is absent *and* at least one `ivPhasePreset*` was
+assigned. Relatedly, `refreshPresetSelect()` now runs **before**
+`writeAll(saved)` at init: the preset dropdowns are empty markup until it
+fills them in, and assigning a `<select>.value` with no matching `<option>`
+is a silent no-op — which used to drop every saved phase assignment on
+reload (a pre-existing bug, fixed alongside this work).
 
 **Curve capture/restore — the most error-prone part of this design.** The
 probability-curve system (`curves`/`curveMode`, § below "Cue/feedback
@@ -528,9 +646,10 @@ through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 `"lat.camOnboarded"` — inconsistent but harmless (all share the `lat.`
 prefix).
 
-`SETTING_IDS` (`index.html:1740`, 52 element IDs — 7 are the Interval
-Sequence scenario's per-phase fields: `ivPhaseCount` + `ivPhasePreset1..6`,
-each a `<select>` of saved preset names) + `readAll()`/
+`SETTING_IDS` (`index.html:1740`, 55 element IDs — 10 are the Interval
+Sequence scenario's fields: `ivLevelSel` (built-in level or `custom`),
+`ivPhaseCount` + `ivPhasePreset1..8`, each a `<select>` of saved preset
+names) + `readAll()`/
 `writeAll()` (`index.html:1751`/`1759`) round-trip the settings form through
 `lat.settings` on every change (debounced 400ms). `writeAll()` also contains
 a legacy migration shim: old blobs with `o.rest` but no `o.minRest` get

@@ -113,10 +113,16 @@ prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
 `S.sd_phase` at all). Don't assume a prefix tells you which scenarios use a
 field; check `ARCHITECTURE.md § Scenario engine` or grep.
 
-**Interval Sequence** (`S.scenario === "interval"`, 2–6 phases,
-`index.html:3239`-`3264`): each phase is configured by picking one of your
-saved **presets** from a dropdown (`ivPhasePreset1..6`), so running the
-sequence feels exactly like running several independent Reps *or Time*
+**Interval Sequence** (`S.scenario === "interval"`, 2–8 phases,
+`index.html:3239`-`3264`): the phases come from one of two places, picked
+with the `#ivLevelSel` dropdown — a **built-in level** (`IV_LEVELS`, five of
+them, `l2` is the default; see "Built-in levels" just below) or `custom`,
+where each phase is configured by picking one of your saved **presets** from
+a dropdown (`ivPhasePreset1..8`, cap in `IV_MAX_PHASES`). Both funnel
+through `ivPhaseSrc(st, idx)`, the single place that resolves a phase index
+to its settings object — built-in phases come off `S.iv_phaseObjs`, custom
+ones out of `KV.get(K.presets)` — so everything downstream is identical, and
+running the sequence feels exactly like running several independent Reps *or Time*
 sessions back to back — press-gated, with the same hold/rest probability
 curves, strict mode, penalty, and late-start tolerance as the standalone
 mode the preset was saved from, phase by phase. **A phase can be either
@@ -127,7 +133,7 @@ runtime) and either rolls `cfg.totalReps` or carries over `cfg.totalMin`
 with `cfg.totalReps = null`. Preset-select dropdowns tag each option with
 its mode (`(Reps)`/`(Time)`, via `populatePresetOptions()`,
 `index.html:2075`) so it's clear which is which before assigning it to a
-phase — and the six phase dropdowns additionally **filter out presets saved
+phase — and the eight phase dropdowns additionally **filter out presets saved
 in Scenario mode** (`repsTimeOnly` flag; `validate()` also rejects a stale
 scenario-preset selection), since a phase can only reproduce a Reps- or
 Time-mode session. Mechanically this works by reusing the entire Reps
@@ -167,6 +173,48 @@ scenarios) to show "Phase X/Y" and the active preset's name. An old preset
 saved before curve-capture existed (no `.curves` key) falls back to a
 blank/uniform-random curve rather than crashing.
 
+**Built-in levels** (`IV_LEVELS`, defined next to `applyIvPhaseCurve()`):
+five ready-made sequences `l1`–`l5` (Anfänger → Ultra Extrem), 6–7 phases
+each, 7:00–12:30. The key design point is that **a built-in phase is just a
+plain object shaped like `readAll()`'s output — i.e. like a saved preset**,
+so `applyRepsConfig()`/`applyIvPhaseCurve()` consume it unchanged and the
+levels needed almost no engine code. Three builders on top of
+`IV_PHASE_BASE`:
+- `ivPh(label, secs, hold, rest)` — fixed hold/breathe. Uses
+  `holdChance:100` with `minHold===maxHold` rather than `baseHold`, because
+  only the long-hold branch of `holdDurationFor()` sets `long:true`, which
+  is what puts the **seconds countdown** on screen.
+- `ivMix(label, secs, holds[], rests[])` — the Flow/Chaos phases. Those are
+  *ordered* HOLD/BREATHE cycles in the source spec, which the engine can't
+  express (one hold + one rest are drawn per rep), so they're approximated
+  as a random draw over exactly the cycle's values via a synthesized
+  probability curve: `ivCurveFor(vals, min, max)` puts one narrow spike per
+  value at `round((v-min)/(max-min)*(CURVE_N-1))`, and a value listed twice
+  gets double weight, so each value's cycle frequency survives. Only the
+  order/pairing is randomized.
+- `ivBreathe(label, secs)` — **breathe-only phase**: no press at all. The
+  only genuinely new engine code. `applyRepsConfig()` carries
+  `S.iv_breathe`; `nextRep()` then spends the phase's remaining duration in
+  the rest countdown it already has and calls `nextRep(false)` instead of
+  `beginRep()` when it elapses. Never valid as phase 1 (the session needs a
+  first press to boot via `bootFirstPress()`), so every level starts with a
+  hold phase.
+
+Built-in levels aren't bound by `IV_MAX_PHASES` (`iv_phasePresets` is just
+an array) but all stay within it. `validate()` skips the preset-presence
+checks when a level is selected, so a level runs with an empty preset store.
+`ivApplyLevelVisibility()`/`ivRenderLevelInfo()` swap the manual phase
+dropdowns for a read-only listing (re-rendered from `applyRuntimeI18n()`,
+like `renderStats()`). Phase labels are the author's proper names and are
+deliberately untranslated; only the level titles (`ivLevel1..5`) are.
+A settings blob written before this existed has no `ivLevelSel`, so the init
+path defaults it to `"custom"` when any `ivPhasePreset*` was assigned —
+otherwise upgrading would silently replace a hand-built sequence with Level
+2. Related fix in the same place: `refreshPresetSelect()` now runs **before**
+`writeAll(saved)`, since assigning a `<select>.value` with no matching
+`<option>` is a silent no-op and used to drop every saved phase assignment
+on reload.
+
 **Cue/feedback layer**: three *different*, overlapping small dispatchers —
 `setCue(kind,...)` (`index.html:3365`, `kind` ∈ `"up"/"down"/"rest"`, also
 always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2212`, `kind` ∈
@@ -185,10 +233,11 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 52 element
-IDs — 7 of them are the Interval Sequence scenario's per-phase fields,
-`ivPhaseCount` + `ivPhasePreset1..6`, each a `<select>` of saved preset
-names rather than a raw numeric field) + `KV`/`readAll()`/`writeAll()`
+**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 55 element
+IDs — 10 of them belong to the Interval Sequence scenario: `ivLevelSel`
+(built-in level or `custom`) plus `ivPhaseCount` + `ivPhasePreset1..8`, each
+a `<select>` of saved preset names rather than a raw numeric field)
++ `KV`/`readAll()`/`writeAll()`
 (`index.html:962`/`1751`) round-trip the whole settings form through
 `localStorage` key `lat.settings`. `buildPlan()` independently re-reads the
 same DOM elements (with its own clamping) rather than reusing `readAll()`'s
@@ -242,6 +291,12 @@ restarted session (now `nextRepTimer`, cleared in
 during a rest countdown (`beginRep()` re-check); the never-read
 `S.spokeHold` field; and the camera setup loop continuing to sample a dead
 stream after stream loss.
+
+Resolved alongside the built-in Interval levels: `writeAll(saved)` running
+*before* `refreshPresetSelect()` at init, so every saved Interval phase
+assignment (and the main `#presetSel` selection) was silently dropped on
+reload — assigning a `<select>.value` with no matching `<option>` is a
+no-op. The two calls are now in the other order.
 
 Still open, deliberately left as documented rather than fixed:
 - `readAll()`/`buildPlan()` dual source of truth for settings — can

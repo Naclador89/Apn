@@ -154,6 +154,13 @@
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .sublbl{display:block;font-size:11px;color:var(--muted);margin:0 0 5px 2px}
+  /* read-only phase list of a built-in Interval Sequence level */
+  .ivLevelInfo{margin-top:10px;background:#11131a;border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.5}
+  .ivLevelInfo .ivRow{display:flex;justify-content:space-between;gap:10px}
+  .ivLevelInfo .ivRow span:first-child{color:var(--text)}
+  .ivLevelInfo .ivRow span:last-child{color:var(--muted);white-space:nowrap}
+  .ivLevelInfo .ivTotal{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted)}
   @media (max-width:420px){ .row3{grid-template-columns:1fr} }
 
   /* segmented control */
@@ -514,9 +521,21 @@
             <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
           </div>
           <div class="field hidden" id="ivField" style="margin:12px 0 0">
+            <label class="lbl" for="ivLevelSel" data-i18n="labelIvLevel">Template</label>
+            <select id="ivLevelSel" aria-label="Sequence template" data-i18n-aria="ariaIvLevel">
+              <option value="l1" data-i18n="ivLevel1">Level 1 · Beginner</option>
+              <option value="l2" selected data-i18n="ivLevel2">Level 2 · Advanced</option>
+              <option value="l3" data-i18n="ivLevel3">Level 3 · Pro</option>
+              <option value="l4" data-i18n="ivLevel4">Level 4 · Extreme</option>
+              <option value="l5" data-i18n="ivLevel5">Level 5 · Ultra Extreme</option>
+              <option value="custom" data-i18n="optIvCustom">Custom (own presets)</option>
+            </select>
+            <div class="hint" data-i18n="hintIvLevel">Ready-made training sequences. Pick “Custom” to build the phases yourself from saved presets.</div>
+            <div class="ivLevelInfo hidden" id="ivLevelInfo"></div>
+            <div class="field" id="ivPhaseCountField" style="margin-top:10px">
             <label class="lbl" data-i18n="labelIvPhaseCount">Number of phases</label>
-            <input id="ivPhaseCount" type="number" min="2" max="6" step="1" value="3" aria-label="Number of phases" data-i18n-aria="ariaIvPhaseCount">
-            <div class="hint" data-i18n="hintIvPhaseCount">How many phases the sequence runs through (2–6), each with its own duration, hold, and rest length.</div>
+            <input id="ivPhaseCount" type="number" min="2" max="8" step="1" value="3" aria-label="Number of phases" data-i18n-aria="ariaIvPhaseCount">
+            <div class="hint" data-i18n="hintIvPhaseCount">How many phases the sequence runs through (2–8), each with its own duration, hold, and rest length.</div>
             <div class="field" id="ivPhaseRow1" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead1">Phase 1</span>
               <select id="ivPhasePreset1" aria-label="Phase 1 preset"><option value="" data-i18n="optLoad">– load –</option></select>
@@ -540,6 +559,15 @@
             <div class="field hidden" id="ivPhaseRow6" style="margin-top:10px">
               <span class="sublbl" id="ivPhaseHead6">Phase 6</span>
               <select id="ivPhasePreset6" aria-label="Phase 6 preset"><option value="" data-i18n="optLoad">– load –</option></select>
+            </div>
+            <div class="field hidden" id="ivPhaseRow7" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead7">Phase 7</span>
+              <select id="ivPhasePreset7" aria-label="Phase 7 preset"><option value="" data-i18n="optLoad">– load –</option></select>
+            </div>
+            <div class="field hidden" id="ivPhaseRow8" style="margin-top:10px">
+              <span class="sublbl" id="ivPhaseHead8">Phase 8</span>
+              <select id="ivPhasePreset8" aria-label="Phase 8 preset"><option value="" data-i18n="optLoad">– load –</option></select>
+            </div>
             </div>
           </div>
           <div class="field hidden" id="livesField" style="margin:12px 0 0">
@@ -851,7 +879,7 @@
     <div id="screenColorBorderLayer" class="screenColorBorder hidden" aria-hidden="true"></div>
     <div class="sessionTop">
       <div class="meta">
-        <span class="count"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
+        <span class="count" id="repCount"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
         <span class="clock" id="clock">0:00</span>
         <button class="ghost" id="stopBtn" data-i18n="stop">Stop</button>
       </div>
@@ -992,6 +1020,7 @@
 (function(){
   "use strict";
   const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
   // ---------- storage helpers (localStorage; degrade silently if unavailable) ----------
   const KV = {
@@ -1166,13 +1195,19 @@
         rrMiss:"Beat verpasst", rrEarly:"zu früh", rrLate:"zu spät",
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} Treffer · ${bpm} BPM`,
         rhythmGetReady:"Achtung…", rhythmGo:"Tippen!", rhythmTapBeat:"Auf jeden Beat tippen", rhythmTap:"Tippen",
-        scenarioInterval:"Intervall-Sequenz", hintInterval:"Durchläuft mehrere Phasen hintereinander, jede mit den Einstellungen eines gespeicherten Presets, das du zuweist — drücken, halten und loslassen genau wie im Rep-Modus, Phase für Phase.",
-        labelIvPhaseCount:"Anzahl Phasen", hintIvPhaseCount:"Wie viele Phasen die Sequenz durchläuft (2–6), jede mit dem Preset, das du ihr zuweist.",
+        scenarioInterval:"Intervall-Sequenz", hintInterval:"Durchläuft mehrere Phasen hintereinander — entweder eines der fertigen Level oder eigene Phasen aus gespeicherten Presets. Drücken, halten und loslassen genau wie im Rep-Modus, Phase für Phase.",
+        labelIvPhaseCount:"Anzahl Phasen", hintIvPhaseCount:"Wie viele Phasen die Sequenz durchläuft (2–8), jede mit dem Preset, das du ihr zuweist.",
         ariaIvPhaseCount:"Anzahl Phasen",
+        labelIvLevel:"Vorlage", ariaIvLevel:"Vorlage der Sequenz",
+        hintIvLevel:"Fertige Trainings-Sequenzen. Wähle „Eigene“, um die Phasen selbst aus gespeicherten Presets zusammenzustellen.",
+        optIvCustom:"Eigene (eigene Presets)",
+        ivLevel1:"Level 1 · Anfänger", ivLevel2:"Level 2 · Fortgeschritten", ivLevel3:"Level 3 · Profi",
+        ivLevel4:"Level 4 · Extrem", ivLevel5:"Level 5 · Ultra Extrem",
+        ivBreatheOnly:"nur Atmen", ivLevelTotal:"Gesamtdauer",
         ariaIvPhasePreset:n=>`Phase ${n} Preset`, errIvPhasePreset:n=>`Phase ${n} braucht ein gespeichertes Preset`,
         ivPhaseHeading:n=>`Phase ${n}`,
         ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
-        ivPhaseLabel:"Phase", ivPresetLabel:"Preset",
+        ivPhaseLabel:"Phase", ivPresetLabel:"Preset", ivStepLabel:"Abschnitt",
         ivComplete:total=>`Sequenz abgeschlossen (${total} Phasen).`,
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
@@ -1363,13 +1398,19 @@
         rrMiss:"missed beat", rrEarly:"too early", rrLate:"too late",
         rrOver:(reason,hits,bpm)=>`Game Over (${reason}). ${hits} hits · ${bpm} BPM`,
         rhythmGetReady:"Get ready…", rhythmGo:"Tap!", rhythmTapBeat:"Tap on every beat", rhythmTap:"Tap",
-        scenarioInterval:"Interval Sequence", hintInterval:"Runs through several phases back-to-back, each using the settings of a saved preset you assign — press, hold, and release exactly like Reps mode, phase by phase.",
-        labelIvPhaseCount:"Number of phases", hintIvPhaseCount:"How many phases the sequence runs through (2–6), each using the preset you assign it.",
+        scenarioInterval:"Interval Sequence", hintInterval:"Runs through several phases back-to-back — either one of the ready-made levels or your own phases built from saved presets. Press, hold, and release exactly like Reps mode, phase by phase.",
+        labelIvPhaseCount:"Number of phases", hintIvPhaseCount:"How many phases the sequence runs through (2–8), each using the preset you assign it.",
         ariaIvPhaseCount:"Number of phases",
+        labelIvLevel:"Template", ariaIvLevel:"Sequence template",
+        hintIvLevel:"Ready-made training sequences. Pick “Custom” to build the phases yourself from saved presets.",
+        optIvCustom:"Custom (own presets)",
+        ivLevel1:"Level 1 · Beginner", ivLevel2:"Level 2 · Advanced", ivLevel3:"Level 3 · Pro",
+        ivLevel4:"Level 4 · Extreme", ivLevel5:"Level 5 · Ultra Extreme",
+        ivBreatheOnly:"breathe only", ivLevelTotal:"Total",
         ariaIvPhasePreset:n=>`Phase ${n} preset`, errIvPhasePreset:n=>`Phase ${n} needs a saved preset selected`,
         ivPhaseHeading:n=>`Phase ${n}`,
         ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
-        ivPhaseLabel:"Phase", ivPresetLabel:"Preset",
+        ivPhaseLabel:"Phase", ivPresetLabel:"Preset", ivStepLabel:"Section",
         ivComplete:total=>`Sequence complete (${total} phases).`,
         recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
@@ -1566,6 +1607,7 @@
     const rl2 = $("repLabel"); if(rl2) rl2.textContent = t.rep;
     updateScenarioHint();
     ivLabelPhases();
+    ivRenderLevelInfo();        // runtime HTML the data-i18n pass can't reach
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
     if(typeof refreshPresetSelect === "function") refreshPresetSelect();
     if(typeof updateSummaries === "function") updateSummaries();
@@ -1608,6 +1650,125 @@
       curveMode.hold = "random"; curveMode.rest = "random";
     }
   }
+
+  // ---------- built-in Interval Sequence levels ----------
+  // Each phase below is a plain object shaped exactly like readAll()'s output —
+  // i.e. exactly like a saved preset — so applyRepsConfig() consumes it
+  // unchanged and a built-in level rides the very same per-phase machinery as
+  // a hand-assembled one. Only the fields applyRepsConfig() actually reads are
+  // present; everything else (cues, signals, display) stays session-global.
+
+  // Builds a CURVE_N-length weight array with one narrow spike per target
+  // value, so that sampleFromCurve(which, min, max) returns exactly those
+  // values. sampleFromCurve picks a bucket by weight, then jitters inside it
+  // (t = (i+random)/CURVE_N) and rounds min + t*(max-min) — with 60 buckets a
+  // single bucket is far narrower than 1s for any range we use here, so a
+  // spike decodes back to its own integer. A value listed twice gets twice the
+  // weight, which is how a HOLD/BREATHE cycle's own frequencies survive the
+  // conversion from an ordered pattern to a random draw.
+  function ivCurveFor(vals, min, max){
+    const arr = new Array(CURVE_N).fill(0);
+    if(!(max > min)) return arr;
+    for(const v of vals){
+      const i = Math.max(0, Math.min(CURVE_N-1, Math.round((v - min)/(max - min)*(CURVE_N-1))));
+      arr[i] += 1;
+    }
+    return arr;
+  }
+
+  // Difficulty/timing fields every built-in phase shares — the form's own
+  // defaults, so a level feels like the app does out of the box.
+  const IV_PHASE_BASE = {
+    goal:"time",
+    strict:true, penalty:false, hideDur:false, releaseGrace:150,
+    penaltyX:2, lateTol:3,
+    noisePenalty:false, noisePenaltyX:1, noiseThr:60,
+    minReps:15, maxReps:25,          // unused (goal "time") but keeps the shape complete
+  };
+  // Fixed phase: hold `hold`s, breathe `rest`s, for `secs` seconds.
+  // holdChance 100 + minHold===maxHold makes every rep a "long" hold, which is
+  // what puts the seconds countdown on screen (see holdDurationFor()/loop());
+  // sampleFromCurve() short-circuits to `min` when max isn't greater than min.
+  const ivPh = (label, secs, hold, rest) => ({
+    ...IV_PHASE_BASE, label, totalMin: secs/60, ivSecs: secs,
+    baseHold: hold, holdChance: 100,
+    minHold: hold, maxHold: hold, minRest: rest, maxRest: rest,
+  });
+  // Flow phase: an ordered HOLD/BREATHE cycle approximated as a random draw
+  // over exactly the cycle's values (see ivCurveFor above).
+  const ivMix = (label, secs, holds, rests) => {
+    const hLo = Math.min(...holds), hHi = Math.max(...holds);
+    const rLo = Math.min(...rests), rHi = Math.max(...rests);
+    return {
+      ...IV_PHASE_BASE, label, totalMin: secs/60, ivSecs: secs,
+      baseHold: hLo, holdChance: 100,
+      minHold: hLo, maxHold: hHi, minRest: rLo, maxRest: rHi,
+      ivHolds: holds, ivRests: rests,
+      curves: { hold: ivCurveFor(holds, hLo, hHi), rest: ivCurveFor(rests, rLo, rHi), modeHold:"random", modeRest:"random" },
+    };
+  };
+  // Breathe-only phase: no press at all, just a countdown (see nextRep()).
+  // Never valid as phase 1 — the session needs a first press to boot
+  // (bootFirstPress()), so every level below starts with a hold phase.
+  const ivBreathe = (label, secs) => ({
+    ...IV_PHASE_BASE, label, totalMin: secs/60, ivSecs: secs, breathe: true,
+    baseHold: 1, holdChance: 0, minHold: 1, maxHold: 1,
+    minRest: secs, maxRest: secs,
+  });
+
+  // How many phases a hand-assembled sequence may have. Built-in levels are
+  // not bound by this — iv_phasePresets is just an array — but the levels
+  // below stay within it so any of them can also be rebuilt by hand.
+  const IV_MAX_PHASES = 8;
+
+  // Phase names are the author's own labels and deliberately not translated —
+  // they are proper names, already a German/English mix. Only the level titles
+  // are localized (ivLevel1..5).
+  const IV_LEVELS = {
+    l1: { nameKey:"ivLevel1", phases:[
+      ivPh("Warm-up", 60, 2, 6),
+      ivPh("Intervall 1 (Sanfter Takt)", 75, 2, 4),
+      ivPh("Intervall 2 (Erste Haltephasen)", 90, 3, 6),
+      ivPh("Intervall 3 (Gesteigerte Tiefe)", 75, 4, 6),
+      ivMix("Dynamic Flow", 90, [2,3], [4,5]),
+      ivBreathe("Cool-down", 30),
+    ]},
+    l2: { nameKey:"ivLevel2", phases:[
+      ivPh("Warm-up", 60, 3, 5),
+      ivPh("Intervall 1 (Schneller Takt)", 60, 2, 2),
+      ivPh("Intervall 2 (Deep Holds 1)", 90, 6, 5),
+      ivPh("Intervall 3 (Deep Holds 2)", 90, 8, 6),
+      ivMix("Dynamic Flow", 120, [4,6], [3,4]),
+      ivPh("Cool-down", 60, 3, 8),
+    ]},
+    l3: { nameKey:"ivLevel3", phases:[
+      ivPh("Warm-up (Aktivierung)", 60, 4, 3),
+      ivPh("Intervall 1 (Rapid Thrusts)", 60, 2, 1),
+      ivPh("Intervall 2 (Long Holds)", 120, 10, 4),
+      ivPh("Intervall 3 (Peak Endurance)", 120, 14, 5),
+      ivMix("Chaos Flow", 120, [3,8,2,12], [2,3,1,4]),
+      ivPh("Burnout", 45, 8, 2),
+      ivBreathe("Cool-down", 30),
+    ]},
+    l4: { nameKey:"ivLevel4", phases:[
+      ivPh("Warm-up (Fast Pace)", 60, 4, 2),
+      ivPh("Intervall 1 (Suffocation Thrusts)", 90, 3, 1),
+      ivPh("Intervall 2 (Deep Wall Endurance)", 120, 15, 4),
+      ivPh("Intervall 3 (Peak Capacity)", 150, 20, 5),
+      ivMix("Extreme Chaos Flow", 150, [4,12,2,18], [1,3,1,4]),
+      ivPh("Burnout Set", 60, 10, 2),
+      ivBreathe("Cool-down", 45),
+    ]},
+    l5: { nameKey:"ivLevel5", phases:[
+      ivPh("Warm-up (Atemkontrolle)", 60, 6, 2),
+      ivPh("Intervall 1 (Rapid Suffocation)", 90, 4, 1),
+      ivPh("Intervall 2 (Heavy Apnoe 1)", 150, 22, 4),
+      ivPh("Intervall 3 (Max Limit Hold)", 180, 30, 5),
+      ivMix("Ultra Chaos", 150, [5,20,3,25], [1,3,1,4]),
+      ivPh("Final Oxygen Depletion", 60, 12, 1),
+      ivBreathe("Cool-down", 60),
+    ]},
+  };
 
   const CURVE_PRESETS = {
     uniform: i => 0.6,
@@ -1797,8 +1958,8 @@
 
   const SETTING_IDS = [
     "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
-    "ivPhaseCount",
-    "ivPhasePreset1","ivPhasePreset2","ivPhasePreset3","ivPhasePreset4","ivPhasePreset5","ivPhasePreset6",
+    "ivLevelSel","ivPhaseCount",
+    "ivPhasePreset1","ivPhasePreset2","ivPhasePreset3","ivPhasePreset4","ivPhasePreset5","ivPhasePreset6","ivPhasePreset7","ivPhasePreset8",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
     "noisePenalty","noisePenaltyX","noiseThr",
@@ -1850,7 +2011,8 @@
     const goalTxt = {
       reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
-      scenario: `${t.goalScenario} · ${scName[s.scenarioSel] || ""}`,
+      scenario: `${t.goalScenario} · ${scName[s.scenarioSel] || ""}`
+        + (s.scenarioSel==="interval" && IV_LEVELS[s.ivLevelSel] ? ` · ${t[IV_LEVELS[s.ivLevelSel].nameKey]}` : ""),
       }[goal] || "";
     setTxt("sumGoal", goalTxt);
     const hasHoldCurve = curves.hold.some(v=>v>0.001);
@@ -2146,7 +2308,7 @@
   }
   function refreshPresetSelect(){
     populatePresetOptions($("presetSel"));
-    for(let i=1;i<=6;i++) populatePresetOptions($("ivPhasePreset"+i), true);
+    for(let i=1;i<=IV_MAX_PHASES;i++) populatePresetOptions($("ivPhasePreset"+i), true);
   }
   function presetSave(){
     const name = ($("presetName").value || "").trim();
@@ -2353,19 +2515,51 @@
     $("taField").classList.toggle("hidden", !(isScen && sc==="timeattack"));
     $("rrField").classList.toggle("hidden", !(isScen && sc==="rhythm"));
     $("ivField").classList.toggle("hidden", !(isScen && sc==="interval"));
-    ivApplyPhaseVisibility();
+    ivApplyLevelVisibility();
     $("livesField").classList.toggle("hidden", !(isScen && scenarioSupportsLives(sc)));
     $("livesCountField").classList.toggle("hidden", !$("livesOn").checked);
   }
+  function ivPhaseCountValue(){
+    return Math.min(IV_MAX_PHASES, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
+  }
+  // "" / "custom" (or anything unknown) = hand-assembled from saved presets;
+  // otherwise the key of a built-in level in IV_LEVELS.
+  function ivSelectedLevel(){
+    const sel = $("ivLevelSel");
+    return (sel && IV_LEVELS[sel.value]) || null;
+  }
   function ivApplyPhaseVisibility(){
-    const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
-    for(let i=1;i<=6;i++){
+    const n = ivPhaseCountValue();
+    for(let i=1;i<=IV_MAX_PHASES;i++){
       const row = $("ivPhaseRow"+i); if(row) row.classList.toggle("hidden", i>n);
     }
   }
+  // A built-in level replaces the manual phase-count + preset dropdowns with a
+  // read-only listing of what it will run.
+  function ivApplyLevelVisibility(){
+    const lvl = ivSelectedLevel();
+    const cntField = $("ivPhaseCountField"), info = $("ivLevelInfo");
+    if(cntField) cntField.classList.toggle("hidden", !!lvl);
+    if(info) info.classList.toggle("hidden", !lvl);
+    ivApplyPhaseVisibility();
+    ivRenderLevelInfo();
+  }
+  function ivRenderLevelInfo(){
+    const info = $("ivLevelInfo"); if(!info) return;
+    const lvl = ivSelectedLevel(); if(!lvl) return;
+    const t = T();
+    const span = (lo, hi) => lo===hi ? `${lo}s` : `${lo}–${hi}s`;
+    const rows = lvl.phases.map((p, i) => {
+      const detail = p.breathe ? t.ivBreatheOnly
+        : `${span(p.minHold, p.maxHold)} / ${span(p.minRest, p.maxRest)}`;
+      return `<div class="ivRow"><span>${i+1} · ${esc(p.label)}</span><span>${p.ivSecs}s · ${detail}</span></div>`;
+    });
+    const total = lvl.phases.reduce((a,p)=>a+p.ivSecs, 0);
+    info.innerHTML = rows.join("") + `<div class="ivTotal">${t.ivLevelTotal}: ${fmtTime(total)}</div>`;
+  }
   function ivLabelPhases(){
     const t = T();
-    for(let i=1;i<=6;i++){
+    for(let i=1;i<=IV_MAX_PHASES;i++){
       const head = $("ivPhaseHead"+i); if(head) head.textContent = t.ivPhaseHeading(i);
       const sel = $("ivPhasePreset"+i); if(sel) sel.setAttribute("aria-label", t.ariaIvPhasePreset(i));
     }
@@ -2373,6 +2567,7 @@
   $("scenarioSel").addEventListener("change", ()=>{ applyScenarioVisibility(); updateScenarioHint(); });
   $("livesOn").addEventListener("change", applyScenarioVisibility);
   $("ivPhaseCount").addEventListener("input", ivApplyPhaseVisibility);
+  $("ivLevelSel").addEventListener("change", ()=>{ ivApplyLevelVisibility(); updateSummaries(); });
 
   // advanced settings: collapsed by default, state remembered
   (function initAdvanced(){
@@ -2478,8 +2673,10 @@
       if($("penalty").checked && !(num("lateTol")>=1)) return t.errLateTolMin;
       if($("noisePenalty").checked && !(num("noisePenaltyX")>=1)) return t.errNoisePenaltyAmount;
     }
-    if(goal==="scenario" && $("scenarioSel").value === "interval"){
-      const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
+    // a built-in level brings its own phases — only the hand-assembled path
+    // depends on saved presets being present and of the right kind
+    if(goal==="scenario" && $("scenarioSel").value === "interval" && !ivSelectedLevel()){
+      const n = ivPhaseCountValue();
       const presets = KV.get(K.presets, {});
       for(let i=1;i<=n;i++){
         const name = $("ivPhasePreset"+i).value;
@@ -2528,6 +2725,9 @@
     // helper runs in buildPlan() and lives on S in ivAdvancePhase(), so this
     // one line covers the baseline and every phase.
     if(cfg.sig && cfg.sig.speech) cfg.noisePenalty = false;
+    // Breathe-only phase (Interval Sequence): no press, no reps — just the
+    // phase's duration spent breathing. Handled in nextRep().
+    cfg.iv_breathe = !!src.breathe;
     if(src.goal === "time"){
       cfg.iv_phaseMode = "time";
       cfg.totalMin     = fn("totalMin");
@@ -2581,12 +2781,21 @@
       cfg.livesOn = $("livesOn").checked;
       cfg.livesCount = Math.min(9, Math.max(1, Math.round(parseFloat($("livesCount").value) || 3)));
       if(cfg.scenario === "interval"){
-        const n = Math.min(6, Math.max(2, Math.round(parseFloat($("ivPhaseCount").value) || 3)));
-        cfg.iv_phasePresets = [1,2,3,4,5,6].map(i => $("ivPhasePreset"+i).value || "").slice(0, n);
+        const lvl = ivSelectedLevel();
+        if(lvl){
+          // built-in level: the phase configs live in IV_LEVELS, not in the
+          // user's preset store. iv_phasePresets still carries the display
+          // names, so ivUpdatePhaseIndicator()/ivComplete() work unchanged.
+          cfg.iv_phaseObjs = lvl.phases;
+          cfg.iv_phasePresets = lvl.phases.map(p => p.label);
+        } else {
+          const n = ivPhaseCountValue();
+          cfg.iv_phaseObjs = null;
+          cfg.iv_phasePresets = Array.from({length:IV_MAX_PHASES}, (_,k) => $("ivPhasePreset"+(k+1)).value || "").slice(0, n);
+        }
         cfg.iv_phaseIdx = 0;
         cfg.iv_totalDone = 0;
-        const presets = KV.get(K.presets, {});
-        const p0 = presets[cfg.iv_phasePresets[0]] || {};
+        const p0 = ivPhaseSrc(cfg, 0);
         applyRepsConfig(cfg, p0);       // phase 1's own preset overrides the baseline
         cfg.iv_savedCurves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
         applyIvPhaseCurve(p0);
@@ -2635,6 +2844,7 @@
     $("repTotalWrap").style.display = S.totalReps ? "" : "none";
     $("repTotal").textContent = S.totalReps || "";
     $("repNow").textContent = "0";
+    $("repCount").style.visibility = "";   // a previous session may have ended in a breathe-only phase
     armReady();   // (mic lifecycle handled by show("session") → micSync() above)
   }
 
@@ -3334,16 +3544,26 @@
     $("swStats").classList.remove("hidden");
     document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().ivPhaseLabel;
     $("swRest").textContent = T().ivPhaseOfLabel(S.iv_phaseIdx+1, S.iv_phasePresets.length);
-    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().ivPresetLabel;
+    // a built-in level's phases are sections of that level, not saved presets
+    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = S.iv_phaseObjs ? T().ivStepLabel : T().ivPresetLabel;
     $("swLongest").textContent = S.iv_phasePresets[S.iv_phaseIdx] || "";
+  }
+
+  // Where a phase's settings come from: a built-in level carries its phase
+  // objects on iv_phaseObjs, a hand-assembled sequence looks them up by name
+  // in the user's saved presets. Both are readAll()-shaped, so everything
+  // downstream (applyRepsConfig/applyIvPhaseCurve) is identical.
+  // `st` is the live S at runtime, or the half-built cfg inside buildPlan().
+  function ivPhaseSrc(st, idx){
+    if(st.iv_phaseObjs) return st.iv_phaseObjs[idx] || {};
+    return KV.get(K.presets, {})[st.iv_phasePresets[idx]] || {};
   }
 
   function ivAdvancePhase(){
     if(!S || S.scenario !== "interval") return false;
     S.iv_phaseIdx++;
     if(S.iv_phaseIdx >= S.iv_phasePresets.length) return false;
-    const presets = KV.get(K.presets, {});
-    const p = presets[S.iv_phasePresets[S.iv_phaseIdx]] || {};
+    const p = ivPhaseSrc(S, S.iv_phaseIdx);
     applyRepsConfig(S, p);
     applyIvPhaseCurve(p);
     S.done = 0;
@@ -3370,16 +3590,35 @@
     }
     if(timeUp()) return finish();
 
-    const restSecs = restSecsForNext();
-    const restMs = first ? 0 : restSecs*1000;
+    // A breathe-only Interval phase has no reps at all — it spends its entire
+    // duration in the rest countdown below and then re-enters nextRep(), where
+    // the phase-end check above advances to the next phase (or finishes). It
+    // is therefore never valid as phase 1: the session still needs a first
+    // press to boot (bootFirstPress()), which only beginRep() waits for.
+    const breathe = !!S.iv_breathe;
+    const restSecs = breathe
+      ? Math.max(1, Math.ceil(((S.endAt || Date.now()) - Date.now())/1000) || 1)
+      : restSecsForNext();
+    const restMs = (first && !breathe) ? 0 : restSecs*1000;
+    const bigCue = breathe ? S.words.up : T().rest;
+    const subCue = n => breathe
+      ? `${S.iv_phasePresets[S.iv_phaseIdx] || T().breathe} · ${n}s`
+      : `${T().breathe} · ${n}s`;
     if(restMs>0){
       let left = restSecs;
-      setCue("rest", T().rest, `${T().breathe} · ${left}s`);
+      setCue("rest", bigCue, subCue(left));
       $("timer").textContent = "";
+      if(breathe){
+        // nothing to press for the whole phase — say so on the button and drop
+        // the rep counter, which would otherwise sit at 0 the entire time
+        $("btnLab").textContent = T().breathe;
+        $("repCount").style.visibility = "hidden";
+        cmd("up");             // the phase itself is the cue — announce it once
+      }
       restTimer = setInterval(()=>{
         left--;
-        if(left<=0){ clearInterval(restTimer); beginRep(); }
-        else $("subcue").textContent = `${T().breathe} · ${left}s`;
+        if(left<=0){ clearInterval(restTimer); if(breathe) nextRep(false); else beginRep(); }
+        else $("subcue").textContent = subCue(left);
       },1000);
     } else {
       beginRep();
@@ -3401,6 +3640,7 @@
     applyScreenColor();
     setFill(0);
     const n = S.done + 1;
+    $("repCount").style.visibility = "";   // a breathe-only phase hides it (see nextRep)
     $("repNow").textContent = n;
     let big, sub;
     if(S.hide){
@@ -4249,6 +4489,19 @@
     });
 
     const saved = KV.get(K.settings, null);
+    // Settings written before built-in levels existed carry no ivLevelSel, so
+    // writeAll() would leave the markup's default (Level 2) in place and
+    // silently replace a sequence the user had assembled by hand. Anyone who
+    // had actually assigned a phase preset keeps their own setup.
+    if(saved && saved.ivLevelSel === undefined
+       && Array.from({length:IV_MAX_PHASES}, (_,i) => saved["ivPhasePreset"+(i+1)]).some(v => v)){
+      saved.ivLevelSel = "custom";
+    }
+    // must run before writeAll(): the preset dropdowns (#presetSel and the
+    // Interval phase selects) are empty markup until this fills them in, and
+    // assigning a <select>.value that has no matching <option> is a silent
+    // no-op — which used to drop every saved phase assignment on reload
+    refreshPresetSelect();
     if(saved) writeAll(saved);
     const lg = I18N[LANG] || I18N.en;
     const seed = (id, val) => { const el = $(id); if(el && !((el.value||"").trim())) el.value = val; };
@@ -4260,7 +4513,6 @@
     seed("cmdFinishWord", lg.cueFinish);
     applyRuntimeI18n();
 
-    refreshPresetSelect();
     renderStats();
     loadCurves();
     ["hold","rest"].forEach(which=>{
