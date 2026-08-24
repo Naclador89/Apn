@@ -154,13 +154,14 @@
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .sublbl{display:block;font-size:11px;color:var(--muted);margin:0 0 5px 2px}
-  /* read-only phase list of a built-in Interval Sequence level */
-  .ivLevelInfo{margin-top:10px;background:#11131a;border:1px solid var(--line);
+  /* read-only listing of a built-in routine: an Interval Sequence level's
+     phases, or a Power Breathing routine's rounds */
+  .routineInfo{margin-top:10px;background:#11131a;border:1px solid var(--line);
     border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.5}
-  .ivLevelInfo .ivRow{display:flex;justify-content:space-between;gap:10px}
-  .ivLevelInfo .ivRow span:first-child{color:var(--text)}
-  .ivLevelInfo .ivRow span:last-child{color:var(--muted);white-space:nowrap}
-  .ivLevelInfo .ivTotal{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted)}
+  .routineInfo .ivRow{display:flex;justify-content:space-between;gap:10px}
+  .routineInfo .ivRow span:first-child{color:var(--text)}
+  .routineInfo .ivRow span:last-child{color:var(--muted);white-space:nowrap}
+  .routineInfo .ivTotal{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted)}
   @media (max-width:420px){ .row3{grid-template-columns:1fr} }
 
   /* segmented control */
@@ -489,6 +490,7 @@
             <option value="timeattack" data-i18n="scenarioTimeAttack">Time Attack</option>
             <option value="rhythm" data-i18n="scenarioRhythm">Rhythm Rush</option>
             <option value="interval" data-i18n="scenarioInterval">Interval Sequence</option>
+            <option value="powerbreath" data-i18n="scenarioPowerbreath">Power Breathing — 3-phase cycle</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
           <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
@@ -531,7 +533,7 @@
               <option value="custom" data-i18n="optIvCustom">Custom (own presets)</option>
             </select>
             <div class="hint" data-i18n="hintIvLevel">Ready-made training sequences. Pick “Custom” to build the phases yourself from saved presets.</div>
-            <div class="ivLevelInfo hidden" id="ivLevelInfo"></div>
+            <div class="routineInfo hidden" id="ivLevelInfo"></div>
             <div class="field" id="ivPhaseCountField" style="margin-top:10px">
             <label class="lbl" data-i18n="labelIvPhaseCount">Number of phases</label>
             <input id="ivPhaseCount" type="number" min="2" max="8" step="1" value="3" aria-label="Number of phases" data-i18n-aria="ariaIvPhaseCount">
@@ -569,6 +571,16 @@
               <select id="ivPhasePreset8" aria-label="Phase 8 preset"><option value="" data-i18n="optLoad">– load –</option></select>
             </div>
             </div>
+          </div>
+          <div class="field hidden" id="pbField" style="margin:12px 0 0">
+            <label class="lbl" for="pbRoutineSel" data-i18n="labelPbRoutine">Routine</label>
+            <select id="pbRoutineSel" aria-label="Breathing routine" data-i18n-aria="ariaPbRoutine">
+              <option value="short" data-i18n="pbRoutineShort">Starter · 2 rounds</option>
+              <option value="standard" selected data-i18n="pbRoutineStandard">Standard · 3 rounds</option>
+              <option value="long" data-i18n="pbRoutineLong">Advanced · 4 rounds</option>
+            </select>
+            <div class="hint" data-i18n="hintPbRoutine">Each round: power breathing, then a hold on empty lungs, then a 15 s recovery hold on full lungs.</div>
+            <div class="routineInfo" id="pbRoutineInfo"></div>
           </div>
           <div class="field hidden" id="livesField" style="margin:12px 0 0">
             <div class="toggle" style="margin-bottom:0">
@@ -918,6 +930,7 @@
     <div class="done">
       <div class="num" id="doneNum">0</div>
       <div class="msg" id="doneMsg" data-i18n="repsCompleted">Reps completed.</div>
+      <div class="routineInfo hidden" id="doneList" style="text-align:left"></div>
     </div>
     <div class="finishGame hidden" id="finishGame">
       <div class="fgBadges hidden" id="fgBadges"></div>
@@ -1209,6 +1222,24 @@
         ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
         ivPhaseLabel:"Phase", ivPresetLabel:"Preset", ivStepLabel:"Abschnitt",
         ivComplete:total=>`Sequenz abgeschlossen (${total} Phasen).`,
+        scenarioPowerbreath:"Power Breathing — 3-Phasen-Zyklus",
+        hintPowerbreath:"Geführte Runden aus Power-Atmung, Halten auf leerer Lunge und Recovery-Hold auf voller Lunge. Kein Drücken nötig — nur die Retention beendest du selbst per Tipp, sobald der Atemreiz kommt. Sicherheit: nie im oder am Wasser, nie im Stehen oder beim Autofahren — im Sitzen oder Liegen üben. Die Hyperventilation kann zu Schwindel und Ohnmacht führen.",
+        labelPbRoutine:"Routine", ariaPbRoutine:"Atem-Routine",
+        hintPbRoutine:"Jede Runde: Power-Atmung, dann Halten auf leerer Lunge, dann 15 s Recovery-Hold auf voller Lunge.",
+        pbRoutineShort:"Einstieg · 2 Runden", pbRoutineStandard:"Standard · 3 Runden", pbRoutineLong:"Fortgeschritten · 4 Runden",
+        pbRoundLabel:"Runde", pbPhaseLabel:"Phase",
+        pbPhaseBreathe:"Atmung", pbPhaseRetention:"Retention", pbPhaseRecovery:"Recovery",
+        pbInhale:"EINATMEN", pbExhale:"AUSATMEN",
+        pbBreathOf:(n,total)=>`Atemzug ${n} / ${total}`,
+        pbHoldEmpty:"Ausatmen und halten", pbHoldEmptySub:target=>`Leere Lunge · Ziel ${target}`,
+        pbTapWhenUrge:"Tippen, wenn der Atemreiz kommt",
+        pbRecovery:"Tief einatmen und halten", pbRecoverySub:"Volle Lunge",
+        pbExhaleFully:"Vollständig ausatmen",
+        pbRoundOf:(n,total)=>`${n}/${total}`,
+        pbComplete:total=>`Routine abgeschlossen (${total} ${total===1?"Runde":"Runden"}).`,
+        pbLogLine:(n,held,target,early)=>[`Runde ${n} · Retention`, `${held} / ${target}${early?" ↩":""}`],
+        pbTotalRetention:"Retention gesamt",
+        pbGetReady:"Gleich geht's los",
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
         labelLivesCount:"Anzahl Leben",
@@ -1412,6 +1443,24 @@
         ivPhaseOfLabel:(idx,total)=>`Phase ${idx}/${total}`,
         ivPhaseLabel:"Phase", ivPresetLabel:"Preset", ivStepLabel:"Section",
         ivComplete:total=>`Sequence complete (${total} phases).`,
+        scenarioPowerbreath:"Power Breathing — 3-phase cycle",
+        hintPowerbreath:"Guided rounds of power breathing, a hold on empty lungs, and a recovery hold on full lungs. No pressing needed — you only end the retention yourself with a tap, once the urge to breathe kicks in. Safety: never in or near water, never standing or while driving — practise sitting or lying down. The hyperventilation can cause dizziness and fainting.",
+        labelPbRoutine:"Routine", ariaPbRoutine:"Breathing routine",
+        hintPbRoutine:"Each round: power breathing, then a hold on empty lungs, then a 15 s recovery hold on full lungs.",
+        pbRoutineShort:"Starter · 2 rounds", pbRoutineStandard:"Standard · 3 rounds", pbRoutineLong:"Advanced · 4 rounds",
+        pbRoundLabel:"Round", pbPhaseLabel:"Phase",
+        pbPhaseBreathe:"Breathing", pbPhaseRetention:"Retention", pbPhaseRecovery:"Recovery",
+        pbInhale:"INHALE", pbExhale:"EXHALE",
+        pbBreathOf:(n,total)=>`Breath ${n} / ${total}`,
+        pbHoldEmpty:"Exhale and hold", pbHoldEmptySub:target=>`Empty lungs · target ${target}`,
+        pbTapWhenUrge:"Tap when the urge to breathe hits",
+        pbRecovery:"Deep breath in and hold", pbRecoverySub:"Full lungs",
+        pbExhaleFully:"Exhale fully",
+        pbRoundOf:(n,total)=>`${n}/${total}`,
+        pbComplete:total=>`Routine complete (${total} ${total===1?"round":"rounds"}).`,
+        pbLogLine:(n,held,target,early)=>[`Round ${n} · retention`, `${held} / ${target}${early?" ↩":""}`],
+        pbTotalRetention:"Total retention",
+        pbGetReady:"Get ready",
         recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
         labelLivesCount:"Number of lives",
@@ -1608,6 +1657,7 @@
     updateScenarioHint();
     ivLabelPhases();
     ivRenderLevelInfo();        // runtime HTML the data-i18n pass can't reach
+    pbRenderRoutineInfo();      // same — the Power Breathing round listing
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
     if(typeof refreshPresetSelect === "function") refreshPresetSelect();
     if(typeof updateSummaries === "function") updateSummaries();
@@ -1619,7 +1669,7 @@
   function updateScenarioHint(){
     const el = $("scenarioHint"); if(!el) return;
     const t = T();
-    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm, interval:t.hintInterval };
+    const map = { stopwatch:t.hintStopwatch, sd_hold:t.hintSdHold, sd_speed:t.hintSdSpeed, sd_mixed:t.hintSdMixed, timeattack:t.hintTimeAttack, rhythm:t.hintRhythm, interval:t.hintInterval, powerbreath:t.hintPowerbreath };
     const v = map[$("scenarioSel").value];
     if(typeof v === "string") el.textContent = v;
   }
@@ -1769,6 +1819,38 @@
       ivBreathe("Cool-down", 60),
     ]},
   };
+
+  // ---------- built-in Power Breathing routines ----------
+  // Wim-Hof-/Pranayama-inspired: each round is power breathing → a hold on
+  // EMPTY lungs (retention) → a fixed recovery hold on FULL lungs. Unlike
+  // every other mode in this app, nothing here is press-gated — it's a guided,
+  // timer-driven sequence (see pbTick()); the only user input is ending the
+  // retention early once the urge to breathe hits.
+  const pbRound = (breaths, inhaleMs, exhaleMs, retentionSec, recoverySec) =>
+    ({ breaths, inhaleMs, exhaleMs, retentionSec, recoverySec });
+  const PB_ROUTINES = {
+    short:    { nameKey:"pbRoutineShort", rounds:[
+      pbRound(25, 1000, 1000, 45, 15),
+      pbRound(30, 1000, 1000, 60, 15),
+    ]},
+    standard: { nameKey:"pbRoutineStandard", rounds:[
+      pbRound(30, 1000, 1000,  60, 15),
+      pbRound(35,  900,  900,  90, 15),
+      pbRound(40,  900,  900, 120, 15),
+    ]},
+    long:     { nameKey:"pbRoutineLong", rounds:[
+      pbRound(30, 1000, 1000,  60, 15),
+      pbRound(35,  900,  900,  90, 15),
+      pbRound(40,  900,  900, 120, 15),
+      pbRound(40,  800,  800, 150, 15),
+    ]},
+  };
+  // Rough wall-clock length of a routine, for the setup listing. Retention is
+  // an upper bound: ending it early only makes the real session shorter.
+  function pbRoutineSecs(rounds){
+    return rounds.reduce((a,r)=>
+      a + r.breaths*(r.inhaleMs + r.exhaleMs)/1000 + r.retentionSec + r.recoverySec, 0);
+  }
 
   const CURVE_PRESETS = {
     uniform: i => 0.6,
@@ -1958,7 +2040,7 @@
 
   const SETTING_IDS = [
     "minReps","maxReps","totalMin","scenarioSel","sdActionSec","sdPauseSec","sdStartReps","sdStartHold","taTarget","rrBpm","rrStep","livesOn","livesCount",
-    "ivLevelSel","ivPhaseCount",
+    "ivLevelSel","ivPhaseCount","pbRoutineSel",
     "ivPhasePreset1","ivPhasePreset2","ivPhasePreset3","ivPhasePreset4","ivPhasePreset5","ivPhasePreset6","ivPhasePreset7","ivPhasePreset8",
     "baseHold","holdChance","minHold","maxHold","minRest","maxRest","releaseGrace",
     "strict","penalty","penaltyX","lateTol","hideDur",
@@ -2007,12 +2089,13 @@
     const s = readAll();
     const t = T();
     const setTxt = (id, txt) => { const e = $(id); if(e) e.textContent = txt; };
-    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, timeattack: t.scenarioTimeAttack, rhythm: t.scenarioRhythm, interval: t.scenarioInterval };
+    const scName = { stopwatch: (t.scenarioStopwatch||"").split(" — ")[0], sd_hold: t.scenarioSdHold, sd_speed: t.scenarioSdSpeed, sd_mixed: t.scenarioSdMixed, timeattack: t.scenarioTimeAttack, rhythm: t.scenarioRhythm, interval: t.scenarioInterval, powerbreath: (t.scenarioPowerbreath||"").split(" — ")[0] };
     const goalTxt = {
       reps: `${t.goalReps} ${s.minReps}–${s.maxReps}`,
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
       scenario: `${t.goalScenario} · ${scName[s.scenarioSel] || ""}`
-        + (s.scenarioSel==="interval" && IV_LEVELS[s.ivLevelSel] ? ` · ${t[IV_LEVELS[s.ivLevelSel].nameKey]}` : ""),
+        + (s.scenarioSel==="interval" && IV_LEVELS[s.ivLevelSel] ? ` · ${t[IV_LEVELS[s.ivLevelSel].nameKey]}` : "")
+        + (s.scenarioSel==="powerbreath" && PB_ROUTINES[s.pbRoutineSel] ? ` · ${t[PB_ROUTINES[s.pbRoutineSel].nameKey]}` : ""),
       }[goal] || "";
     setTxt("sumGoal", goalTxt);
     const hasHoldCurve = curves.hold.some(v=>v>0.001);
@@ -2515,7 +2598,9 @@
     $("taField").classList.toggle("hidden", !(isScen && sc==="timeattack"));
     $("rrField").classList.toggle("hidden", !(isScen && sc==="rhythm"));
     $("ivField").classList.toggle("hidden", !(isScen && sc==="interval"));
+    $("pbField").classList.toggle("hidden", !(isScen && sc==="powerbreath"));
     ivApplyLevelVisibility();
+    pbRenderRoutineInfo();
     $("livesField").classList.toggle("hidden", !(isScen && scenarioSupportsLives(sc)));
     $("livesCountField").classList.toggle("hidden", !$("livesOn").checked);
   }
@@ -2557,6 +2642,25 @@
     const total = lvl.phases.reduce((a,p)=>a+p.ivSecs, 0);
     info.innerHTML = rows.join("") + `<div class="ivTotal">${t.ivLevelTotal}: ${fmtTime(total)}</div>`;
   }
+  // Which Power Breathing routine is selected (falls back to the default).
+  function pbSelectedRoutine(){
+    const sel = $("pbRoutineSel");
+    return (sel && PB_ROUTINES[sel.value]) || PB_ROUTINES.standard;
+  }
+  // Read-only round listing under the routine dropdown. Runtime HTML, so
+  // applyRuntimeI18n() re-renders it on a language switch (like renderStats()).
+  function pbRenderRoutineInfo(){
+    const info = $("pbRoutineInfo"); if(!info) return;
+    const r = pbSelectedRoutine(); if(!r) return;
+    const t = T();
+    const rows = r.rounds.map((rd, i) => {
+      const cadence = ((rd.inhaleMs + rd.exhaleMs)/1000).toFixed(1).replace(/\.0$/, "");
+      const left = `${i+1} · ${rd.breaths}× ${t.pbPhaseBreathe} (${cadence}s)`;
+      const right = `${t.pbPhaseRetention} ${fmtTime(rd.retentionSec)} · ${t.pbPhaseRecovery} ${rd.recoverySec}s`;
+      return `<div class="ivRow"><span>${left}</span><span>${right}</span></div>`;
+    });
+    info.innerHTML = rows.join("") + `<div class="ivTotal">${t.ivLevelTotal}: ~${fmtTime(pbRoutineSecs(r.rounds))}</div>`;
+  }
   function ivLabelPhases(){
     const t = T();
     for(let i=1;i<=IV_MAX_PHASES;i++){
@@ -2568,6 +2672,7 @@
   $("livesOn").addEventListener("change", applyScenarioVisibility);
   $("ivPhaseCount").addEventListener("input", ivApplyPhaseVisibility);
   $("ivLevelSel").addEventListener("change", ()=>{ ivApplyLevelVisibility(); updateSummaries(); });
+  $("pbRoutineSel").addEventListener("change", ()=>{ pbRenderRoutineInfo(); updateSummaries(); });
 
   // advanced settings: collapsed by default, state remembered
   (function initAdvanced(){
@@ -2780,6 +2885,12 @@
       cfg.rr_step = Math.min(40, Math.max(1, Math.round(parseFloat($("rrStep").value) || 8)));
       cfg.livesOn = $("livesOn").checked;
       cfg.livesCount = Math.min(9, Math.max(1, Math.round(parseFloat($("livesCount").value) || 3)));
+      if(cfg.scenario === "powerbreath"){
+        cfg.pb_rounds = pbSelectedRoutine().rounds;
+        cfg.pb_roundIdx = 0;
+        cfg.pb_log = [];
+        cfg.noRecord = true;   // not scored — see the Power Breathing block comment
+      }
       if(cfg.scenario === "interval"){
         const lvl = ivSelectedLevel();
         if(lvl){
@@ -3022,6 +3133,11 @@
       $("swLongest").textContent = fmtSW(tgt);
       document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().taTotalLabel;
       document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().taTargetLabel;
+    } else if (S.scenario === "powerbreath") {
+      S.pb_phase = "idle";
+      $("repCount").style.visibility = "hidden";   // no reps in this mode
+      $("timer").textContent = "";
+      pbUpdateStats();
     } else if (S.scenario === "rhythm") {
       // rhythm auto-starts with a count-in; no press needed to boot
       $("swRest").textContent = "0";
@@ -3039,6 +3155,11 @@
     if(S.scenario === "interval"){
       S.iv_phaseStartAt = S.startTime;
       if(S.iv_phaseMode === "time") S.endAt = S.startTime + S.totalMin*60*1000;
+    }
+
+    if(S.scenario === "powerbreath"){
+      S.pb_timer = setInterval(pbTick, 50);
+      pbStartBreathing();
     }
 
     if(S.scenario==="sd_speed") {
@@ -3211,6 +3332,7 @@
 
   let swRestTimer = 0;
   function pressStartStopwatch(pointerId){
+    if(S && S.scenario === "powerbreath"){ pbPress(); return; }   // a press = boot / end the retention, never a hold
     if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
     if(S && S.scenario === "sd_speed" && S.sd_phase === "rest") return;
     if(S && S.scenario === "sd_mixed" && S.sd_phase === "pause") return;
@@ -3288,6 +3410,7 @@
     raf = requestAnimationFrame(stopwatchHoldLoop);
   }
   function pressEndStopwatch(){
+    if(S && S.scenario === "powerbreath") return;   // nothing is ever held here (see pbPress)
     releaseHold();
     S.swReleaseTs = Date.now();
     const graceMs = (S && S.releaseGrace) ? S.releaseGrace : 0;
@@ -3513,6 +3636,189 @@
     if(S.rr_timer) clearInterval(S.rr_timer);
     S.scenarioFailMsg = T().rrOver(reason, S.rr_hits||0, Math.round(S.rr_bpm||0));
     finish();
+  }
+
+  // ========== Power Breathing (S.scenario === "powerbreath") ==========
+  // A guided, timer-driven sequence rather than a press-gated one: every round
+  // runs power breathing -> retention (hold on EMPTY lungs) -> recovery (fixed
+  // hold on FULL lungs). Structurally modelled on Rhythm Rush — one interval
+  // timer drives everything and a press means "event", not "hold".
+  //
+  // Deliberately NOT recorded (S.noRecord, set in buildPlan): a retention on
+  // empty lungs isn't comparable to this app's full-lung hold PB, and the
+  // routine has no rep count worth turning into XP. See finish().
+
+  // Short non-spoken in/out indicator — rising tone in, falling tone out. Same
+  // shape as tick(), but its own function since the pitches carry meaning here.
+  function pbBreathCue(isInhale){
+    if(!S || !S.sig) return;
+    if(S.sig.beep) beep(isInhale ? 780 : 460, 90, 0);
+    if(S.sig.vibrate) vibrate(isInhale ? 22 : 14);
+  }
+  // Transition into a hold phase (retention or recovery): distinct two-tone.
+  function pbHoldCue(text){
+    if(!S || !S.sig) return;
+    if(S.sig.speech) say(text);
+    if(S.sig.beep){ beep(680,140,0); beep(920,200,150); }
+    if(S.sig.vibrate) vibrate([0,90,60,90]);
+  }
+  function pbUpdateStats(){
+    if(!S || S.scenario !== "powerbreath") return;
+    const t = T();
+    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = t.pbRoundLabel;
+    $("swRest").textContent = t.pbRoundOf(S.pb_roundIdx + 1, S.pb_rounds.length);
+    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = t.pbPhaseLabel;
+    // defaults to "breathing" for the pre-start and between-rounds states,
+    // which is what is coming up next in both
+    $("swLongest").textContent = S.pb_phase === "retention" ? t.pbPhaseRetention
+                               : S.pb_phase === "recovery"  ? t.pbPhaseRecovery
+                               : t.pbPhaseBreathe;
+  }
+  function pbCurRound(){ return S.pb_rounds[S.pb_roundIdx]; }
+
+  function pbStartBreathing(){
+    const r = pbCurRound();
+    S.pb_phase = "breathe";
+    S.pb_breathIdx = 1;
+    S.pb_isInhale = true;
+    S.pb_halfEndTs = Date.now() + r.inhaleMs;
+    $("btnLab").textContent = "";   // the button is idle for the whole breathing phase
+    pbUpdateStats();
+    pbRenderBreath();
+    pbBreathCue(true);
+  }
+  function pbRenderBreath(){
+    const r = pbCurRound(), t = T();
+    setCue("up", S.pb_isInhale ? t.pbInhale : t.pbExhale, t.pbBreathOf(S.pb_breathIdx, r.breaths));
+    $("timer").textContent = S.pb_breathIdx;
+  }
+  function pbStartRetention(){
+    const r = pbCurRound(), t = T();
+    S.pb_phase = "retention";
+    S.pb_retStartTs = Date.now();
+    S.pb_phaseEndTs = S.pb_retStartTs + r.retentionSec*1000;
+    S.pb_lastCountSec = null;
+    setFill(0);
+    pbUpdateStats();
+    setCue("down", t.pbHoldEmpty, t.pbHoldEmptySub(fmtTime(r.retentionSec)));
+    $("btnLab").textContent = t.pbTapWhenUrge;
+    pbHoldCue(t.pbHoldEmpty);
+  }
+  // Ends the retention and books the time actually held. `early` = the user
+  // tapped before the target elapsed; otherwise the target was reached.
+  function pbEndRetention(early){
+    if(!S || S.pb_phase !== "retention") return;
+    const r = pbCurRound();
+    const heldSec = Math.max(0, (Date.now() - S.pb_retStartTs)/1000);
+    S.pb_log.push({ round: S.pb_roundIdx + 1, held: heldSec, target: r.retentionSec, early: !!early });
+    pbStartRecovery();
+  }
+  function pbStartRecovery(){
+    const r = pbCurRound(), t = T();
+    S.pb_phase = "recovery";
+    S.pb_phaseEndTs = Date.now() + r.recoverySec*1000;
+    S.pb_lastCountSec = null;
+    setFill(1);                      // full lungs
+    pbUpdateStats();
+    setCue("rest", t.pbRecovery, t.pbRecoverySub);
+    $("btnLab").textContent = t.pbRecovery;
+    pbHoldCue(t.pbRecovery);
+  }
+  function pbEndRecovery(){
+    const t = T();
+    S.pb_roundIdx++;
+    S.done = S.pb_roundIdx;          // completed rounds -> #doneNum
+    setFill(0);
+    setCue("rest", t.pbExhaleFully, "");
+    if(S.sig.speech) say(t.pbExhaleFully);
+    if(S.sig.beep) beep(400,170,0);
+    if(S.sig.vibrate) vibrate(200);
+    if(S.pb_roundIdx >= S.pb_rounds.length){
+      S.scenarioFailMsg = t.pbComplete(S.pb_rounds.length);
+      // let the "exhale fully" cue land before the finish screen replaces it
+      S.pb_endTimer = setTimeout(()=>{ if(S) finish(); }, 1500);
+      S.pb_phase = "done";
+      return;
+    }
+    S.pb_pendingNext = Date.now() + 3000;   // short breather between rounds
+    S.pb_phase = "between";
+    $("btnLab").textContent = "";
+  }
+
+  function pbTick(){
+    if(!S || S.scenario !== "powerbreath"){ clearInterval(S.pb_timer); return; }
+    const now = Date.now();
+    if(S.pb_phase === "breathe"){
+      if(now < S.pb_halfEndTs){
+        // fill rises through the inhale and falls back through the exhale
+        const r = pbCurRound();
+        const halfMs = S.pb_isInhale ? r.inhaleMs : r.exhaleMs;
+        const p = Math.max(0, Math.min(1, 1 - (S.pb_halfEndTs - now)/halfMs));
+        setFill(S.pb_isInhale ? p : 1 - p);
+        return;
+      }
+      const r = pbCurRound();
+      if(S.pb_isInhale){
+        S.pb_isInhale = false;
+        S.pb_halfEndTs += r.exhaleMs;
+        pbRenderBreath();
+        pbBreathCue(false);
+        return;
+      }
+      // an exhale just finished: that completes one breath
+      if(S.pb_breathIdx >= r.breaths){ pbStartRetention(); return; }
+      S.pb_breathIdx++;
+      S.pb_isInhale = true;
+      S.pb_halfEndTs += r.inhaleMs;
+      pbRenderBreath();
+      pbBreathCue(true);
+      // speech only every 10th breath — at a 0.9s cadence, announcing each one
+      // would just cancel the previous utterance (see say())
+      if(S.pb_breathIdx % 10 === 0 && S.sig.speech) say(String(S.pb_breathIdx));
+      return;
+    }
+    if(S.pb_phase === "retention" || S.pb_phase === "recovery"){
+      const remain = Math.max(0, (S.pb_phaseEndTs - now)/1000);
+      $("timer").textContent = fmtTime(Math.ceil(remain));
+      if(S.pb_phase === "recovery"){
+        const r = pbCurRound();
+        setFill(Math.max(0, Math.min(1, remain / r.recoverySec)));
+      }
+      const sec = Math.ceil(remain);
+      if(sec <= 3 && sec >= 1 && sec !== S.pb_lastCountSec){
+        S.pb_lastCountSec = sec;
+        if(S.sig.beep) beep(900,55,0);
+        if(S.sig.vibrate) vibrate(40);
+      }
+      if(remain <= 0){
+        if(S.pb_phase === "retention") pbEndRetention(false); else pbEndRecovery();
+      }
+      return;
+    }
+    if(S.pb_phase === "between" && now >= S.pb_pendingNext){
+      pbStartBreathing();
+    }
+  }
+
+  // A press means different things per phase; it never starts a hold.
+  function pbPress(){
+    if(!S || S.scenario !== "powerbreath") return;
+    if(S.waitingStart){ bootFirstPress(); return; }
+    if(S.pb_phase === "retention") pbEndRetention(true);
+  }
+
+  // Per-round retention summary on the finish screen (see finish()).
+  function pbRenderDoneList(log){
+    const el = $("doneList"); if(!el) return;
+    if(!log || !log.length){ el.classList.add("hidden"); el.innerHTML = ""; return; }
+    const t = T();
+    const rows = log.map(e=>{
+      const [left, right] = t.pbLogLine(e.round, fmtTime(Math.round(e.held)), fmtTime(e.target), e.early);
+      return `<div class="ivRow"><span>${esc(left)}</span><span>${esc(right)}</span></div>`;
+    });
+    const total = log.reduce((a,e)=>a+e.held, 0);
+    el.innerHTML = rows.join("") + `<div class="ivTotal">${t.pbTotalRetention}: ${fmtTime(Math.round(total))}</div>`;
+    el.classList.remove("hidden");
   }
 
   let clockTimer = 0;
@@ -3882,6 +4188,8 @@
     clearTimeout(nextRepTimer); nextRepTimer = 0;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
     if (S && S.rr_timer) clearInterval(S.rr_timer);
+    if (S && S.pb_timer) clearInterval(S.pb_timer);
+    if (S && S.pb_endTimer) clearTimeout(S.pb_endTimer);
 
     if(S && S.iv_savedCurves){
       curves.hold = S.iv_savedCurves.hold.slice();
@@ -3911,9 +4219,14 @@
         $("doneMsg").textContent = (total===1 ? T().rep : (T().rep + "s")) + " · " + fmtTime(elapsedSec);
     }
     
+    pbRenderDoneList(S && S.pb_log);
+
     cmdFinish();
     let gameResult = null;
-    if(S && S.startTime){
+    // S.noRecord: Power Breathing is deliberately not scored — see the block
+    // comment above pbBreathCue(). gameResult stays null, so renderFinishGame()
+    // hides the XP card by itself.
+    if(S && S.startTime && !S.noRecord){
       addHistory({
         at: Date.now(),
         goal: S.goal,

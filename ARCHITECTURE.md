@@ -35,6 +35,7 @@ of both `finish()` (`index.html:3565`) and `stopSession()` (`index.html:3621`).
 | `rate` | speech rate (0.5–2) |
 | `eyesClosed`, `guardExit`, `screenColor` | display/handling toggles — session-wide even for Interval Sequence; not varied per phase (a deliberate scope limit, see § 3) |
 | `scenario`, `sd_actionMs`, `sd_pauseMs`, `sd_startReps`, `sd_startHold`, `ta_target`, `rr_bpm`, `rr_step`, `livesOn`, `livesCount` | only populated when `goal === "scenario"` |
+| `pb_rounds`, `pb_roundIdx`, `pb_log`, `noRecord` | only populated when `scenario === "powerbreath"` — see § 3. `noRecord` is the one general-purpose field here: it gates the whole recording block in `finish()` |
 | `iv_phasePresets`, `iv_phaseObjs`, `iv_phaseIdx`, `iv_totalDone`, `iv_savedCurves`, `iv_breathe` | only populated when `scenario === "interval"` — see § 3 |
 
 Note: `totalReps`/`totalMin` above are set by `applyRepsConfig()` per the
@@ -208,10 +209,10 @@ is never rewritten to `"reps"` to achieve this).
 - `beginRep()` (`index.html:3296`): mirrors `armReady()` for reps 2..N, also
   calls `startReactionWindow()`.
 
-### Scenario path (the other six sub-modes)
+### Scenario path (the other seven sub-modes)
 
 - `armReadyScenario()` (`index.html:2654`): single dispatcher that inline-
-  initializes each of the **six** non-interval scenarios' fields in one
+  initializes each of the **seven** non-interval scenarios' fields in one
   large if/else chain, then calls `rhythmStart()` for `"rhythm"` as a
   special case (rhythm alone auto-starts, no press needed to boot).
 - `bootFirstPress()` (`index.html:2732`): shared boot logic (clock/wake-
@@ -220,12 +221,15 @@ is never rewritten to `"reps"` to achieve this).
   machines defined inside this one function as anonymous closures.
   `sd_hold`/`stopwatch`/`timeattack` have no equivalent timer (purely
   press/release driven); `rhythm` has its own separate `S.rr_timer` set up
-  in `rhythmStart()`.
+  in `rhythmStart()`; `powerbreath` starts its own `S.pb_timer` here too
+  (one added branch, right before the `sd_speed` one).
 - `pressStartStopwatch()` (`index.html:2910`): handles "start holding";
-  delegates immediately to `rhythmTap()` if scenario is `rhythm` (taps, not
-  holds). The release-grace resume branch calls the shared
+  delegates immediately to `pbPress()` for `powerbreath` and `rhythmTap()`
+  for `rhythm` — in both, a press is an event, not a hold. The release-grace resume branch calls the shared
   `resumeHeldRelease()` helper (`index.html:2889`, see § Known Issues).
-- `pressEndStopwatch()` (`index.html:2987`) → `finalizeStopwatchRelease()`
+- `pressEndStopwatch()` (`index.html:2987`) returns immediately for
+  `powerbreath` (nothing is ever held there) and otherwise goes on to
+  `finalizeStopwatchRelease()`
   (`index.html:2999`): ~120-line function with a big if/else-if chain over
   `S.scenario` (`sd_hold`, `sd_mixed`, `sd_speed`, else), duplicating much
   of what `completeRep()`/`finalizeRelease()` do for reps/time, reimplemented
@@ -269,12 +273,13 @@ recorded; `finish()` for natural end, always recorded).
 | `sd_mixed` | `S.sd_phase` ∈ {action, hold, pause} | action → hold (beat `sd_prevActionReps`) → hold (beat `sd_prevHold`, uses `mixedHoldCue`/`mixedHoldTargetCue`) → pause → action | own `S.sd_timer` (100ms tick, separate closure from sd_speed's) |
 | `timeattack` | none | continuous accumulation of `S.holdSec` until it reaches `S.ta_target` → `taComplete()` | none (RAF-driven via `stopwatchHoldLoop`) |
 | `rhythm` | implicit via `S.rr_countIn`/`S.rr_level` | count-in (4 beats) → tapping, level/BPM steps up every `rr_beatsPerLevel` hits, any miss → `tryLoseLife()`/`finish()` | own `S.rr_timer` (20ms tick, `rhythmTick`) |
+| `powerbreath` | `S.pb_phase` ∈ {breathe, retention, recovery, between, done} | per round: `pb_breaths` power breaths → retention on empty lungs (ends on target **or** a tap) → fixed recovery hold → next round → `finish()` | own `S.pb_timer` (50ms tick, `pbTick`) |
 
 `interval` is deliberately **not** in this table — it doesn't take the
 scenario path at all (see § 2). It's documented separately below.
 
 No lives support: `scenarioSupportsLives()` deliberately excludes `interval`
-(alongside `stopwatch`/`timeattack`) since there's no fail condition — a
+(alongside `stopwatch`/`timeattack`/`powerbreath`) since there's no fail condition — a
 fixed practice sequence, not a challenge to survive. No per-scenario
 personal-best record in `commitGameSession()` either, for the same reason
 (no natural "best" metric for a sequence of arbitrary preset-driven phases);
@@ -552,7 +557,71 @@ curves. Two distinct rules keep this safe:
    Sequence (and separately, a manually-stopped one), and confirmed the
    `lat.curves` `localStorage` blob was byte-identical before and after.
 
-### Naming-consistency notes (read before adding an 8th scenario)
+### Power Breathing (`S.scenario === "powerbreath"`)
+
+Wim-Hof-/Pranayama-inspired guided routine, and the **only mode in the app
+that is not press-gated at all**. Each round runs three phases:
+
+1. **Power breathing** — `breaths` full breaths at a fixed cadence
+   (`inhaleMs`/`exhaleMs`).
+2. **Retention** — hold on *empty* lungs, target `retentionSec`.
+3. **Recovery** — fixed hold on *full* lungs, `recoverySec`.
+
+**Data.** `PB_ROUTINES` (next to `IV_LEVELS`), three built-in routines
+(`short`/`standard`/`long`); `standard` is the markup default and is the
+routine as specified: 30 breaths @ 2.0 s / retention 60 s, 35 @ 1.8 s / 90 s,
+40 @ 1.8 s / 120 s, recovery 15 s throughout. A round is a flat
+`{breaths, inhaleMs, exhaleMs, retentionSec, recoverySec}` built by
+`pbRound()`. `pbRoutineSecs()` gives the upper-bound wall-clock length for
+the setup listing (upper bound because ending a retention early only
+shortens the session). Selected with `#pbRoutineSel` (in `SETTING_IDS`);
+`pbRenderRoutineInfo()` renders the read-only round listing, re-rendered
+from `applyRuntimeI18n()` on a language switch — same pattern as
+`ivRenderLevelInfo()`, and both use the shared `.routineInfo` CSS class.
+
+**State machine.** One `setInterval` (`S.pb_timer`, 50 ms, `pbTick()`)
+drives everything — one tick point instead of nested `setTimeout` chains,
+and therefore exactly one line in `teardownSessionTimers()` (plus
+`S.pb_endTimer`, the short delay that lets the closing "exhale fully" cue
+land before `finish()` swaps the screen). Fields: `pb_rounds`, `pb_roundIdx`,
+`pb_phase`, `pb_breathIdx`, `pb_isInhale`, `pb_halfEndTs`, `pb_phaseEndTs`,
+`pb_retStartTs`, `pb_lastCountSec`, `pb_pendingNext`, `pb_log`.
+`pb_phase` also takes `"between"` (3 s pause between rounds) and `"done"`.
+
+**Input.** The entire integration into the press engine is two lines:
+`pressStartStopwatch()` routes to `pbPress()`, `pressEndStopwatch()` returns
+early. `pbPress()` boots the session on the first press (through the shared
+`bootFirstPress()`, which supplies clock/wake-lock/audio-resume/exit-guard)
+and otherwise does exactly one thing — end the retention early. Space/Enter
+work for free via the existing `keydown` handler. `holding` is never set, so
+`pressEnd()`'s `if(!holding) return` already short-circuits the release path
+even without the explicit guard.
+
+**Retention timing.** Ends on whichever comes first: the target elapsing
+(auto-advance) or a tap. Both push `{round, held, target, early}` onto
+`S.pb_log` with the time *actually* held; `pbRenderDoneList()` turns that
+into the per-round summary in `#doneList` on the finish screen (hidden for
+every other mode, since `finish()` calls it with `S.pb_log` undefined).
+
+**Cue design.** During the breathing phase the cue *kind* stays `"up"` for
+the whole phase — inhale/exhale is carried by the big text, the rising and
+falling `setFill()`, and the two-pitch `pbBreathCue()`. Alternating the cue
+kind would have driven `applyScreenColor()` back and forth at a 0.9 s
+cadence; keeping it fixed means `applyScreenColor()` needed no
+`powerbreath` branch at all. Speech fires only every 10th breath, because
+`say()` calls `synth.cancel()` first and would otherwise just cut off the
+previous count.
+
+**Not scored, deliberately.** `buildPlan()` sets `cfg.noRecord = true`, and
+`finish()`'s recording block is gated on `!S.noRecord` — no `addHistory()`,
+no `setPR()`, no `commitGameSession()`. Reasoning: a retention on empty
+lungs is a different discipline from this app's full-lung hold PB, and the
+routine has no rep count worth converting to XP. `gameResult` stays `null`,
+so `renderFinishGame()` hides the XP card by itself. Knock-on effects worth
+knowing: such a session does not feed the daily streak and does not appear
+in the stats box.
+
+### Naming-consistency notes (read before adding a 9th scenario)
 
 - **`sd_` prefix** is used for `sd_hold`/`sd_speed`/`sd_mixed` fields, but
   `sd_hold` never sets `S.sd_phase` — the prefix implies a phase machine
@@ -646,10 +715,10 @@ through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 `"lat.camOnboarded"` — inconsistent but harmless (all share the `lat.`
 prefix).
 
-`SETTING_IDS` (`index.html:1740`, 55 element IDs — 10 are the Interval
+`SETTING_IDS` (`index.html:1740`, 56 element IDs — 10 are the Interval
 Sequence scenario's fields: `ivLevelSel` (built-in level or `custom`),
 `ivPhaseCount` + `ivPhasePreset1..8`, each a `<select>` of saved preset
-names) + `readAll()`/
+names; plus `pbRoutineSel` for Power Breathing) + `readAll()`/
 `writeAll()` (`index.html:1751`/`1759`) round-trip the settings form through
 `lat.settings` on every change (debounced 400ms). `writeAll()` also contains
 a legacy migration shim: old blobs with `o.rest` but no `o.minRest` get
