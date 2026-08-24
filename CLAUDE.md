@@ -81,12 +81,14 @@ based on `S.goal === "scenario" && S.scenario !== "interval"`:
   dispatch points above, so it rides the entire reps engine unmodified while
   still being excluded from both the Reps-mode and Time-mode personal-best
   records and correctly tagged in history.
-- **Scenario** (`S.goal === "scenario"`, the other 6 sub-modes — see table
+- **Scenario** (`S.goal === "scenario"`, the other 7 sub-modes — see table
   below): `armReadyScenario()` → `bootFirstPress()` → `pressStartStopwatch()`
   / `pressEndStopwatch()` → `finalizeStopwatchRelease()`, driven by
   `stopwatchHoldLoop()` (timestamp-based, not delta-integrated) plus
-  per-scenario timers (`S.sd_timer`, `S.rr_timer`). Every one of these is
-  press-gated.
+  per-scenario timers (`S.sd_timer`, `S.rr_timer`, `S.pb_timer`). All of
+  these are press-gated **except `powerbreath`**, which is fully
+  timer-driven — a press there only boots the session and ends the retention
+  early (see "Power Breathing" below).
 
 Both paths funnel into `finish()` (`index.html:3565`) on success/game-over —
 this is what records history/gamification. Manually hitting Stop always
@@ -104,6 +106,7 @@ an aborted session is never recorded, only a natural end is.
 | `sd_mixed` | `S.sd_phase`: action → hold → pause | own `S.sd_timer` |
 | `timeattack` | none — accumulate hold time to a target | none (RAF-driven) |
 | `rhythm` | implicit, via `S.rr_level`/`S.rr_countIn` | own `S.rr_timer` |
+| `powerbreath` | `S.pb_phase`: breathe → retention → recovery, per round | own `S.pb_timer` |
 
 `interval` is deliberately **not** in this table — it never calls
 `armReadyScenario()` (see "Interval Sequence" below).
@@ -215,6 +218,44 @@ otherwise upgrading would silently replace a hand-built sequence with Level
 `<option>` is a silent no-op and used to drop every saved phase assignment
 on reload.
 
+**Power Breathing** (`S.scenario === "powerbreath"`, Wim-Hof-/Pranayama-
+inspired): the only mode in the app that is **not press-gated at all**. Each
+round runs power breathing → **retention** (hold on *empty* lungs) →
+**recovery** (fixed hold on *full* lungs), driven entirely by one interval
+timer `S.pb_timer` (50 ms, `pbTick()`), modelled on Rhythm Rush — which is
+also timer-driven and where a press means "event", not "hold". Rounds come
+from `PB_ROUTINES` (three built-in routines, `standard` = 3 rounds is the
+default, picked with `#pbRoutineSel`); each round is
+`{breaths, inhaleMs, exhaleMs, retentionSec, recoverySec}`.
+
+The whole integration into the press engine is **two lines**:
+`pressStartStopwatch()` routes to `pbPress()` and `pressEndStopwatch()`
+returns early — exactly the pattern `rhythm` already uses there. `pbPress()`
+boots the session on the first press (via the shared `bootFirstPress()`,
+which supplies clock/wake-lock/audio-resume/exit-guard) and otherwise only
+does one thing: end the retention early. Space/Enter work for free, since the
+existing `keydown` handler calls `pressStart()` anyway. `holding` is never
+set, so `pressEnd()`'s `if(!holding) return` already made the release path a
+no-op even before the explicit guard.
+
+Retention ends **either** when the target elapses (auto-advance) **or** on a
+tap; both book the *actually held* time into `S.pb_log`, which
+`pbRenderDoneList()` turns into the per-round summary in `#doneList` on the
+finish screen. During the breathing phase the cue kind stays `"up"` for the
+whole phase and in/out is carried by the big text, the rising/falling
+`setFill()` and the two-pitch `pbBreathCue()` — deliberately *not* by
+switching cue kinds, which would make the screen-color layer flicker at a
+0.9 s cadence (`applyScreenColor()` is untouched). Speech fires only every
+10th breath, because `say()` cancels the previous utterance.
+
+**Deliberately not scored**: `buildPlan()` sets `cfg.noRecord = true` and
+`finish()`'s recording block is gated on `!S.noRecord`, so no history, no XP,
+no records, no PB — a retention on empty lungs isn't comparable to this app's
+full-lung hold PB, and there is no rep count worth turning into XP. Knock-on
+effect to keep in mind: such a session also doesn't feed the daily streak or
+the stats box. `scenarioSupportsLives()` excludes it automatically (there is
+no fail condition).
+
 **Cue/feedback layer**: three *different*, overlapping small dispatchers —
 `setCue(kind,...)` (`index.html:3365`, `kind` ∈ `"up"/"down"/"rest"`, also
 always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2212`, `kind` ∈
@@ -233,10 +274,11 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 55 element
+**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 56 element
 IDs — 10 of them belong to the Interval Sequence scenario: `ivLevelSel`
 (built-in level or `custom`) plus `ivPhaseCount` + `ivPhasePreset1..8`, each
-a `<select>` of saved preset names rather than a raw numeric field)
+a `<select>` of saved preset names rather than a raw numeric field; plus
+`pbRoutineSel` for Power Breathing)
 + `KV`/`readAll()`/`writeAll()`
 (`index.html:962`/`1751`) round-trip the whole settings form through
 `localStorage` key `lat.settings`. `buildPlan()` independently re-reads the
@@ -360,8 +402,8 @@ Still open, deliberately left as documented rather than fixed:
   (`applyRepsConfig()` carries `noisePenalty`/`noisePenaltyX`/`noiseThr`).
 - Lives system (`tryLoseLife()`, `index.html:2600`) is wired into exactly
   `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack`/
-  `interval` have no fail condition, so lives are structurally inapplicable
-  there (`scenarioSupportsLives()`, `index.html:2265`).
+  `interval`/`powerbreath` have no fail condition, so lives are structurally
+  inapplicable there (`scenarioSupportsLives()`, `index.html:2265`).
 
 ## Workflow notes for this repo
 
