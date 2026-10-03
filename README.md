@@ -9,7 +9,7 @@ mobile and desktop.
 - **Three session goals**: Reps, Time, and Scenario training.
 - **Scenario sub-modes**: Stopwatch, Sudden Death Hold, Sudden Death Speed,
   Sudden Death Mixed, Time Attack, Rhythm Rush, and Interval Sequence (five
-  built-in levels or your own presets as phases) — each a different
+  built-in levels, a CO₂ and an O₂ table, or your own presets as phases) — each a different
   challenge format with its own pacing and (for the fail-based modes) an
   optional Lives system so a miss doesn't have to end the session instantly.
 - **Gamification**: XP, ranks, streaks, and personal-best records across

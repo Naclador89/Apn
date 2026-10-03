@@ -454,6 +454,7 @@
   .ivPen:empty{display:none}
   .routineInfo .ivPen{margin:4px 0 10px}
   .ivPenAmt{display:inline-flex;align-items:center;gap:4px;color:var(--text)}
+  .ivPenChks{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 7px}
   .ivPen input[type="number"]{width:44px;padding:6px 7px;font-size:14px;border-radius:8px}
   .ivPenChk{display:inline-flex;align-items:center;gap:5px;min-height:36px;cursor:pointer;color:var(--text)}
   .ivPenChk input{width:18px;height:18px;margin:0;accent-color:var(--rise);cursor:pointer}
@@ -608,6 +609,8 @@
               <option value="l3" data-i18n="ivLevel3">Level 3 · Pro</option>
               <option value="l4" data-i18n="ivLevel4">Level 4 · Extreme</option>
               <option value="l5" data-i18n="ivLevel5">Level 5 · Ultra Extreme</option>
+              <option value="co2" data-i18n="ivLevelCo2">CO₂ table · urge tolerance</option>
+              <option value="o2" data-i18n="ivLevelO2">O₂ table · longer holds</option>
               <option value="custom" data-i18n="optIvCustom">Custom (own presets)</option>
             </select>
             <div class="hint" data-i18n="hintIvLevel">Ready-made training sequences. Pick “Custom” to build the phases yourself from saved presets.</div>
@@ -1369,7 +1372,10 @@
         ivLevel2Desc:"Erste Strafen (+3 s): Tempo-Phasen ahnden Spätstarts, Halte-Phasen zu kurzes Halten, der Flow beides.",
         ivLevel3Desc:"Strafen +5 s nach demselben Muster, das Burnout kostet bei jedem Fehler +8 s.",
         ivLevel4Desc:"Strafen schon ab dem Warm-up (+4 s), in den Intervallen +8 s, im Burnout Set +10 s.",
-        ivLevel5Desc:"Jede Phase außer dem Cool-down ist strafbewehrt: +5 s bis +12 s im Finale."
+        ivLevel5Desc:"Jede Phase außer dem Cool-down ist strafbewehrt: +5 s bis +12 s im Finale.",
+        ivLevelCo2:"CO₂-Tabelle · Atemreiz-Toleranz", ivLevelO2:"O₂-Tabelle · längere Holds",
+        ivLevelCo2Desc:"Klassische Freitaucher-Tabelle: 7 Runden à 20 s halten, die Pause dazwischen wird jedes Mal 5 s kürzer (40 → 15 s). Trainiert, den Atemreiz auszuhalten. Nur an Land, nie im Wasser.",
+        ivLevelO2Desc:"Das Gegenstück: Die Haltezeit steigt jede Runde um 5 s (10 → 35 s), die Pause bleibt bei 30 s. Trainiert längere Holds. Nur an Land, nie im Wasser — höre bei Schwindel sofort auf."
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1620,6 +1626,9 @@
         ivLevel3Desc:"Penalties of +5 s in the same pattern; every mistake in the Burnout costs +8 s.",
         ivLevel4Desc:"Penalties from the warm-up on (+4 s), +8 s in the intervals, +10 s in the Burnout Set.",
         ivLevel5Desc:"Every phase but the cool-down carries a penalty: +5 s up to +12 s in the finale.",
+        ivLevelCo2:"CO₂ table · urge tolerance", ivLevelO2:"O₂ table · longer holds",
+        ivLevelCo2Desc:"Classic freediving table: 7 rounds of 20 s holds, the rest in between gets 5 s shorter each time (40 → 15 s). Trains tolerating the urge to breathe. Dry training only, never in water.",
+        ivLevelO2Desc:"The counterpart: the hold grows by 5 s each round (10 → 35 s), the rest stays at 30 s. Trains longer holds. Dry training only, never in water — stop at once if you feel dizzy.",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1909,6 +1918,24 @@
     baseHold: 1, holdChance: 0, minHold: 1, maxHold: 1,
     minRest: secs, maxRest: secs,
   });
+  // Apnea table (CO2/O2): one phase per round, each a reps-mode phase with
+  // exactly one hold, so a round ends the moment its hold is done — never on
+  // a clock. (A time phase would let a strict-mode restart or a slow start
+  // eat the round's rest; here the rest is always exactly the table's.)
+  // nextRep() advances the phase *before* counting down the rest, so the
+  // rest after round k is drawn from round k+1: round k carries the rest that
+  // follows round k-1, and round 1's is never used (the first press boots the
+  // session). `restsBetween` has one entry fewer than `holds`; ivRestAfter
+  // and ivSecs (hold + following rest) only feed the setup listing.
+  const ivTable = (prefix, holds, restsBetween) => holds.map((hold, k) => ({
+    ...IV_PHASE_BASE, goal:"reps", minReps:1, maxReps:1,
+    label: `${prefix} · ${k+1}`,
+    baseHold: hold, holdChance: 100, minHold: hold, maxHold: hold,
+    minRest: k ? restsBetween[k-1] : 0, maxRest: k ? restsBetween[k-1] : 0,
+    ivRestAfter: k < restsBetween.length ? restsBetween[k] : null,
+    ivSecs: hold + (k < restsBetween.length ? restsBetween[k] : 0),
+    ivPenDefault: null,
+  }));
 
   // How many phases a hand-assembled sequence may have. Built-in levels are
   // not bound by this — iv_phasePresets is just an array — but the levels
@@ -1991,6 +2018,18 @@
       ivPh("Intervall 3 (Max Limit Hold)", 180, 30, 5, penShort(10)),
       ivMix("Ultra Chaos", 150, [5,20,3,25], [1,3,1,4], penBoth(10)),
       ivPh("Final Oxygen Depletion", 60, 12, 1, penBoth(12)),
+      ivBreathe("Cool-down", 60),
+    ]},
+    // Classic dry apnea tables (never in or near water — see the description).
+    // No default penalties: the table itself is the load.
+    // CO2: same hold every round, the rest shrinks 40 -> 15 s.
+    co2: { nameKey:"ivLevelCo2", descKey:"ivLevelCo2Desc", phases:[
+      ...ivTable("CO₂", [20,20,20,20,20,20,20], [40,35,30,25,20,15]),
+      ivBreathe("Cool-down", 60),
+    ]},
+    // O2: the hold grows 10 -> 35 s, the rest stays 30 s.
+    o2: { nameKey:"ivLevelO2", descKey:"ivLevelO2Desc", phases:[
+      ...ivTable("O₂", [10,15,20,25,30,35], [30,30,30,30,30]),
       ivBreathe("Cool-down", 60),
     ]},
   };
@@ -2896,9 +2935,13 @@
     return `<label class="ivPenAmt" title="${esc(t.ivPenLabel)}">+ `
       + `<input id="ivPenX${i+1}" type="number" inputmode="numeric" min="0" step="1" value="${p.x}" data-ivpen="x" aria-label="${esc(t.ariaIvPenX(i+1))}">`
       + ` <span>${esc(info.time ? t.ivPenUnitSecs : t.ivPenUnitReps)}</span></label>`
+      // the three checkmarks wrap as one group: on a narrow screen they move
+      // to the next line together instead of leaving one orphaned
+      + `<span class="ivPenChks">`
       + chk("late", t.ivPenLate, info.breathe)
       + chk("short", t.ivPenShort, info.breathe)
-      + chk("noise", t.ivPenNoise, voiceOn, voiceOn ? t.ivPenNoiseVoiceOff : "");
+      + chk("noise", t.ivPenNoise, voiceOn, voiceOn ? t.ivPenNoiseVoiceOff : "")
+      + `</span>`;
   }
   // Renders the controls in exactly one place — the level listing or the
   // custom phase rows — and empties the other, so the ivPenX<n> ids stay unique.
@@ -2917,8 +2960,12 @@
     const t = T();
     const span = (lo, hi) => lo===hi ? `${lo}s` : `${lo}–${hi}s`;
     const rows = lvl.phases.map((p, i) => {
+      // a table round shows the rest that *follows* it (see ivTable())
+      const rest = p.ivRestAfter !== undefined
+        ? (p.ivRestAfter != null ? `${p.ivRestAfter}s` : "")
+        : span(p.minRest, p.maxRest);
       const detail = p.breathe ? t.ivBreatheOnly
-        : `${span(p.minHold, p.maxHold)} / ${span(p.minRest, p.maxRest)}`;
+        : span(p.minHold, p.maxHold) + (rest ? ` / ${rest}` : "");
       return `<div class="ivRow"><span>${i+1} · ${esc(p.label)}</span><span>${p.ivSecs}s · ${detail}</span></div>`
         + `<div class="ivPen${ivPenActive(ivPenGet(i)) ? " active" : ""}" data-ivpen-idx="${i}">${ivPenLineHTML(i)}</div>`;
     });
