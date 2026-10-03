@@ -7,18 +7,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#14161d">
+<meta name="theme-color" content="#111319">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%20width%3D%22512%22%20height%3D%22512%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22bg%22%20cx%3D%2250%25%22%20cy%3D%2228%25%22%20r%3D%2295%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23242b3b%22%2F%3E%3Cstop%20offset%3D%2258%25%22%20stop-color%3D%22%2314161d%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230d0e13%22%2F%3E%3C%2FradialGradient%3E%3ClinearGradient%20id%3D%22or%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23F8BF57%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23E89A25%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20x%3D%2216%22%20y%3D%2216%22%20width%3D%22480%22%20height%3D%22480%22%20rx%3D%22116%22%20fill%3D%22url%28%23bg%29%22%2F%3E%3C%21--%20hold%20ring%20with%20a%20gap%20at%20the%20top%20%28echoes%20the%20app%27s%20hold%20button%3B%20%27gasping%20for%20more%27%20%3D%20not%20quite%20closed%29%20--%3E%3Cpath%20d%3D%22M340.9%20141.8%20A150%20150%200%201%201%20171.1%20141.8%22%0A%20%20%20%20%20%20%20%20fill%3D%22none%22%20stroke%3D%22url%28%23or%29%22%20stroke-width%3D%2248%22%20stroke-linecap%3D%22round%22%2F%3E%3C%21--%20breath%20waveform%20through%20the%20centre%20--%3E%3Cpath%20d%3D%22M182%20268%20q37%20-54%2074%200%20t74%200%22%0A%20%20%20%20%20%20%20%20fill%3D%22none%22%20stroke%3D%22%23F8BF57%22%20stroke-width%3D%2227%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* self-hosted variable fonts (latin subset, SIL OFL 1.1 — see fonts/LICENSE.txt):
+     no third-party request, and they keep working offline once cached */
+  @font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;
+    src:url(fonts/inter-latin.woff2) format("woff2")}
+  @font-face{font-family:"Space Grotesk";font-style:normal;font-weight:300 700;font-display:swap;
+    src:url(fonts/space-grotesk-latin.woff2) format("woff2")}
   :root{
     --ink:#111319;
     --ink-2:#191d27;
-    --ink-3:#23273400;
     --line:#2b3040;
     --text:#EDEBE4;
     --muted:#9aa0b0;
@@ -432,6 +434,66 @@
   }
   #livesCountField{margin-top:10px}
 
+  /* ---------- utilities (replace one-off inline styles) ---------- */
+  .mb0{margin-bottom:0}
+  .mb12{margin-bottom:12px}
+  .mt6{margin-top:6px}
+  .mt10{margin-top:10px}
+  .subField{margin:12px 0 0}
+  .hint.hintTight{margin-top:2px}
+  .btnRow{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .lh16{line-height:1.6}
+  #noiseVoiceHint{margin-top:4px;color:var(--rise)}
+  #noiseThr{margin-top:14px;accent-color:var(--rise)}
+  #micErr{color:var(--bad);min-height:0}
+  #doneList{text-align:left}
+
+  /* ---------- form validation: the offending field is outlined + focused ---------- */
+  input.invalid,select.invalid{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+  .presetMsg{min-height:0}
+  .presetMsg.bad{color:var(--bad)}
+
+  /* Start button stays reachable at the bottom of the long setup form */
+  .startBar{position:sticky;bottom:0;z-index:4;margin-top:16px;
+    padding:10px 0 calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(17,19,25,0),var(--ink) 30%)}
+  .startBar .start{margin-top:0}
+  .startBar .err{margin-top:8px;min-height:0}
+  .startBar .err:empty{display:none}
+
+  /* ---------- modal dialogs (stop confirmation, safety notice) ---------- */
+  .modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:rgba(9,10,14,.78)}
+  .modal.hidden{display:none !important}
+  .modalCard{width:100%;max-width:400px;background:linear-gradient(180deg,var(--ink-2),#181b24);
+    border:1px solid var(--line);border-radius:var(--radius);padding:22px;
+    display:flex;flex-direction:column;gap:10px}
+  .modalCard h2{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:20px;color:var(--rise)}
+  .modalCard p,.modalCard li{font-size:14px;color:var(--text);line-height:1.45}
+  .modalCard ul{padding-left:20px;display:flex;flex-direction:column;gap:6px}
+  .modalCard .start{margin-top:6px}
+  .modalCard .ghost{width:100%}
+  .modalCard .ghost.danger{color:var(--bad);border-color:rgba(239,125,112,.45)}
+
+  /* ---------- finish screen summary + repeat ---------- */
+  .done .sum{color:var(--text);font-size:14px;margin-top:4px}
+  .done .sum b{color:var(--rise);font-family:"Space Grotesk",sans-serif}
+  .finishGame .start{margin-top:4px}
+
+  /* ---------- touch targets (~44px, WCAG 2.5.5) ---------- */
+  .ghost{min-height:44px}
+  .curveHeader button{min-height:36px}
+  .overlay .toolbar button{min-height:40px}
+
+  /* ---------- reduced motion: no pulsing, popping or sliding ---------- */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+      transition-duration:.01ms !important}
+    .screenColor.green{opacity:.4}
+    .screenColor.yellow{opacity:.5}
+    .screenColor.red{opacity:.7}
+  }
+
   /* keep everything usable on short / landscape screens */
   @media (max-height:560px){
     .cue{font-size:clamp(20px,7vh,32px);margin:2px 0 1px}
@@ -458,7 +520,7 @@
     <details class="panel primary" id="secGoal" open>
       <summary><span data-i18n="uiGoalTitle">Session goal</span> <span class="sumSub" id="sumGoal"></span></summary>
       <div class="body">
-        <div class="field" style="margin-bottom:12px">
+        <div class="field mb12">
           <div class="seg" id="goalSeg" role="group" aria-label="Session goal" data-i18n-aria="ariaSessionGoal">
             <button type="button" data-goal="reps" aria-pressed="true" data-i18n="goalReps">Reps</button>
             <button type="button" data-goal="time" aria-pressed="false" data-i18n="goalTime">Time</button>
@@ -469,18 +531,18 @@
         <div class="field" id="repsField">
           <label class="lbl" data-i18n="labelReps">Number of reps (random in range)</label>
           <div class="row">
-            <input id="minReps" type="number" min="1" value="15" aria-label="Minimum reps" data-i18n-aria="ariaMinReps">
-            <input id="maxReps" type="number" min="1" value="25" aria-label="Maximum reps" data-i18n-aria="ariaMaxReps">
+            <input id="minReps" type="number" inputmode="numeric" min="1" step="1" value="15" aria-label="Minimum reps" data-i18n-aria="ariaMinReps">
+            <input id="maxReps" type="number" inputmode="numeric" min="1" step="1" value="25" aria-label="Maximum reps" data-i18n-aria="ariaMaxReps">
           </div>
           <div class="hint" data-i18n="hintReps">The app picks a random number between min and max.</div>
         </div>
 
         <div class="field hidden" id="timeField">
           <label class="lbl" data-i18n="labelDuration">Session duration (minutes)</label>
-          <input id="totalMin" type="number" min="1" value="5" aria-label="Duration in minutes" data-i18n-aria="ariaDurationMin">
+          <input id="totalMin" type="number" inputmode="decimal" min="1" step="0.5" value="5" aria-label="Duration in minutes" data-i18n-aria="ariaDurationMin">
         </div>
 
-        <div class="field hidden" id="scenarioField" style="margin-bottom:0">
+        <div class="field hidden mb0" id="scenarioField">
           <label class="lbl" data-i18n="labelScenario">Scenario</label>
           <select id="scenarioSel" aria-label="Choose scenario" data-i18n-aria="ariaChooseScenario">
             <option value="stopwatch" selected data-i18n="scenarioStopwatch">Stopwatch — hold as long as you can</option>
@@ -493,36 +555,36 @@
             <option value="powerbreath" data-i18n="scenarioPowerbreath">Power Breathing — 3-phase cycle</option>
           </select>
           <div class="hint" id="scenarioHint">Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold, shows the rest since your last hold, and remembers your longest hold this session.</div>
-          <div class="field hidden" id="sdSpeedField" style="margin:12px 0 0">
+          <div class="field hidden subField" id="sdSpeedField">
             <label class="lbl" id="sdSpeedLbl" data-i18n="labelActionPause">Action / Pause length (seconds)</label>
             <div class="row">
-              <input id="sdActionSec" type="number" min="5" max="600" step="1" value="60" aria-label="Action phase length in seconds" data-i18n-aria="ariaActionSec">
-              <input id="sdPauseSec" type="number" min="3" max="300" step="1" value="20" aria-label="Pause phase length in seconds" data-i18n-aria="ariaPauseSec">
+              <input id="sdActionSec" type="number" inputmode="numeric" min="5" max="600" step="1" value="60" aria-label="Action phase length in seconds" data-i18n-aria="ariaActionSec">
+              <input id="sdPauseSec" type="number" inputmode="numeric" min="3" max="300" step="1" value="20" aria-label="Pause phase length in seconds" data-i18n-aria="ariaPauseSec">
             </div>
             <div class="hint" id="sdSpeedHint" data-i18n="hintActionPause">Left = action phase, right = pause phase. Each round you must match or beat the reps from the previous action phase.</div>
           </div>
-          <div class="field hidden" id="sdMixedField" style="margin:12px 0 0">
+          <div class="field hidden subField" id="sdMixedField">
             <label class="lbl" data-i18n="labelMixedStart">Mixed — start values (round 1)</label>
             <div class="row">
-              <input id="sdStartReps" type="number" min="1" max="50" step="1" value="1" aria-label="Start rep target for round 1" data-i18n-aria="ariaStartReps">
-              <input id="sdStartHold" type="number" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1" data-i18n-aria="ariaStartHold">
+              <input id="sdStartReps" type="number" inputmode="numeric" min="1" max="50" step="1" value="1" aria-label="Start rep target for round 1" data-i18n-aria="ariaStartReps">
+              <input id="sdStartHold" type="number" inputmode="decimal" min="0" max="120" step="0.5" value="0" aria-label="Start hold seconds for round 1" data-i18n-aria="ariaStartHold">
             </div>
             <div class="hint" data-i18n="hintMixedStart">Left: reps in round 1 · right: minimum hold (s) in round 1. Each round must then raise both.</div>
           </div>
-          <div class="field hidden" id="taField" style="margin:12px 0 0">
+          <div class="field hidden subField" id="taField">
             <label class="lbl" data-i18n="labelTaTarget">Target total hold (seconds)</label>
-            <input id="taTarget" type="number" min="10" max="900" step="5" value="60" aria-label="Target total hold seconds" data-i18n-aria="ariaTaTarget">
+            <input id="taTarget" type="number" inputmode="numeric" min="10" max="900" step="5" value="60" aria-label="Target total hold seconds" data-i18n-aria="ariaTaTarget">
             <div class="hint" data-i18n="hintTa">Reach this much accumulated hold time as fast as you can — score = target ÷ your time.</div>
           </div>
-          <div class="field hidden" id="rrField" style="margin:12px 0 0">
+          <div class="field hidden subField" id="rrField">
             <label class="lbl" data-i18n="labelRr">Start tempo (BPM) / speed-up per level</label>
             <div class="row">
-              <input id="rrBpm" type="number" min="20" max="200" step="5" value="45" aria-label="Start BPM" data-i18n-aria="ariaRrBpm">
-              <input id="rrStep" type="number" min="1" max="40" step="1" value="8" aria-label="BPM step per level" data-i18n-aria="ariaRrStep">
+              <input id="rrBpm" type="number" inputmode="numeric" min="20" max="200" step="5" value="45" aria-label="Start BPM" data-i18n-aria="ariaRrBpm">
+              <input id="rrStep" type="number" inputmode="numeric" min="1" max="40" step="1" value="8" aria-label="BPM step per level" data-i18n-aria="ariaRrStep">
             </div>
             <div class="hint" data-i18n="hintRr">Tap the button on every beat. Every 8 hits it speeds up. One miss ends the run.</div>
           </div>
-          <div class="field hidden" id="ivField" style="margin:12px 0 0">
+          <div class="field hidden subField" id="ivField">
             <label class="lbl" for="ivLevelSel" data-i18n="labelIvLevel">Template</label>
             <select id="ivLevelSel" aria-label="Sequence template" data-i18n-aria="ariaIvLevel">
               <option value="l1" data-i18n="ivLevel1">Level 1 · Beginner</option>
@@ -534,45 +596,14 @@
             </select>
             <div class="hint" data-i18n="hintIvLevel">Ready-made training sequences. Pick “Custom” to build the phases yourself from saved presets.</div>
             <div class="routineInfo hidden" id="ivLevelInfo"></div>
-            <div class="field" id="ivPhaseCountField" style="margin-top:10px">
+            <div class="field mt10" id="ivPhaseCountField">
             <label class="lbl" data-i18n="labelIvPhaseCount">Number of phases</label>
-            <input id="ivPhaseCount" type="number" min="2" max="8" step="1" value="3" aria-label="Number of phases" data-i18n-aria="ariaIvPhaseCount">
+            <input id="ivPhaseCount" type="number" inputmode="numeric" min="2" max="8" step="1" value="3" aria-label="Number of phases" data-i18n-aria="ariaIvPhaseCount">
             <div class="hint" data-i18n="hintIvPhaseCount">How many phases the sequence runs through (2–8), each with its own duration, hold, and rest length.</div>
-            <div class="field" id="ivPhaseRow1" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead1">Phase 1</span>
-              <select id="ivPhasePreset1" aria-label="Phase 1 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field" id="ivPhaseRow2" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead2">Phase 2</span>
-              <select id="ivPhasePreset2" aria-label="Phase 2 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field" id="ivPhaseRow3" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead3">Phase 3</span>
-              <select id="ivPhasePreset3" aria-label="Phase 3 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field hidden" id="ivPhaseRow4" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead4">Phase 4</span>
-              <select id="ivPhasePreset4" aria-label="Phase 4 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field hidden" id="ivPhaseRow5" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead5">Phase 5</span>
-              <select id="ivPhasePreset5" aria-label="Phase 5 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field hidden" id="ivPhaseRow6" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead6">Phase 6</span>
-              <select id="ivPhasePreset6" aria-label="Phase 6 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field hidden" id="ivPhaseRow7" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead7">Phase 7</span>
-              <select id="ivPhasePreset7" aria-label="Phase 7 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
-            <div class="field hidden" id="ivPhaseRow8" style="margin-top:10px">
-              <span class="sublbl" id="ivPhaseHead8">Phase 8</span>
-              <select id="ivPhasePreset8" aria-label="Phase 8 preset"><option value="" data-i18n="optLoad">– load –</option></select>
-            </div>
+            <div id="ivPhaseRows"></div>
             </div>
           </div>
-          <div class="field hidden" id="pbField" style="margin:12px 0 0">
+          <div class="field hidden subField" id="pbField">
             <label class="lbl" for="pbRoutineSel" data-i18n="labelPbRoutine">Routine</label>
             <select id="pbRoutineSel" aria-label="Breathing routine" data-i18n-aria="ariaPbRoutine">
               <option value="short" data-i18n="pbRoutineShort">Starter · 2 rounds</option>
@@ -582,17 +613,17 @@
             <div class="hint" data-i18n="hintPbRoutine">Each round: power breathing, then a hold on empty lungs, then a 15 s recovery hold on full lungs.</div>
             <div class="routineInfo" id="pbRoutineInfo"></div>
           </div>
-          <div class="field hidden" id="livesField" style="margin:12px 0 0">
-            <div class="toggle" style="margin-bottom:0">
+          <div class="field hidden subField" id="livesField">
+            <div class="toggle mb0">
               <div>
                 <label class="lbl" for="livesOn" data-i18n="labelLives">Lives</label>
-                <div class="hint" style="margin-top:2px" data-i18n="hintLives">Survive a mistake instead of instant game over — retry the same target using one of your lives.</div>
+                <div class="hint hintTight" data-i18n="hintLives">Survive a mistake instead of instant game over — retry the same target using one of your lives.</div>
               </div>
               <label class="switch"><input id="livesOn" type="checkbox"><span class="track"><span class="knob"></span></span></label>
             </div>
             <div class="field hidden" id="livesCountField">
               <label class="lbl" data-i18n="labelLivesCount">Number of lives</label>
-              <input id="livesCount" type="number" min="1" max="9" step="1" value="3" aria-label="Number of lives" data-i18n-aria="ariaLivesCount">
+              <input id="livesCount" type="number" inputmode="numeric" min="1" max="9" step="1" value="3" aria-label="Number of lives" data-i18n-aria="ariaLivesCount">
             </div>
           </div>
         </div>
@@ -604,15 +635,15 @@
       <div class="body">
         <div class="field" id="fBase">
           <label class="lbl" data-i18n="labelHoldPerRep">Hold time per rep (seconds)</label>
-          <input id="baseHold" type="number" min="0.1" step="0.1" value="2" aria-label="Base hold time" data-i18n-aria="ariaBaseHold">
+          <input id="baseHold" type="number" inputmode="decimal" min="0.1" step="0.1" value="2" aria-label="Base hold time" data-i18n-aria="ariaBaseHold">
           <div class="hint" data-i18n="hintHoldPerRep">How long you must keep the button pressed for the rep to count. Values below 1 s are allowed (e.g. 0.5).</div>
         </div>
 
         <div class="field" id="fRest">
           <label class="lbl" data-i18n="labelRest">Rest between reps (seconds, random in range)</label>
           <div class="row">
-            <input id="minRest" type="number" min="0" value="3" aria-label="Minimum rest" data-i18n-aria="ariaMinRest">
-            <input id="maxRest" type="number" min="0" value="3" aria-label="Maximum rest" data-i18n-aria="ariaMaxRest">
+            <input id="minRest" type="number" inputmode="numeric" min="0" step="1" value="3" aria-label="Minimum rest" data-i18n-aria="ariaMinRest">
+            <input id="maxRest" type="number" inputmode="numeric" min="0" step="1" value="3" aria-label="Maximum rest" data-i18n-aria="ariaMaxRest">
           </div>
           <div class="hint" data-i18n="hintRest">Equal min and max = fixed rest.</div>
           <div class="curveBox">
@@ -627,15 +658,15 @@
 
         <div class="field" id="fChance">
           <label class="lbl" data-i18n="labelChance">Chance of a long hold (%)</label>
-          <input id="holdChance" type="number" min="0" max="100" value="25" aria-label="Long-hold chance" data-i18n-aria="ariaHoldChance">
+          <input id="holdChance" type="number" inputmode="numeric" min="0" max="100" step="1" value="25" aria-label="Long-hold chance" data-i18n-aria="ariaHoldChance">
           <div class="hint" data-i18n="hintChance">Some reps randomly become longer endurance holds.</div>
         </div>
 
-        <div class="field" id="fHolds" style="margin-bottom:0">
+        <div class="field mb0" id="fHolds">
           <label class="lbl" data-i18n="labelLongHold">Long hold duration (seconds, random in range)</label>
           <div class="row">
-            <input id="minHold" type="number" min="1" value="5" aria-label="Minimum long hold" data-i18n-aria="ariaMinHold">
-            <input id="maxHold" type="number" min="1" value="12" aria-label="Maximum long hold" data-i18n-aria="ariaMaxHold">
+            <input id="minHold" type="number" inputmode="numeric" min="1" step="1" value="5" aria-label="Minimum long hold" data-i18n-aria="ariaMinHold">
+            <input id="maxHold" type="number" inputmode="numeric" min="1" step="1" value="12" aria-label="Maximum long hold" data-i18n-aria="ariaMaxHold">
           </div>
           <div class="curveBox">
             <div class="curveHeader">
@@ -644,7 +675,7 @@
             </div>
             <canvas class="curvePreview" id="curveHold" width="600" height="56" aria-label="Open hold curve editor" data-i18n-aria="ariaOpenHoldCurve"></canvas>
             <div class="curveAxis"><span id="curveHoldLo">min</span><span id="curveHoldHi">max</span></div>
-            <div class="hint" style="margin-top:6px" data-i18n="hintCurveDraw">Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.</div>
+            <div class="hint mt6" data-i18n="hintCurveDraw">Higher on the curve = more likely to be picked. Draw with finger or mouse. No curve = uniform distribution.</div>
           </div>
         </div>
       </div>
@@ -662,7 +693,7 @@
         <div class="field toggle" id="fStrict">
           <div>
             <label class="lbl" for="strict" data-i18n="labelStrict">Strict mode</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintStrict">If you release the button too early, the rep restarts.</div>
+            <div class="hint hintTight" data-i18n="hintStrict">If you release the button too early, the rep restarts.</div>
           </div>
           <label class="switch"><input id="strict" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -670,7 +701,7 @@
         <div class="field toggle" id="fPenaltyToggle">
           <div>
             <label class="lbl" for="penalty" data-i18n="labelPenalty">Penalty for early release</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintPenalty">Extends the session every time you release before the hold is complete.</div>
+            <div class="hint hintTight" data-i18n="hintPenalty">Extends the session every time you release before the hold is complete.</div>
           </div>
           <label class="switch"><input id="penalty" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -678,11 +709,11 @@
           <div class="row">
             <div>
               <span class="sublbl" id="penaltyLbl">Penalty amount (+reps)</span>
-              <input id="penaltyX" type="number" min="1" value="2" aria-label="Penalty amount" data-i18n-aria="ariaPenaltyX">
+              <input id="penaltyX" type="number" inputmode="numeric" min="1" step="1" value="2" aria-label="Penalty amount" data-i18n-aria="ariaPenaltyX">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblLateStart">Allowed late-start (s)</span>
-              <input id="lateTol" type="number" min="1" value="3" aria-label="Allowed late start" data-i18n-aria="ariaLateTol">
+              <input id="lateTol" type="number" inputmode="numeric" min="1" step="1" value="3" aria-label="Allowed late start" data-i18n-aria="ariaLateTol">
             </div>
           </div>
           <div class="hint" id="lateTolHint" data-i18n="hintLateStart">If you don't start holding within this time after the start cue, a penalty is added — and again after each further delay.</div>
@@ -691,8 +722,8 @@
         <div class="field toggle" id="fNoisePenaltyToggle">
           <div>
             <label class="lbl" for="noisePenalty" data-i18n="labelNoisePenalty">Noise punishment (microphone)</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintNoisePenalty">If sound rises above the limit during the session, the session is extended. Only available while voice cues are off.</div>
-            <div class="hint hidden" id="noiseVoiceHint" style="margin-top:4px;color:var(--rise)" data-i18n="hintNoiseNeedsVoiceOff">Only available while voice cues are off — an open microphone makes the spoken cues sound distant on many devices.</div>
+            <div class="hint hintTight" data-i18n="hintNoisePenalty">If sound rises above the limit during the session, the session is extended. Only available while voice cues are off.</div>
+            <div class="hint hidden" id="noiseVoiceHint" data-i18n="hintNoiseNeedsVoiceOff">Only available while voice cues are off — an open microphone makes the spoken cues sound distant on many devices.</div>
           </div>
           <label class="switch"><input id="noisePenalty" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -700,31 +731,31 @@
           <div class="row">
             <div>
               <span class="sublbl" id="noisePenaltyLbl">Penalty amount (+reps)</span>
-              <input id="noisePenaltyX" type="number" min="1" value="1" aria-label="Noise penalty amount" data-i18n-aria="ariaNoisePenaltyX">
+              <input id="noisePenaltyX" type="number" inputmode="numeric" min="1" step="1" value="1" aria-label="Noise penalty amount" data-i18n-aria="ariaNoisePenaltyX">
             </div>
             <div>
               <span class="sublbl"><span data-i18n="sublblNoiseLimit">Noise limit</span> <b id="noiseThrVal">60</b>%</span>
-              <input id="noiseThr" type="range" min="1" max="100" value="60" aria-label="Noise limit" data-i18n-aria="ariaNoiseThr" style="margin-top:14px;accent-color:var(--rise)">
+              <input id="noiseThr" type="range" min="1" max="100" value="60" aria-label="Noise limit" data-i18n-aria="ariaNoiseThr">
             </div>
           </div>
-          <div class="camBar" id="noiseBar" style="margin-top:10px" aria-hidden="true">
+          <div class="camBar mt10" id="noiseBar" aria-hidden="true">
             <div class="camBarFill" id="noiseBarFill"></div>
             <span class="camMark camMarkPress" id="noiseMark"></span>
           </div>
-          <div class="hint" id="micErr" style="color:var(--bad);min-height:0"></div>
+          <div class="hint" id="micErr"></div>
         </div>
 
         <div class="field toggle" id="fHideDur">
           <div>
             <label class="lbl" for="hideDur" data-i18n="labelHideDur">Hide required hold time</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintHideDur">The needed hold duration is not shown. Once you start holding, the voice says the hold cue and counts down the last few seconds.</div>
+            <div class="hint hintTight" data-i18n="hintHideDur">The needed hold duration is not shown. Once you start holding, the voice says the hold cue and counts down the last few seconds.</div>
           </div>
           <label class="switch"><input id="hideDur" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
 
-        <div class="field" id="fReleaseGrace" style="margin-bottom:0">
+        <div class="field mb0" id="fReleaseGrace">
           <label class="lbl" data-i18n="labelReleaseGrace">Release tolerance (ms)</label>
-          <input id="releaseGrace" type="number" min="0" step="10" value="150" aria-label="Release tolerance" data-i18n-aria="ariaReleaseGrace">
+          <input id="releaseGrace" type="number" inputmode="numeric" min="0" step="10" value="150" aria-label="Release tolerance" data-i18n-aria="ariaReleaseGrace">
           <div class="hint" data-i18n="hintReleaseGrace">If you briefly lift your finger, it doesn't count as releasing yet — the hold continues seamlessly. 0 = release is immediate.</div>
         </div>
       </div>
@@ -736,21 +767,21 @@
         <div class="field toggle">
           <div>
             <label class="lbl" for="voice" data-i18n="labelVoice">Voice cues</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintVoice">Speaks the cues (start / release) — once each.</div>
+            <div class="hint hintTight" data-i18n="hintVoice">Speaks the cues (start / release) — once each.</div>
           </div>
           <label class="switch"><input id="voice" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle">
           <div>
             <label class="lbl" for="beep" data-i18n="labelBeep">Beeps</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintBeep">Short tones as cues (rising = start holding, low = release).</div>
+            <div class="hint hintTight" data-i18n="hintBeep">Short tones as cues (rising = start holding, low = release).</div>
           </div>
           <label class="switch"><input id="beep" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle">
           <div>
             <label class="lbl" for="vibrate" data-i18n="labelVibration">Vibration</label>
-            <div class="hint" id="vibrateHint" style="margin-top:2px" data-i18n="hintVibration">Vibration patterns as cues. Tap the switch to test.</div>
+            <div class="hint hintTight" id="vibrateHint" data-i18n="hintVibration">Vibration patterns as cues. Tap the switch to test.</div>
           </div>
           <label class="switch"><input id="vibrate" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -760,15 +791,15 @@
           <div class="row3">
             <div>
               <span class="sublbl" data-i18n="sublblStartHold">Start hold</span>
-              <input id="cmdDown" type="text" value="Hold" aria-label="Start-hold cue word" data-i18n-aria="ariaCmdDown">
+              <input id="cmdDown" type="text" value="" aria-label="Start-hold cue word" data-i18n-aria="ariaCmdDown">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblRelease">Release</span>
-              <input id="cmdUp" type="text" value="Breathe" aria-label="Release cue word" data-i18n-aria="ariaCmdUp">
+              <input id="cmdUp" type="text" value="" aria-label="Release cue word" data-i18n-aria="ariaCmdUp">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblLongHold">Long hold</span>
-              <input id="cmdHold" type="text" value="Keep going" aria-label="Long-hold cue word" data-i18n-aria="ariaCmdHold">
+              <input id="cmdHold" type="text" value="" aria-label="Long-hold cue word" data-i18n-aria="ariaCmdHold">
             </div>
           </div>
         </div>
@@ -776,21 +807,21 @@
           <div class="row3">
             <div>
               <span class="sublbl" data-i18n="sublblPenaltyWord">Penalty word</span>
-              <input id="cmdPenaltyWord" type="text" value="Penalty" aria-label="Penalty word" data-i18n-aria="ariaCmdPenaltyWord">
+              <input id="cmdPenaltyWord" type="text" value="" aria-label="Penalty word" data-i18n-aria="ariaCmdPenaltyWord">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblNoiseWord">Noise word</span>
-              <input id="cmdNoiseWord" type="text" value="Too loud" aria-label="Noise word" data-i18n-aria="ariaCmdNoiseWord">
+              <input id="cmdNoiseWord" type="text" value="" aria-label="Noise word" data-i18n-aria="ariaCmdNoiseWord">
             </div>
             <div>
               <span class="sublbl" data-i18n="sublblFinishWord">Finish word</span>
-              <input id="cmdFinishWord" type="text" value="Done" aria-label="Finish word" data-i18n-aria="ariaCmdFinishWord">
+              <input id="cmdFinishWord" type="text" value="" aria-label="Finish word" data-i18n-aria="ariaCmdFinishWord">
             </div>
           </div>
         </div>
-        <div class="field" style="margin-bottom:0">
+        <div class="field mb0">
           <span class="sublbl" data-i18n="sublblRate">Speech rate (0.5–2)</span>
-          <input id="cmdRate" type="number" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate" data-i18n-aria="ariaCmdRate">
+          <input id="cmdRate" type="number" inputmode="decimal" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate" data-i18n-aria="ariaCmdRate">
         </div>
       </div>
     </details>
@@ -801,14 +832,14 @@
         <div class="field toggle">
           <div>
             <label class="lbl" for="progressTone" data-i18n="labelProgressTone">Hold progress tone</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintProgressTone">A quiet, slowly rising tone during the hold — great for the eyes-closed mode.</div>
+            <div class="hint hintTight" data-i18n="hintProgressTone">A quiet, slowly rising tone during the hold — great for the eyes-closed mode.</div>
           </div>
           <label class="switch"><input id="progressTone" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
-        <div class="field toggle" style="margin-bottom:0">
+        <div class="field toggle mb0">
           <div>
             <label class="lbl" for="prAnnounce" data-i18n="labelPrAnnounce">Personal-best announcement</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintPrAnnounce">When you beat your longest recorded hold, the app announces it.</div>
+            <div class="hint hintTight" data-i18n="hintPrAnnounce">When you beat your longest recorded hold, the app announces it.</div>
           </div>
           <label class="switch"><input id="prAnnounce" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -821,21 +852,21 @@
         <div class="field toggle">
           <div>
             <label class="lbl" for="eyesClosed" data-i18n="labelEyesClosed">Eyes-closed mode</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintEyesClosed">Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.</div>
+            <div class="hint hintTight" data-i18n="hintEyesClosed">Tap anywhere on the screen to hold — for training purely by sound or vibration. Best combined with beeps or vibration.</div>
           </div>
           <label class="switch"><input id="eyesClosed" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
         <div class="field toggle">
           <div>
             <label class="lbl" for="guardExit" data-i18n="labelSwipeGuard">Swipe guard</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintSwipeGuard">Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.</div>
+            <div class="hint hintTight" data-i18n="hintSwipeGuard">Makes it harder to close accidentally (edge-swipe back, reload) and tries fullscreen. Exit via the Stop button.</div>
           </div>
           <label class="switch"><input id="guardExit" type="checkbox" checked><span class="track"><span class="knob"></span></span></label>
         </div>
-        <div class="field toggle" style="margin-bottom:0">
+        <div class="field toggle mb0">
           <div>
             <label class="lbl" for="screenColor" data-i18n="labelScreenColor">Screen color cues</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintScreenColor">The screen background pulses green when you may breathe, brightens yellow just before a hold, and deepens to dark red while holding.</div>
+            <div class="hint hintTight" data-i18n="hintScreenColor">The screen background pulses green when you may breathe, brightens yellow just before a hold, and deepens to dark red while holding.</div>
           </div>
           <label class="switch"><input id="screenColor" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -845,10 +876,10 @@
     <details class="panel" id="secCamera">
       <summary><span data-i18n="camPanelTitle">Camera control</span> <span class="sumSub" id="sumCamera"></span></summary>
       <div class="body">
-        <div class="field toggle" style="margin-bottom:0">
+        <div class="field toggle mb0">
           <div>
             <label class="lbl" for="cameraControl" data-i18n="labelCamControl">Control by camera</label>
-            <div class="hint" style="margin-top:2px" data-i18n="hintCamControl">Instead of the button, a webcam region triggers hold/release. Place &amp; calibrate the region before each session.</div>
+            <div class="hint hintTight" data-i18n="hintCamControl">Instead of the button, a webcam region triggers hold/release. Place &amp; calibrate the region before each session.</div>
           </div>
           <label class="switch"><input id="cameraControl" type="checkbox"><span class="track"><span class="knob"></span></span></label>
         </div>
@@ -864,16 +895,16 @@
             <input id="presetName" type="text" placeholder="Name" data-i18n-ph="phPresetName" aria-label="Preset name" data-i18n-aria="ariaPresetName">
             <select id="presetSel" aria-label="Load preset" data-i18n-aria="ariaLoadPreset"><option value="" data-i18n="optLoad">– load –</option></select>
           </div>
-          <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <div class="hint btnRow">
             <button type="button" class="ghost" id="presetSave" data-i18n="btnSave">Save</button>
-            <button type="button" class="ghost" id="presetLoad" data-i18n="btnLoad">Load</button>
             <button type="button" class="ghost" id="presetDel" data-i18n="btnDelete">Delete</button>
           </div>
+          <div class="hint presetMsg" id="presetMsg" role="status"></div>
         </div>
-        <div class="field" style="margin-bottom:0">
+        <div class="field mb0">
           <label class="lbl" data-i18n="labelStats">Stats</label>
-          <div id="statsBox" class="hint" style="line-height:1.6" data-i18n="statsNoSessions">No sessions yet.</div>
-          <div class="hint" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <div id="statsBox" class="hint lh16" data-i18n="statsNoSessions">No sessions yet.</div>
+          <div class="hint btnRow">
             <button type="button" class="ghost" id="statsClear" data-i18n="btnClearHistory">Clear history</button>
           </div>
         </div>
@@ -882,25 +913,27 @@
 
     </div><!-- /advancedWrap -->
 
-    <button class="start" id="startBtn" data-i18n="btnStartSession">Start session</button>
-    <div class="err" id="err"></div>
+    <div class="startBar">
+      <button type="button" class="start" id="startBtn" data-i18n="btnStartSession">Start session</button>
+      <div class="err" id="err" role="alert"></div>
+    </div>
   </section>
 
-  <section id="session" class="session hidden" aria-live="polite">
+  <section id="session" class="session hidden">
     <div id="screenColorLayer" class="screenColor hidden" aria-hidden="true"></div>
     <div id="screenColorBorderLayer" class="screenColorBorder hidden" aria-hidden="true"></div>
     <div class="sessionTop">
       <div class="meta">
         <span class="count" id="repCount"><span id="repLabel">Rep</span> <b id="repNow">0</b><span id="repTotalWrap"> / <b id="repTotal">0</b></span></span>
         <span class="clock" id="clock">0:00</span>
-        <button class="ghost" id="stopBtn" data-i18n="stop">Stop</button>
+        <button type="button" class="ghost" id="stopBtn" data-i18n="stop">Stop</button>
       </div>
-      <div class="cue" id="cue" data-i18n="ready">Ready?</div>
+      <div class="cue" id="cue" data-i18n="ready" aria-live="polite" aria-atomic="true">Ready?</div>
       <div class="subcue" id="subcue" data-i18n="subCue">Press &amp; hold on the start cue, release on the release cue.</div>
-      <div id="livesRow" class="livesRow hidden" aria-label="Lives remaining" data-i18n-aria="ariaLivesRemaining"></div>
+      <div id="livesRow" class="livesRow hidden" role="img" aria-label="Lives remaining"></div>
       <div id="swStats" class="swStats hidden">
-        <div class="swStat"><span class="swLbl">Rest since last hold</span><span class="swVal" id="swRest">0.0s</span></div>
-        <div class="swStat"><span class="swLbl">Longest hold</span><span class="swVal" id="swLongest">0.0s</span></div>
+        <div class="swStat"><span class="swLbl" id="swLbl1" data-i18n="swRestLabel">Rest since last hold</span><span class="swVal" id="swRest">0.0s</span></div>
+        <div class="swStat"><span class="swLbl" id="swLbl2" data-i18n="swLongestLabel">Longest hold</span><span class="swVal" id="swLongest">0.0s</span></div>
       </div>
     </div>
 
@@ -912,7 +945,7 @@
       </button>
     </div>
 
-    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface" data-i18n-aria="ariaTapSurface"><span class="tapHint">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
+    <div id="tapSurface" class="tapSurface hidden" aria-label="Tap surface" data-i18n-aria="ariaTapSurface"><span class="tapHint" data-i18n="tapHintEyes">Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)</span></div>
 
     <div id="camPip" class="camPip hidden" aria-hidden="true">
       <div class="camPipVid" id="camPipHost"><div class="camPipRoi" id="camPipRoi"></div></div>
@@ -924,13 +957,14 @@
     <div class="sessionTop">
       <div class="meta">
         <span class="count" data-i18n="done">Done</span>
-        <button class="ghost" id="againBtn" data-i18n="newSession">New session</button>
+        <button type="button" class="ghost" id="againBtn" data-i18n="newSession">New session</button>
       </div>
     </div>
     <div class="done">
       <div class="num" id="doneNum">0</div>
       <div class="msg" id="doneMsg" data-i18n="repsCompleted">Reps completed.</div>
-      <div class="routineInfo hidden" id="doneList" style="text-align:left"></div>
+      <div class="sum hidden" id="doneSum"></div>
+      <div class="routineInfo hidden" id="doneList"></div>
     </div>
     <div class="finishGame hidden" id="finishGame">
       <div class="fgBadges hidden" id="fgBadges"></div>
@@ -945,6 +979,9 @@
       </div>
       <div class="fgStreak hidden" id="fgPace"></div>
       <div class="fgStreak hidden" id="fgStreak"></div>
+    </div>
+    <div class="finishGame">
+      <button type="button" class="start" id="repeatBtn" data-i18n="btnRepeat">Again, same settings</button>
     </div>
   </section>
 
@@ -1015,6 +1052,28 @@
     <div class="err" id="camErr"></div>
   </div>
 
+  <div id="stopDialog" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="stopDialogTitle" aria-hidden="true">
+    <div class="modalCard">
+      <h2 id="stopDialogTitle" data-i18n="stopTitle">End session?</h2>
+      <p id="stopDialogBody"></p>
+      <button type="button" class="start" id="stopSave" data-i18n="stopSave">Finish &amp; save</button>
+      <button type="button" class="ghost danger" id="stopDiscard" data-i18n="stopDiscard">Discard session</button>
+      <button type="button" class="ghost" id="stopContinue" data-i18n="stopContinue">Keep going</button>
+    </div>
+  </div>
+
+  <div id="safetyDialog" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="safetyTitle" aria-hidden="true">
+    <div class="modalCard">
+      <h2 id="safetyTitle" data-i18n="safetyTitle">Train safely</h2>
+      <ul>
+        <li data-i18n="safety1">Never practise breath-holds in or near water without trained, active supervision.</li>
+        <li data-i18n="safety2">Don't train to the point of dizziness or blackout — stop as soon as you feel unwell.</li>
+        <li data-i18n="safety3">Sit or lie down in a safe place. This app is a training aid, not medical advice.</li>
+      </ul>
+      <button type="button" class="start" id="safetyOk" data-i18n="safetyOk">Understood — start</button>
+    </div>
+  </div>
+
   <div id="camIntro" class="camIntro hidden" aria-hidden="true">
     <div class="camIntroCard">
       <h2 data-i18n="camIntroTitle">Camera control</h2>
@@ -1042,6 +1101,7 @@
     del(k){ try{ localStorage.removeItem(k); }catch(e){} },
   };
   const K = { settings:"lat.settings", presets:"lat.presets", history:"lat.history", pr:"lat.pr", curves:"lat.curves", game:"lat.game" };
+  const SAFETY_KEY = "lat.safetyAck";   // set once the first-session safety notice was acknowledged
 
   // ---------- i18n: top-10 most-spoken languages ----------
   const I18N = {
@@ -1066,7 +1126,7 @@
         sdMixedActionFail:(reps,needed)=>`Game Over. ${reps} Reps (nötig: >${needed}).`,
         sdHoldFail:(held,prev)=>`Game Over. ${held}s war kürzer als dein vorheriger Hold (${prev}s).`,
         sdMixedHoldFail:(held,needed)=>`Game Over. Hold ${held}s (nötig: >${needed}s).`,
-        scenarioTitle:"Szenario", scenarioStopwatch:"Stoppuhr — Halte so lange du kannst",
+        scenarioStopwatch:"Stoppuhr — Halte so lange du kannst",
         title:"Gasping for More", mark:"Breathless",
         ready:"Bereit", pressToStart:"Drücken zum Starten", tapToStart:"Tippen zum Starten",
         subCue:"Beim Startsignal gedrückt halten, beim Loslass-Signal loslassen.",
@@ -1084,7 +1144,7 @@
         errRestNegative:"Pause darf nicht negativ sein.", errRestMinMax:"Min. Pause darf Max. Pause nicht überschreiten.",
         errReleaseGraceNegative:"Loslass-Toleranz darf nicht negativ sein.",
         errPenaltyAmount:"Bitte eine gültige Strafmenge eingeben (mind. 1).", errLateTolMin:"Erlaubter Spätstart muss mindestens 1 Sekunde betragen.",
-        errNoPresetName:"Bitte einen Namen eingeben.", confirmClearHistory:"Den gesamten Verlauf und Bestwert löschen?",
+        confirmClearHistory:"Den gesamten Verlauf und Bestwert löschen?",
         vibrateUnsupported:"Dieser Browser meldet keine Vibrationsunterstützung.",
         vibrateTestTriggered:"Test ausgelöst. Nichts gespürt? Auf Android: Einstellungen → Ton & Vibration → Vibration & Haptik aktivieren; und sicherstellen, dass das Handy nicht stumm/Nicht-stören ist.",
         vibrateBlocked:"Vibration wurde vom Browser blockiert (Nutzer-Interaktion oder Systemeinstellung erforderlich).",
@@ -1099,8 +1159,7 @@
         ariaPenaltyX:"Strafmenge", ariaLateTol:"Erlaubter Spätstart", ariaReleaseGrace:"Loslass-Toleranz",
         ariaCmdDown:"Signalwort Halten", ariaCmdUp:"Signalwort Loslassen", ariaCmdHold:"Signalwort langer Hold",
         ariaCmdPenaltyWord:"Strafe-Wort", ariaCmdNoiseWord:"Lärm-Wort", ariaCmdFinishWord:"Fertig-Wort", ariaCmdRate:"Sprechtempo",
-        ariaPresetName:"Preset-Name", ariaLoadPreset:"Preset laden", ariaLivesRemaining:"Verbleibende Leben",
-        ariaTapSurface:"Tippfläche", ariaCurveMode:"Kurven-Modus", ariaCurvePresets:"Kurven-Vorlagen", ariaDrawCurve:"Wahrscheinlichkeitskurve zeichnen",
+        ariaPresetName:"Preset-Name", ariaLoadPreset:"Preset laden", ariaTapSurface:"Tippfläche", ariaCurveMode:"Kurven-Modus", ariaCurvePresets:"Kurven-Vorlagen", ariaDrawCurve:"Wahrscheinlichkeitskurve zeichnen",
         ariaCamRelThr:"Loslass-Schwelle", ariaCamPressThr:"Druck-Schwelle",
         rankNames:["Schnorchler","Apnoe-Neuling","Freitaucher","Tieftaucher","Abgrund","Meister","Legende"],
         xpGained:n=>`+${n} XP`,
@@ -1157,7 +1216,7 @@
         hintScreenColor:"Der Bildschirm pulsiert grün, wenn du atmen darfst, hellt sich gelb auf kurz vor dem Halten, und vertieft sich dunkelrot während du die Luft anhältst.",
         uiPresetsTitle:"Presets & Statistik",
         labelPresets:"Presets", phPresetName:"Name (z. B. Abend-Set)", optLoad:"– laden –",
-        btnSave:"Speichern", btnLoad:"Laden", btnDelete:"Löschen",
+        btnSave:"Speichern", btnDelete:"Löschen",
         labelStats:"Statistik", btnClearHistory:"Verlauf löschen",
         btnStartSession:"Sitzung starten",
         hintStopwatch:"Freihändig: keine feste Halte- oder Pausenzeit. Drücken und halten, loslassen wann du willst, dann weiter. Die App misst jeden Hold und merkt sich deinen längsten Hold dieser Sitzung.",
@@ -1239,12 +1298,10 @@
         pbComplete:total=>`Routine abgeschlossen (${total} ${total===1?"Runde":"Runden"}).`,
         pbLogLine:(n,held,target,early)=>[`Runde ${n} · Retention`, `${held} / ${target}${early?" ↩":""}`],
         pbTotalRetention:"Retention gesamt",
-        pbGetReady:"Gleich geht's los",
         recTimeAttack:"Time-Attack-Score", recRhythm:"Bestes Tempo",
         labelLives:"Leben", hintLives:"Überlebe einen Fehler statt Sofort-Aus — mit einem Leben nochmal am selben Ziel versuchen.",
         labelLivesCount:"Anzahl Leben",
-        statsRank:"Rang", statsStreak:"Streak",
-        statsNoSessions:"Noch keine Sitzungen.",
+        statsRank:"Rang", statsNoSessions:"Noch keine Sitzungen.",
         statsTotalSessions:"Sitzungen gesamt", statsLast7:"letzte 7 Tage",
         statsLongestHold:"Längster Hold (Rekord)", statsTotalHeld:"Gesamte Haltezeit", statsLastSession:"Letzte Sitzung",
         curveTitleHoldRandom:"Wahrscheinlichkeitskurve langer Hold", curveTitleHoldTiming:"Dauer langer Hold über die Sitzung",
@@ -1263,7 +1320,26 @@
         micStreamLost:"Mikrofon-Signal verloren (Berechtigung entzogen oder Gerät getrennt) — Lärm-Strafe deaktiviert.",
         errNoisePenaltyAmount:"Bitte eine gültige Lärm-Strafmenge eingeben (mind. 1).",
         sumNoise:x=>`Lärm +${x}`,
-        ariaNoisePenaltyX:"Lärm-Strafmenge", ariaNoiseThr:"Lärm-Limit"
+        ariaNoisePenaltyX:"Lärm-Strafmenge", ariaNoiseThr:"Lärm-Limit",
+        tapHintEyes:"Augen-zu-Modus · zum Halten irgendwo auf den Bildschirm tippen (die Stopp-Taste bleibt aktiv)",
+        repsLabel:n=>n===1 ? "Wiederholung" : "Wiederholungen",
+        penaltyUnitReps:x=>`+${x} Wdh.`, penaltyUnitSecs:x=>`+${x} s`,
+        ariaLivesLeft:(n,max)=>`${n} von ${max} Leben übrig`,
+        stopTitle:"Sitzung beenden?",
+        stopBodyOpen:"Die Stoppuhr hat kein festes Ende — speichere die Sitzung, damit sie in Statistik, Rekorden und XP zählt.",
+        stopBodyAbort:"Eine abgebrochene Sitzung wird nicht gespeichert — nur eine regulär beendete zählt für Statistik und Rekorde.",
+        stopSave:"Beenden & speichern", stopDiscard:"Sitzung verwerfen", stopContinue:"Weitermachen",
+        safetyTitle:"Sicher trainieren",
+        safety1:"Übe Atemanhalten nie im oder am Wasser ohne geschulte, aktive Aufsicht.",
+        safety2:"Trainiere nicht bis zu Schwindel oder Bewusstlosigkeit — hör sofort auf, wenn du dich unwohl fühlst.",
+        safety3:"Sitz oder lieg an einem sicheren Ort. Diese App ist eine Trainingshilfe, keine medizinische Beratung.",
+        safetyOk:"Verstanden — los",
+        btnRepeat:"Nochmal, gleiche Einstellungen",
+        finishSummary:(longest,total)=>`Längster Hold <b>${longest}</b> · Gesamt gehalten <b>${total}</b>`,
+        presetSaved:n=>`Preset „${n}“ gespeichert.`, presetLoaded:n=>`Preset „${n}“ geladen.`, presetDeleted:n=>`Preset „${n}“ gelöscht.`,
+        presetOverwrite:n=>`Preset „${n}“ gibt es schon. Überschreiben?`, presetConfirmDelete:n=>`Preset „${n}“ löschen?`,
+        presetNeedName:"Bitte einen Namen eingeben.", presetPickFirst:"Zuerst ein Preset auswählen.",
+        errWholeNumber:"Bitte hier eine ganze Zahl eingeben."
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1287,7 +1363,7 @@
         sdMixedActionFail:(reps,needed)=>`Game over. ${reps} reps (needed: >${needed}).`,
         sdHoldFail:(held,prev)=>`Game over. ${held}s was shorter than your previous hold (${prev}s).`,
         sdMixedHoldFail:(held,needed)=>`Game over. Hold ${held}s (needed: >${needed}s).`,
-        scenarioTitle:"Scenario", scenarioStopwatch:"Stopwatch — hold as long as you can",
+        scenarioStopwatch:"Stopwatch — hold as long as you can",
         title:"Gasping for More", mark:"Breathless",
         ready:"Ready", pressToStart:"Press to start", tapToStart:"Tap anywhere to start",
         subCue:"Press & hold on the start cue, release on the release cue.",
@@ -1305,7 +1381,7 @@
         errRestNegative:"Rest must not be negative.", errRestMinMax:"Min rest must not exceed max rest.",
         errReleaseGraceNegative:"Release tolerance must not be negative.",
         errPenaltyAmount:"Please enter a valid penalty amount (min 1).", errLateTolMin:"Allowed late-start must be at least 1 second.",
-        errNoPresetName:"Please enter a name.", confirmClearHistory:"Clear the whole history and personal best?",
+        confirmClearHistory:"Clear the whole history and personal best?",
         vibrateUnsupported:"This browser reports no vibration support.",
         vibrateTestTriggered:"Test triggered. Nothing felt? On Android: Settings → Sound & vibration → enable Vibration & haptics; and make sure the phone is not silenced/Do-Not-Disturb.",
         vibrateBlocked:"Vibration was blocked by the browser (user gesture or system setting required).",
@@ -1320,8 +1396,7 @@
         ariaPenaltyX:"Penalty amount", ariaLateTol:"Allowed late start", ariaReleaseGrace:"Release tolerance",
         ariaCmdDown:"Start-hold cue word", ariaCmdUp:"Release cue word", ariaCmdHold:"Long-hold cue word",
         ariaCmdPenaltyWord:"Penalty word", ariaCmdNoiseWord:"Noise word", ariaCmdFinishWord:"Finish word", ariaCmdRate:"Speech rate",
-        ariaPresetName:"Preset name", ariaLoadPreset:"Load preset", ariaLivesRemaining:"Lives remaining",
-        ariaTapSurface:"Tap surface", ariaCurveMode:"Curve mode", ariaCurvePresets:"Curve presets", ariaDrawCurve:"Draw probability curve",
+        ariaPresetName:"Preset name", ariaLoadPreset:"Load preset", ariaTapSurface:"Tap surface", ariaCurveMode:"Curve mode", ariaCurvePresets:"Curve presets", ariaDrawCurve:"Draw probability curve",
         ariaCamRelThr:"Release threshold", ariaCamPressThr:"Press threshold",
         rankNames:["Snorkeler","Apnist","Free Diver","Deep Diver","Abyss","Master","Legend"],
         xpGained:n=>`+${n} XP`,
@@ -1378,7 +1453,7 @@
         hintScreenColor:"The screen background pulses green when you may breathe, brightens yellow just before a hold, and deepens to dark red while holding.",
         uiPresetsTitle:"Presets & stats",
         labelPresets:"Presets", phPresetName:"Name (e.g. Evening set)", optLoad:"– load –",
-        btnSave:"Save", btnLoad:"Load", btnDelete:"Delete",
+        btnSave:"Save", btnDelete:"Delete",
         labelStats:"Stats", btnClearHistory:"Clear history",
         btnStartSession:"Start session",
         hintStopwatch:"Freeform: no fixed hold or rest length. Press and hold, release whenever you need to, then go again. The app times each hold and remembers your longest hold this session.",
@@ -1460,12 +1535,10 @@
         pbComplete:total=>`Routine complete (${total} ${total===1?"round":"rounds"}).`,
         pbLogLine:(n,held,target,early)=>[`Round ${n} · retention`, `${held} / ${target}${early?" ↩":""}`],
         pbTotalRetention:"Total retention",
-        pbGetReady:"Get ready",
         recTimeAttack:"Time Attack score", recRhythm:"Best tempo",
         labelLives:"Lives", hintLives:"Survive a mistake instead of instant game over — retry the same target using one of your lives.",
         labelLivesCount:"Number of lives",
-        statsRank:"Rank", statsStreak:"Streak",
-        statsNoSessions:"No sessions yet.",
+        statsRank:"Rank", statsNoSessions:"No sessions yet.",
         statsTotalSessions:"Total sessions", statsLast7:"last 7 days",
         statsLongestHold:"Longest hold (record)", statsTotalHeld:"Total time held", statsLastSession:"Last session",
         curveTitleHoldRandom:"Long-hold probability curve", curveTitleHoldTiming:"Long-hold duration over the session",
@@ -1485,6 +1558,25 @@
         errNoisePenaltyAmount:"Please enter a valid noise penalty amount (min 1).",
         sumNoise:x=>`noise +${x}`,
         ariaNoisePenaltyX:"Noise penalty amount", ariaNoiseThr:"Noise limit",
+        tapHintEyes:"Eyes-closed mode · tap anywhere on the screen to hold (Stop button stays active)",
+        repsLabel:n=>n===1 ? "rep" : "reps",
+        penaltyUnitReps:x=>`+${x} reps`, penaltyUnitSecs:x=>`+${x}s`,
+        ariaLivesLeft:(n,max)=>`${n} of ${max} lives left`,
+        stopTitle:"End session?",
+        stopBodyOpen:"The stopwatch has no fixed end — save the session so it counts towards your stats, records and XP.",
+        stopBodyAbort:"An aborted session isn't saved — only a session that ends naturally counts towards stats and records.",
+        stopSave:"Finish & save", stopDiscard:"Discard session", stopContinue:"Keep going",
+        safetyTitle:"Train safely",
+        safety1:"Never practise breath-holds in or near water without trained, active supervision.",
+        safety2:"Don't train to the point of dizziness or blackout — stop as soon as you feel unwell.",
+        safety3:"Sit or lie down in a safe place. This app is a training aid, not medical advice.",
+        safetyOk:"Understood — start",
+        btnRepeat:"Again, same settings",
+        finishSummary:(longest,total)=>`Longest hold <b>${longest}</b> · Total held <b>${total}</b>`,
+        presetSaved:n=>`Preset “${n}” saved.`, presetLoaded:n=>`Preset “${n}” loaded.`, presetDeleted:n=>`Preset “${n}” deleted.`,
+        presetOverwrite:n=>`A preset named “${n}” already exists. Overwrite it?`, presetConfirmDelete:n=>`Delete preset “${n}”?`,
+        presetNeedName:"Please enter a name.", presetPickFirst:"Pick a preset first.",
+        errWholeNumber:"Please enter a whole number here.",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1492,7 +1584,7 @@
       strings:{ ready:"准备", pressToStart:"按下开始", tapToStart:"任意位置点击",
         release:"松开", startWithin:s=>`${s}秒内按下`,
         swRestLabel:"距上次憋气的休息", swLongestLabel:"最长憋气",
-        scenarioTitle:"场景", scenarioStopwatch:"秒表 —— 尽力憋气",
+        scenarioStopwatch:"秒表 —— 尽力憋气",
         subCue:"在开始提示时按住,在释放提示时松开。", pressHold:"按住", holding:"憋气中…",
         stop:"停止", rep:"次", rest:"休息", breathe:"呼吸", pressAndHold:"按下并保持",
         done:"完成", newSession:"新训练", repsCompleted:"次数已完成。",
@@ -1504,7 +1596,7 @@
       strings:{ ready:"तैयार", pressToStart:"शुरू के लिए दबाएँ", tapToStart:"शुरू करने के लिए कहीं भी टैप",
         release:"छोड़ें", startWithin:s=>`${s} सेकंड में दबाएँ`,
         swRestLabel:"पिछले होल्ड के बाद विश्राम", swLongestLabel:"सबसे लंबा होल्ड",
-        scenarioTitle:"परिदृश्य", scenarioStopwatch:"स्टॉपवॉच — जितना हो सके रोकें",
+        scenarioStopwatch:"स्टॉपवॉच — जितना हो सके रोकें",
         subCue:"शुरू-संकेत पर दबाकर रखें, रिलीज़-संकेत पर छोड़ें।",
         pressHold:"दबाएँ और रखें", holding:"होल्ड…", stop:"रोकें", rep:"बार",
         rest:"विश्राम", breathe:"साँस लें", pressAndHold:"दबाएँ और होल्ड",
@@ -1518,7 +1610,7 @@
       strings:{ ready:"Listo", pressToStart:"Pulsa para empezar", tapToStart:"Toca cualquier lugar",
         release:"Suelta", startWithin:s=>`Pulsa en ${s}s`,
         swRestLabel:"Descanso desde la última apnea", swLongestLabel:"Apnea más larga",
-        scenarioTitle:"Escenario", scenarioStopwatch:"Cronómetro — aguanta lo que puedas",
+        scenarioStopwatch:"Cronómetro — aguanta lo que puedas",
         subCue:"Pulsa y mantén en la señal de inicio, suelta en la señal de soltar.",
         pressHold:"Pulsa y mantén", holding:"Aguantando…", stop:"Parar", rep:"Rep",
         rest:"Descanso", breathe:"Respira", pressAndHold:"Pulsa y aguanta",
@@ -1532,7 +1624,7 @@
       strings:{ ready:"Prêt", pressToStart:"Appuie pour démarrer", tapToStart:"Touche n’importe où",
         release:"Relâche", startWithin:s=>`Appuie sous ${s}s`,
         swRestLabel:"Repos depuis la dernière apnée", swLongestLabel:"Apnée la plus longue",
-        scenarioTitle:"Scénario", scenarioStopwatch:"Chronomètre — tiens le plus longtemps possible",
+        scenarioStopwatch:"Chronomètre — tiens le plus longtemps possible",
         subCue:"Appuie et maintiens au signal de début, relâche au signal.",
         pressHold:"Appuyer & maintenir", holding:"En apnée…", stop:"Stop", rep:"Rép.",
         rest:"Repos", breathe:"Respire", pressAndHold:"Appuyer et tenir",
@@ -1546,7 +1638,7 @@
       strings:{ ready:"مستعد", pressToStart:"اضغط للبدء", tapToStart:"اضغط في أي مكان",
         release:"إفلات", startWithin:s=>`اضغط خلال ${s} ث`,
         swRestLabel:"الراحة منذ آخر حبس", swLongestLabel:"أطول حبس",
-        scenarioTitle:"سيناريو", scenarioStopwatch:"ساعة إيقاف — احبس أطول ما يمكنك",
+        scenarioStopwatch:"ساعة إيقاف — احبس أطول ما يمكنك",
         subCue:"اضغط عند إشارة البدء، وأفلت عند إشارة الإفلات.",
         pressHold:"اضغط واستمر", holding:"محتجز…", stop:"إيقاف", rep:"تكرار",
         rest:"راحة", breathe:"تنفّس", pressAndHold:"اضغط واحتفظ",
@@ -1560,7 +1652,7 @@
       strings:{ ready:"প্রস্তুত", pressToStart:"শুরু করতে চাপুন", tapToStart:"যেকোনো জায়গায় ট্যাপ",
         release:"ছাড়ুন", startWithin:s=>`${s} সেকেন্ডে চাপুন`,
         swRestLabel:"শেষ হোল্ডের পর বিশ্রাম", swLongestLabel:"সবচেয়ে দীর্ঘ হোল্ড",
-        scenarioTitle:"দৃশ্যকল্প", scenarioStopwatch:"স্টপওয়াচ — যতটা পারো ধরে রাখো",
+        scenarioStopwatch:"স্টপওয়াচ — যতটা পারো ধরে রাখো",
         subCue:"শুরু সংকেতে চেপে ধরুন, ছাড়া সংকেতে ছাড়ুন।",
         pressHold:"চাপ ও ধরুন", holding:"ধরা আছে…", stop:"বন্ধ", rep:"রেপ",
         rest:"বিশ্রাম", breathe:"শ্বাস", pressAndHold:"চাপ ও ধরে রাখুন",
@@ -1574,7 +1666,7 @@
       strings:{ ready:"Pronto", pressToStart:"Pressione para iniciar", tapToStart:"Toque em qualquer lugar",
         release:"Solte", startWithin:s=>`Pressione em ${s}s`,
         swRestLabel:"Descanso desde a última apneia", swLongestLabel:"Apneia mais longa",
-        scenarioTitle:"Cenário", scenarioStopwatch:"Cronômetro — segure o quanto puder",
+        scenarioStopwatch:"Cronômetro — segure o quanto puder",
         subCue:"Segure no sinal de início, solte no sinal de soltar.",
         pressHold:"Pressione e segure", holding:"Segurando…", stop:"Parar", rep:"Rep",
         rest:"Descanso", breathe:"Respire", pressAndHold:"Pressione e segure",
@@ -1588,7 +1680,7 @@
       strings:{ ready:"Готов", pressToStart:"Нажми для старта", tapToStart:"Тапни где угодно",
         release:"Отпусти", startWithin:s=>`Нажми за ${s}с`,
         swRestLabel:"Отдых с последней задержки", swLongestLabel:"Самая долгая задержка",
-        scenarioTitle:"Сценарий", scenarioStopwatch:"Секундомер — держи сколько сможешь",
+        scenarioStopwatch:"Секундомер — держи сколько сможешь",
         subCue:"Держи на сигнале старта, отпусти на сигнале отпуска.",
         pressHold:"Нажми и держи", holding:"Держу…", stop:"Стоп", rep:"Повтор",
         rest:"Отдых", breathe:"Дыши", pressAndHold:"Нажать и держать",
@@ -1602,7 +1694,7 @@
       strings:{ ready:"تیار", pressToStart:"شروع کرنے کے لیے دبائیں", tapToStart:"کہیں بھی ٹیپ کریں",
         release:"چھوڑیں", startWithin:s=>`${s} سیکنڈ میں دبائیں`,
         swRestLabel:"آخری روک کے بعد آرام", swLongestLabel:"سب سے لمبی روک",
-        scenarioTitle:"منظرنامہ", scenarioStopwatch:"اسٹاپ واچ — جتنا ممکن ہو روکیں",
+        scenarioStopwatch:"اسٹاپ واچ — جتنا ممکن ہو روکیں",
         subCue:"شروع اشارے پر دبائیں، چھوڑنے کے اشارے پر چھوڑیں۔",
         pressHold:"دبائیں اور تھامیں", holding:"روک رہا ہے…", stop:"روکیں", rep:"دہرائی",
         rest:"آرام", breathe:"سانس", pressAndHold:"دبائیں اور تھامیں",
@@ -1630,12 +1722,15 @@
       `<option value="${code}">${I18N[code].name}</option>`).join("");
     sel.value = LANG;
   }
+  function applyLangAttrs(){
+    document.documentElement.setAttribute("lang", LANG);
+    document.documentElement.setAttribute("dir", (LANG==="ar"||LANG==="ur") ? "rtl" : "ltr");
+  }
   function setLang(code){
     if(SUPPORTED_LANGS.indexOf(code) === -1) code = "en";
     LANG = code;
     KV.set("lat.lang", code);
-    document.documentElement.setAttribute("lang", code);
-    document.documentElement.setAttribute("dir", (code==="ar"||code==="ur") ? "rtl" : "ltr");
+    applyLangAttrs();
     applyRuntimeI18n();
   }
   function applyRuntimeI18n(){
@@ -1659,8 +1754,8 @@
     ivRenderLevelInfo();        // runtime HTML the data-i18n pass can't reach
     pbRenderRoutineInfo();      // same — the Power Breathing round listing
     applyGoalVisibility();      // refresh the dynamic penalty label for the language
-    if(typeof refreshPresetSelect === "function") refreshPresetSelect();
-    if(typeof updateSummaries === "function") updateSummaries();
+    refreshPresetSelect();
+    updateSummaries();
     renderStats();   // stats box is runtime-rendered HTML; the data-i18n pass above only covers its empty-state default
     try{ drawCurve("hold"); drawCurve("rest"); }catch(e){}
     if($("appLang")) $("appLang").value = LANG;
@@ -1710,17 +1805,21 @@
 
   // Builds a CURVE_N-length weight array with one narrow spike per target
   // value, so that sampleFromCurve(which, min, max) returns exactly those
-  // values. sampleFromCurve picks a bucket by weight, then jitters inside it
-  // (t = (i+random)/CURVE_N) and rounds min + t*(max-min) — with 60 buckets a
-  // single bucket is far narrower than 1s for any range we use here, so a
-  // spike decodes back to its own integer. A value listed twice gets twice the
-  // weight, which is how a HOLD/BREATHE cycle's own frequencies survive the
-  // conversion from an ordered pattern to a random draw.
+  // values. sampleFromCurve picks a bucket by weight, jitters inside it
+  // (t = (i+random)/CURVE_N) and decodes t via curveValueAt(), which splits
+  // [0,1) into one equal slice per integer min..max. Each spike sits on the
+  // bucket holding the centre of its value's slice; while the range spans at
+  // most CURVE_N/2 integers (every level here: the widest is 3..25) a slice is
+  // at least two buckets wide, so that bucket lies entirely inside it and the
+  // spike always decodes back to its own value. A value listed twice gets twice
+  // the weight, which is how a HOLD/BREATHE cycle's own frequencies survive
+  // the conversion from an ordered pattern to a random draw.
   function ivCurveFor(vals, min, max){
     const arr = new Array(CURVE_N).fill(0);
     if(!(max > min)) return arr;
+    const span = max - min + 1;
     for(const v of vals){
-      const i = Math.max(0, Math.min(CURVE_N-1, Math.round((v - min)/(max - min)*(CURVE_N-1))));
+      const i = Math.max(0, Math.min(CURVE_N-1, Math.floor((v - min + 0.5)/span*CURVE_N)));
       arr[i] += 1;
     }
     return arr;
@@ -1770,6 +1869,21 @@
   // not bound by this — iv_phasePresets is just an array — but the levels
   // below stay within it so any of them can also be rebuilt by hand.
   const IV_MAX_PHASES = 8;
+
+  // The phase-preset rows are generated rather than written out 8 times in
+  // the markup. Must run before anything touches #ivPhasePreset1..8
+  // (SETTING_IDS wiring, refreshPresetSelect(), writeAll()).
+  (function buildIvPhaseRows(){
+    const host = $("ivPhaseRows"); if(!host) return;
+    let html = "";
+    for(let i=1;i<=IV_MAX_PHASES;i++){
+      html += `<div class="field mt10${i>3 ? " hidden" : ""}" id="ivPhaseRow${i}">`
+            + `<span class="sublbl" id="ivPhaseHead${i}">Phase ${i}</span>`
+            + `<select id="ivPhasePreset${i}" aria-label="Phase ${i} preset"><option value="" data-i18n="optLoad">– load –</option></select>`
+            + `</div>`;
+    }
+    host.innerHTML = html;
+  })();
 
   // Phase names are the author's own labels and deliberately not translated —
   // they are proper names, already a German/English mix. Only the level titles
@@ -1998,7 +2112,7 @@
     const arr = curves[which];
     const isEmpty = arr.every(v=>v<=0.001);
     if(curveMode[which]==="timing" && !isEmpty){
-      const p = sessionProgress();               
+      const p = sessionProgress();
       const x = p * (CURVE_N - 1);
       const i = Math.max(0, Math.min(CURVE_N-2, Math.floor(x)));
       const f = x - i;
@@ -2011,8 +2125,14 @@
     let r = Math.random() * total, i = 0;
     for(; i<CURVE_N; i++){ r -= Math.max(0, arr[i]); if(r <= 0) break; }
     if(i >= CURVE_N) i = CURVE_N - 1;
-    const t = (i + Math.random()) / CURVE_N;
-    return Math.round(min + t * (max - min));
+    return curveValueAt((i + Math.random()) / CURVE_N, min, max);
+  }
+  // Maps t in [0,1) onto the integers min..max in equal-width slices, so a
+  // flat curve gives every value the same chance (rounding min + t*(max-min)
+  // used to give min and max only half the weight of the values between).
+  function curveValueAt(t, min, max){
+    const span = max - min + 1;
+    return min + Math.max(0, Math.min(span - 1, Math.floor(t * span)));
   }
 
   function sessionProgress(){
@@ -2047,7 +2167,6 @@
     "noisePenalty","noisePenaltyX","noiseThr",
     "voice","beep","vibrate","eyesClosed","guardExit","screenColor","cameraControl",
     "cmdDown","cmdUp","cmdHold","cmdPenaltyWord","cmdNoiseWord","cmdFinishWord","cmdRate",
-    "appLang",
     "progressTone","prAnnounce",
   ];
   function readAll(){
@@ -2072,18 +2191,15 @@
       const el = $(id); if(!el) continue;
       if(el.type==="checkbox") el.checked = !!o[id]; else el.value = o[id];
     }
-    if($("goalSeg")) [...$("goalSeg").children].forEach(b=>{
-      if(b.getAttribute("aria-pressed")==="true"){ /* sync handled */ }
-    });
     applyScenarioVisibility();
   }
   function saveSettingsNow(){ KV.set(K.settings, readAll()); }
+  let saveSettingsTimer = 0;
   function debouncedSaveSettings(){
     clearTimeout(saveSettingsTimer);
     saveSettingsTimer = setTimeout(()=>{ saveSettingsNow(); updateSummaries(); }, 400);
     try{ updateSummaries(); }catch(e){}
   }
-  let saveSettingsTimer = 0;
 
   function updateSummaries(){
     const s = readAll();
@@ -2299,7 +2415,14 @@
     if((r.records && r.records.length) || r.leveledUp){ confettiBurst(); vibrate([0,40,60,40]); }
   }
 
+  let confettiRaf = 0;
+  function stopConfetti(){
+    cancelAnimationFrame(confettiRaf); confettiRaf = 0;
+    const cv = $("confettiCanvas"); if(cv) cv.style.display = "none";
+  }
   function confettiBurst(){
+    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    stopConfetti();
     try{
       let cv = $("confettiCanvas");
       if(!cv){ cv = document.createElement("canvas"); cv.id = "confettiCanvas"; document.body.appendChild(cv); }
@@ -2334,10 +2457,10 @@
             ctx.restore();
           }
         }
-        if(alive) requestAnimationFrame(frame);
-        else { ctx.clearRect(0,0,W,H); cv.style.display = "none"; }
+        if(alive) confettiRaf = requestAnimationFrame(frame);
+        else { ctx.clearRect(0,0,W,H); cv.style.display = "none"; confettiRaf = 0; }
       }
-      requestAnimationFrame(frame);
+      confettiRaf = requestAnimationFrame(frame);
     }catch(e){}
   }
 
@@ -2357,8 +2480,9 @@
     const week = Date.now() - 7*24*3600*1000;
     const recent = h.filter(x=>x.at>=week);
     const sumHold = h.reduce((a,x)=>a + (x.holdSec||0), 0);
+    // older entries may hold unrounded floats (e.g. 12.3456) — always show one decimal
     const bestRep = Math.max(0, ...h.map(x=>x.longestHold||0));
-    const fmt = s=>{ s=Math.round(s); const m=Math.floor(s/60); return m? (m+":"+String(s%60).padStart(2,"0")) : (s+" s"); };
+    const fmt = fmtDur;
     const g = loadGame();
     const ri = rankInfo(g.xp);
     let gameLine = `${t.statsRank || "Rank"}: <b>${ri.name}</b> · <b>${g.xp}</b> XP`;
@@ -2368,9 +2492,9 @@
     box.innerHTML =
       gameLine + `<br>` +
       `${t.statsTotalSessions}: <b>${total}</b> · ${t.statsLast7}: <b>${recent.length}</b><br>` +
-      `${t.statsLongestHold}: <b>${bestRep} s</b><br>` +
+      `${t.statsLongestHold}: <b>${fmtSW(bestRep)}</b><br>` +
       `${t.statsTotalHeld}: <b>${fmt(sumHold)}</b><br>` +
-      `${t.statsLastSession}: <b>${new Date(last.at).toLocaleString()}</b> · ${last.reps} ${t.rep} · ${fmt(last.elapsed)}`;
+      `${t.statsLastSession}: <b>${new Date(last.at).toLocaleString(speechTag())}</b> · ${last.reps} ${t.repsLabel(last.reps)} · ${fmt(last.elapsed)}`;
   }
 
   // repsTimeOnly: the Interval Sequence phase dropdowns only take presets an
@@ -2385,25 +2509,35 @@
     if(repsTimeOnly) names = names.filter(n => !p[n] || p[n].goal !== "scenario");
     const t = T();
     const tag = n => p[n] && p[n].goal === "time" ? ` (${t.goalTime})` : p[n] && p[n].goal === "reps" ? ` (${t.goalReps})` : "";
-    sel.innerHTML = `<option value="">${t.optLoad}</option>` +
-      names.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${(n+tag(n)).replace(/</g,"&lt;")}</option>`).join("");
+    // new Option(text, value) needs no escaping — names with &, <, " survive intact
+    sel.replaceChildren(new Option(t.optLoad, ""), ...names.map(n => new Option(n + tag(n), n)));
     if(names.includes(prev)) sel.value = prev;
   }
   function refreshPresetSelect(){
     populatePresetOptions($("presetSel"));
     for(let i=1;i<=IV_MAX_PHASES;i++) populatePresetOptions($("ivPhasePreset"+i), true);
   }
+  // Inline status line under the preset buttons (replaces alert()).
+  function presetMsg(text, bad){
+    const el = $("presetMsg"); if(!el) return;
+    el.textContent = text || "";
+    el.classList.toggle("bad", !!bad);
+  }
   function presetSave(){
+    const t = T();
     const name = ($("presetName").value || "").trim();
-    if(!name){ alert(T().errNoPresetName); return; }
+    if(!name){ presetMsg(t.presetNeedName, true); $("presetName").focus(); return; }
     const p = KV.get(K.presets, {});
+    if(Object.prototype.hasOwnProperty.call(p, name) && !confirm(t.presetOverwrite(name))) return;
     const snap = readAll();
     snap.curves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
     p[name] = snap;
     KV.set(K.presets, p);
     refreshPresetSelect();
     $("presetSel").value = name;
+    presetMsg(t.presetSaved(name));
   }
+  // Runs as soon as a preset is picked in #presetSel (no separate Load button).
   function presetLoad(){
     const name = $("presetSel").value;
     if(!name) return;
@@ -2413,16 +2547,22 @@
     applyIvPhaseCurve(p[name]);
     saveCurves();
     drawCurve("hold"); drawCurve("rest");
+    updateCurveAxes();
     $("presetName").value = name;
     saveSettingsNow();
+    presetMsg(T().presetLoaded(name));
   }
   function presetDel(){
+    const t = T();
     const name = $("presetSel").value;
-    if(!name) return;
+    if(!name){ presetMsg(t.presetPickFirst, true); return; }
+    if(!confirm(t.presetConfirmDelete(name))) return;
     const p = KV.get(K.presets, {});
     delete p[name];
     KV.set(K.presets, p);
     refreshPresetSelect();
+    if(($("presetName").value || "").trim() === name) $("presetName").value = "";
+    presetMsg(t.presetDeleted(name));
   }
 
   let progOsc = null, progGain = null;
@@ -2713,6 +2853,19 @@
   let releaseTimer = 0;
   let nextRepTimer = 0;   // completeRep()'s 650ms cue-settle delay before nextRep()
 
+  // Drop a release that is still inside its release-grace window.
+  function cancelPendingRelease(){ clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false; }
+  // Hold times are kept to 0.1 s: whole-second rounding turned every sub-second
+  // hold into 0 s of hold time, and stopwatch-path floats leaked into stats raw.
+  const round1 = v => Math.round(v*10)/10;
+  // A seconds value for speech, in the cue language's number format (12,4 / 12.4).
+  const spokenSec = v => round1(v).toLocaleString(speechTag(), { maximumFractionDigits:1 });
+  // The two stat slots under the cue (#swStats) — scenarios and Interval relabel them.
+  function setSwLabels(a, b){
+    if(a != null) $("swLbl1").textContent = a;
+    if(b != null) $("swLbl2").textContent = b;
+  }
+
   let wakeLock = null;
   async function acquireWake(){
     try{
@@ -2742,41 +2895,77 @@
     try{ history.pushState({tt:1}, ""); }catch(e){}
     window.addEventListener("popstate", popStateHandler);
     window.addEventListener("beforeunload", beforeUnloadHandler);
-    try{ if(document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen(); }catch(e){}
+    try{
+      if(document.documentElement.requestFullscreen && !document.fullscreenElement){
+        const p = document.documentElement.requestFullscreen();
+        if(p && p.catch) p.catch(()=>{});   // denied outside a user gesture — not an error worth surfacing
+      }
+    }catch(e){}
   }
   function disableGuard(){
     if(!guardActive) return;
     guardActive = false;
     window.removeEventListener("popstate", popStateHandler);
     window.removeEventListener("beforeunload", beforeUnloadHandler);
-    try{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); }catch(e){}
+    // drop the entry enableGuard() pushed, so Back works with one press afterwards
+    try{ if(history.state && history.state.tt === 1) history.back(); }catch(e){}
+    try{
+      if(document.fullscreenElement && document.exitFullscreen){
+        const p = document.exitFullscreen();
+        if(p && p.catch) p.catch(()=>{});
+      }
+    }catch(e){}
   }
 
+  // Returns null when the form is valid, otherwise { msg, field } — `field`
+  // is the id of the input to highlight and focus (see showFormError()).
   function validate(){
     const t = T();
+    const fail = (msg, field) => ({ msg, field });
+    // relevant = not inside a section hidden for the current goal/scenario
+    // (the collapsed Advanced section and closed <details> still count)
+    const vis = id => {
+      for(let n = $(id); n && n.id !== "setup"; n = n.parentElement){
+        if(n.classList.contains("hidden") && n.id !== "advancedWrap") return false;
+      }
+      return !!$(id);
+    };
+    // Fields the engine reads with parseInt: a fractional entry used to be
+    // truncated silently (1.5 s rest -> 1 s), so ask for a whole number instead.
+    const wholeIds = ["minReps","maxReps","holdChance","minHold","maxHold","minRest","maxRest",
+      "releaseGrace","penaltyX","lateTol","noisePenaltyX","sdActionSec","sdPauseSec","sdStartReps",
+      "taTarget","rrBpm","rrStep","livesCount","ivPhaseCount"];
+    for(const id of wholeIds){
+      if(!vis(id)) continue;
+      const raw = ($(id).value || "").trim();
+      if(raw !== "" && !Number.isInteger(Number(raw))) return fail(t.errWholeNumber, id);
+    }
     if(goal==="reps"){
       const a=num("minReps"), b=num("maxReps");
-      if(!(a>=1) || !(b>=1)) return t.errRepsInvalid;
-      if(a>b) return t.errRepsMinMax;
+      if(!(a>=1)) return fail(t.errRepsInvalid, "minReps");
+      if(!(b>=1)) return fail(t.errRepsInvalid, "maxReps");
+      if(a>b) return fail(t.errRepsMinMax, "minReps");
     } else if(goal==="time"){
-      if(!(num("totalMin")>=1)) return t.errDurationMin;
+      if(!(fnum("totalMin")>=1)) return fail(t.errDurationMin, "totalMin");
     }
     if(goal!=="scenario"){
-      if(!(fnum("baseHold")>=0.1)) return t.errHoldMin;
+      if(!(fnum("baseHold")>=0.1)) return fail(t.errHoldMin, "baseHold");
       const hc=num("holdChance");
-      if(!(hc>=0 && hc<=100)) return t.errChanceRange;
+      if(!(hc>=0 && hc<=100)) return fail(t.errChanceRange, "holdChance");
       const mn=num("minHold"), mx=num("maxHold");
-      if(!(mn>=1)||!(mx>=1)) return t.errLongHoldInvalid;
-      if(mn>mx) return t.errLongHoldMinMax;
+      if(!(mn>=1)) return fail(t.errLongHoldInvalid, "minHold");
+      if(!(mx>=1)) return fail(t.errLongHoldInvalid, "maxHold");
+      if(mn>mx) return fail(t.errLongHoldMinMax, "minHold");
       const rn=num("minRest"), rx=num("maxRest");
-      if(rn<0 || rx<0 || isNaN(rn) || isNaN(rx)) return t.errRestNegative;
-      if(rn>rx) return t.errRestMinMax;
+      if(rn<0 || isNaN(rn)) return fail(t.errRestNegative, "minRest");
+      if(rx<0 || isNaN(rx)) return fail(t.errRestNegative, "maxRest");
+      if(rn>rx) return fail(t.errRestMinMax, "minRest");
     }
-    if(num("releaseGrace")<0 || isNaN(num("releaseGrace"))) return t.errReleaseGraceNegative;
+    if(num("releaseGrace")<0 || isNaN(num("releaseGrace"))) return fail(t.errReleaseGraceNegative, "releaseGrace");
     if(goal!=="scenario"){
-      if($("penalty").checked && !(num("penaltyX")>=1)) return t.errPenaltyAmount;
-      if($("penalty").checked && !(num("lateTol")>=1)) return t.errLateTolMin;
-      if($("noisePenalty").checked && !(num("noisePenaltyX")>=1)) return t.errNoisePenaltyAmount;
+      if($("penalty").checked && !(num("penaltyX")>=1)) return fail(t.errPenaltyAmount, "penaltyX");
+      if($("penalty").checked && !(num("lateTol")>=1)) return fail(t.errLateTolMin, "lateTol");
+      if($("noisePenalty").checked && !(num("noisePenaltyX")>=1)) return fail(t.errNoisePenaltyAmount, "noisePenaltyX");
     }
     // a built-in level brings its own phases — only the hand-assembled path
     // depends on saved presets being present and of the right kind
@@ -2787,10 +2976,30 @@
         const name = $("ivPhasePreset"+i).value;
         // a stale selection can still point at a Scenario-mode preset (saved
         // before the dropdown filter existed) — reject it like a missing one
-        if(!name || !presets[name] || presets[name].goal === "scenario") return t.errIvPhasePreset(i);
+        if(!name || !presets[name] || presets[name].goal === "scenario") return fail(t.errIvPhasePreset(i), "ivPhasePreset"+i);
       }
     }
     return null;
+  }
+
+  // Shows a validate() failure: message in the sticky start bar, and the
+  // offending field outlined, revealed (its collapsed panel / the advanced
+  // section opened) and focused — the error line alone was easy to miss.
+  function clearFormError(){
+    $("err").textContent = "";
+    document.querySelectorAll("#setup .invalid").forEach(el=>{ el.classList.remove("invalid"); el.removeAttribute("aria-invalid"); });
+  }
+  function showFormError(res){
+    clearFormError();
+    $("err").textContent = res.msg;
+    const el = res.field && $(res.field); if(!el) return;
+    const adv = $("advancedWrap");
+    if(adv && adv.contains(el) && adv.classList.contains("hidden")) $("advToggle").click();
+    for(let d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
+    el.classList.add("invalid");
+    el.setAttribute("aria-invalid", "true");
+    el.scrollIntoView({ block:"center", behavior:"smooth" });
+    try{ el.focus({ preventScroll:true }); }catch(e){ el.focus(); }
   }
 
   // Populates the Reps-mode difficulty fields (hold/rest ranges,
@@ -2850,9 +3059,9 @@
       armed: false,
       progressTone: $("progressTone").checked,
       prAnnounce: $("prAnnounce").checked,
-      pr: getPR(),          
-      longestHold: 0,       
-      prBeaten: false,      
+      pr: getPR(),
+      longestHold: 0,
+      prBeaten: false,
       sig: {
         speech: $("voice").checked,
         beep: $("beep").checked,
@@ -2914,7 +3123,7 @@
         cfg.totalReps = null;
       }
     } else if(goal==="time"){
-      cfg.totalMin = num("totalMin");
+      cfg.totalMin = fnum("totalMin");   // fractional minutes are fine (input step 0.5)
       cfg.totalReps = null;
     }
     // goal==="reps": cfg.totalReps is already correctly rolled by applyRepsConfig(cfg, readAll()) above
@@ -2940,9 +3149,13 @@
   }
 
   function startSession(){
-    const msg = validate();
-    $("err").textContent = msg || "";
-    if(msg) return;
+    const res = validate();
+    if(res){ showFormError(res); return; }
+    clearFormError();
+
+    // one-time safety notice before the very first session; its button
+    // re-enters startSession()
+    if(!KV.get(SAFETY_KEY, false)){ openModal("safetyDialog", "safetyOk"); return; }
 
     // camera mode: place & calibrate the ROI first, then this runs again in "session" mode
     if(camEnabled() && cam.mode!=="session"){ camOpenSetup(); return; }
@@ -2951,6 +3164,7 @@
 
     S = buildPlan();
     S.done = 0;
+    stopConfetti();   // the previous finish screen's burst must not rain into this session
     show("session");
     $("repTotalWrap").style.display = S.totalReps ? "" : "none";
     $("repTotal").textContent = S.totalReps || "";
@@ -2959,6 +3173,12 @@
     armReady();   // (mic lifecycle handled by show("session") → micSync() above)
   }
 
+  // Durations for stats/finish: "1:05" from a minute on, "42.5 s" below.
+  function fmtDur(s){
+    if(s < 59.95) return round1(Math.max(0, s)) + " s";
+    s = Math.round(s);
+    return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+  }
   function fmtSW(s){
     s = Math.max(0,s);
     return s.toFixed(1) + "s";
@@ -2978,8 +3198,8 @@
     $("timer").textContent = "";
     setCue("up", T().ready, S.eyesClosed ? T().tapToStart : T().pressToStart);
     $("btnLab").textContent = T().pressToStart;
-    S.armed = true;          
-    S.waitingStart = true;   
+    S.armed = true;
+    S.waitingStart = true;
     setTapSurface(S.eyesClosed);
     $("clock").textContent = (S.goal==="time") ? ("0:00 / " + fmtTime(S.totalMin*60)) : "0:00";
     if(S.scenario === "interval"){
@@ -2993,11 +3213,12 @@
     const el = $("livesRow"); if(!el) return;
     if(!S || S.livesLeft == null){ el.classList.add("hidden"); el.innerHTML = ""; return; }
     el.classList.remove("hidden");
+    el.setAttribute("aria-label", T().ariaLivesLeft(S.livesLeft, S.livesMax));   // the hearts themselves are aria-hidden
     let html = "";
     for(let i=0;i<S.livesMax;i++){
       const lost = i >= S.livesLeft;
       const cls = "heart" + (lost ? " lost" : "") + (lost && i===justLostIdx ? " justLost" : "");
-      html += `<span class="${cls}">♥</span>`;
+      html += `<span class="${cls}" aria-hidden="true">♥</span>`;
     }
     el.innerHTML = html;
   }
@@ -3068,7 +3289,7 @@
   function armReadyScenario(){
     holding = false;
     applyScreenColor();
-    pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
+    cancelPendingRelease();
     setFill(0);
     $("repNow").textContent = 0;
     S.subBase = "";
@@ -3095,15 +3316,13 @@
       S.swLastReleaseTs = null;
       $("swRest").textContent = fmtSW(0);
       $("swLongest").textContent = fmtSW(0);
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().swRestLabel || "Rest since last hold";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().swLongestLabel || "Longest hold";
+      setSwLabels(T().swRestLabel || "Rest since last hold", T().swLongestLabel || "Longest hold");
     } else if (S.scenario === "sd_hold") {
       S.sd_prevHold = 0;
       S.swLastReleaseTs = null;
       $("swRest").textContent = fmtSW(0);
       $("swLongest").textContent = "0.0s";
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().swRestLabel || "Rest since last hold";
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdHoldLastLabel;
+      setSwLabels(T().swRestLabel || "Rest since last hold", T().sdHoldLastLabel);
     } else if (S.scenario === "sd_speed") {
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
@@ -3111,8 +3330,7 @@
       S.sd_actionMsAcc = 0;   // total action-phase time (pauses excluded), for action pace
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdPhaseTimeLabel;
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdSpeedRepsGoal(0);
+      setSwLabels(T().sdPhaseTimeLabel, T().sdSpeedRepsGoal(0));
     } else if (S.scenario === "sd_mixed") {
       S.sd_phase = "action";
       S.sd_repsThisPhase = 0;
@@ -3124,15 +3342,13 @@
       S.sd_lastCountSec = 0;
       $("swRest").textContent = fmtSW((S.sd_actionMs||60000)/1000);
       $("swLongest").textContent = "0";
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdPhaseTimeLabel;
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedActionRepsGoal(S.sd_prevActionReps);
+      setSwLabels(T().sdPhaseTimeLabel, T().sdMixedActionRepsGoal(S.sd_prevActionReps));
     } else if (S.scenario === "timeattack") {
       S.swLongest = 0;
       const tgt = (S.ta_target||60);
       $("swRest").textContent = fmtSW(0);
       $("swLongest").textContent = fmtSW(tgt);
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().taTotalLabel;
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().taTargetLabel;
+      setSwLabels(T().taTotalLabel, T().taTargetLabel);
     } else if (S.scenario === "powerbreath") {
       S.pb_phase = "idle";
       $("repCount").style.visibility = "hidden";   // no reps in this mode
@@ -3142,8 +3358,7 @@
       // rhythm auto-starts with a count-in; no press needed to boot
       $("swRest").textContent = "0";
       $("swLongest").textContent = fmtSW(0);
-      document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().rhythmLevelLabel;
-      document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().rhythmHitsLabel;
+      setSwLabels(T().rhythmLevelLabel, T().rhythmHitsLabel);
       rhythmStart();
     }
   }
@@ -3158,147 +3373,148 @@
     }
 
     if(S.scenario === "powerbreath"){
-      S.pb_timer = setInterval(pbTick, 50);
+      const timerId = S.pb_timer = setInterval(()=>{
+        if(!S || S.scenario !== "powerbreath"){ clearInterval(timerId); return; }   // S may be null: never read the id off it
+        pbTick();
+      }, 50);
       pbStartBreathing();
     }
 
-    if(S.scenario==="sd_speed") {
-       const actionMs = S.sd_actionMs || 60000;
-       const pauseMs  = S.sd_pauseMs  || 20000;
-       S.sd_phaseEndTs = S.startTime + actionMs;
-       S.sd_timer = setInterval(()=>{
-           if(!S || S.scenario !== "sd_speed") { clearInterval(S.sd_timer); return; }
-           const now = Date.now();
-           const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
-           $("swRest").textContent = fmtSW(remain);
-           
-           if (S.sd_phase === "action" && !holding) {
-               $("subcue").textContent = T().sdActionEndsIn(Math.ceil(remain));
-           } else if (S.sd_phase === "rest") {
-               $("subcue").textContent = T().sdRestNextIn(Math.ceil(remain));
-           }
+    if(S.scenario==="sd_speed"){
+      const actionMs = S.sd_actionMs || 60000;
+      const pauseMs  = S.sd_pauseMs  || 20000;
+      S.sd_phaseEndTs = S.startTime + actionMs;
+      const timerId = S.sd_timer = setInterval(()=>{
+        if(!S || S.scenario !== "sd_speed"){ clearInterval(timerId); return; }   // S may be null: never read the id off it
+        const now = Date.now();
+        const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
+        $("swRest").textContent = fmtSW(remain);
 
-           if (remain <= 0) {
-               if (S.sd_phase === "action") {
-                   flushPendingRelease();   // count an in-flight or grace-pending tap synchronously, like sd_mixed
-                   if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
-                       if(tryLoseLife()){
-                           // retry: redo the same action phase from scratch, target unchanged
-                           S.sd_phaseEndTs = now + actionMs;
-                           S.sd_repsThisPhase = 0;
-                           $("repNow").textContent = 0;
-                           $("swLongest").textContent = "0";
-                           setCue("up", T().ready, T().actionPhaseCue);
-                           cmd("down");
-                           return;
-                       }
-                       S.scenarioFailMsg = T().sdSpeedFail(S.sd_repsThisPhase, S.sd_prevPhaseReps);
-                       finish();
-                       return;
-                   }
-                   S.sd_actionMsAcc = (S.sd_actionMsAcc || 0) + actionMs;   // completed action phase
-                   S.sd_phase = "rest";
-                   S.sd_phaseEndTs = now + pauseMs;
-                   S.sd_prevPhaseReps = Math.max(S.sd_prevPhaseReps || 0, S.sd_repsThisPhase);
-                   S.sd_repsThisPhase = 0;
-                   $("repNow").textContent = 0;
-                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdSpeedRepsGoal(S.sd_prevPhaseReps);
-                   $("swLongest").textContent = "0";
-                   setCue("rest", T().scenarioPauseBig, T().scenarioPauseSub);
-                   cmd("up");
-               } else {
-                   S.sd_phase = "action";
-                   S.sd_phaseEndTs = now + actionMs;
-                   setCue("up", T().ready, T().actionPhaseCue);
-                   cmd("down");
-               }
-           }
-       }, 100);
+        if (S.sd_phase === "action" && !holding) {
+          $("subcue").textContent = T().sdActionEndsIn(Math.ceil(remain));
+        } else if (S.sd_phase === "rest") {
+          $("subcue").textContent = T().sdRestNextIn(Math.ceil(remain));
+        }
+
+        if (remain <= 0) {
+          if (S.sd_phase === "action") {
+            flushPendingRelease();   // count an in-flight or grace-pending tap synchronously, like sd_mixed
+            if (S.sd_prevPhaseReps > 0 && S.sd_repsThisPhase < S.sd_prevPhaseReps) {
+              if(tryLoseLife()){
+                // retry: redo the same action phase from scratch, target unchanged
+                S.sd_phaseEndTs = now + actionMs;
+                S.sd_repsThisPhase = 0;
+                $("repNow").textContent = 0;
+                $("swLongest").textContent = "0";
+                setCue("up", T().ready, T().actionPhaseCue);
+                cmd("down");
+                return;
+              }
+              S.scenarioFailMsg = T().sdSpeedFail(S.sd_repsThisPhase, S.sd_prevPhaseReps);
+              finish();
+              return;
+            }
+            S.sd_actionMsAcc = (S.sd_actionMsAcc || 0) + actionMs;   // completed action phase
+            S.sd_phase = "rest";
+            S.sd_phaseEndTs = now + pauseMs;
+            S.sd_prevPhaseReps = Math.max(S.sd_prevPhaseReps || 0, S.sd_repsThisPhase);
+            S.sd_repsThisPhase = 0;
+            $("repNow").textContent = 0;
+            setSwLabels(null, T().sdSpeedRepsGoal(S.sd_prevPhaseReps));
+            $("swLongest").textContent = "0";
+            setCue("rest", T().scenarioPauseBig, T().scenarioPauseSub);
+            cmd("up");
+          } else {
+            S.sd_phase = "action";
+            S.sd_phaseEndTs = now + actionMs;
+            setCue("up", T().ready, T().actionPhaseCue);
+            cmd("down");
+          }
+        }
+      }, 100);
     }
 
-    if(S.scenario==="sd_mixed") {
-       const actionMs = S.sd_actionMs || 60000;
-       S.sd_phaseEndTs = S.startTime + actionMs;
-       S.sd_timer = setInterval(()=>{
-           if(!S || S.scenario !== "sd_mixed") { clearInterval(S.sd_timer); return; }
-           // hold phase is freeform (no countdown) — driven by press/release
-           if (S.sd_phase === "hold"){
-               if(!holding) $("subcue").textContent = T().sdMixedHoldSub(S.sd_prevHold);
-               return;
-           }
-           const now = Date.now();
-           const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
-           $("swRest").textContent = fmtSW(remain);
+    if(S.scenario==="sd_mixed"){
+      const actionMs = S.sd_actionMs || 60000;
+      S.sd_phaseEndTs = S.startTime + actionMs;
+      const timerId = S.sd_timer = setInterval(()=>{
+        if(!S || S.scenario !== "sd_mixed"){ clearInterval(timerId); return; }   // S may be null: never read the id off it
+        // hold phase is freeform (no countdown) — driven by press/release
+        if (S.sd_phase === "hold"){
+          if(!holding) $("subcue").textContent = T().sdMixedHoldSub(S.sd_prevHold);
+          return;
+        }
+        const now = Date.now();
+        const remain = Math.max(0, (S.sd_phaseEndTs - now) / 1000);
+        $("swRest").textContent = fmtSW(remain);
 
-           if (S.sd_phase === "action") {
-               const secs = Math.ceil(remain);
-               if(!holding) $("subcue").textContent = T().sdMixedActionCountdown(secs);
-               // prominent 3-2-1 countdown into the hold phase
-               if(secs>=1 && secs<=3 && !holding){
-                   $("timer").textContent = String(secs);
-                   if(secs !== S.sd_lastCountSec){
-                       S.sd_lastCountSec = secs;
-                       const el = $("timer");                         // re-trigger the pulse each second
-                       el.classList.remove("counting"); void el.offsetWidth; el.classList.add("counting");
-                       if(S.sig.beep) beep(500 + (4-secs)*130, 90, 0);   // 3->620, 2->750, 1->880
-                       if(S.sig.vibrate) vibrate(20);
-                   }
-               }
-           } else if (S.sd_phase === "pause") {
-               $("subcue").textContent = T().sdMixedPauseSub(Math.ceil(remain));
-           }
+        if (S.sd_phase === "action") {
+          const secs = Math.ceil(remain);
+          if(!holding) $("subcue").textContent = T().sdMixedActionCountdown(secs);
+          // prominent 3-2-1 countdown into the hold phase
+          if(secs>=1 && secs<=3 && !holding){
+            $("timer").textContent = String(secs);
+            if(secs !== S.sd_lastCountSec){
+              S.sd_lastCountSec = secs;
+              const el = $("timer");                         // re-trigger the pulse each second
+              el.classList.remove("counting"); void el.offsetWidth; el.classList.add("counting");
+              if(S.sig.beep) beep(500 + (4-secs)*130, 90, 0);   // 3->620, 2->750, 1->880
+              if(S.sig.vibrate) vibrate(20);
+            }
+          }
+        } else if (S.sd_phase === "pause") {
+          $("subcue").textContent = T().sdMixedPauseSub(Math.ceil(remain));
+        }
 
-           if (remain <= 0) {
-               if (S.sd_phase === "action") {
-                   flushPendingRelease();   // count any in-progress tap synchronously
-                   // must do MORE reps than the previous action phase
-                   if (S.sd_repsThisPhase <= S.sd_prevActionReps) {
-                       if(tryLoseLife()){
-                           // retry: redo the same action phase from scratch, target unchanged
-                           S.sd_phaseEndTs = now + actionMs;
-                           S.sd_repsThisPhase = 0;
-                           S.sd_lastCountSec = 0;
-                           setFill(0);
-                           $("timer").classList.remove("counting");
-                           $("repNow").textContent = 0;
-                           document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedActionRepsGoal(S.sd_prevActionReps);
-                           $("swLongest").textContent = "0";
-                           setCue("up", T().ready, T().actionPhaseCue);
-                           cmd("down");
-                           return;
-                       }
-                       S.scenarioFailMsg = T().sdMixedActionFail(S.sd_repsThisPhase, S.sd_prevActionReps);
-                       finish();
-                       return;
-                   }
-                   S.sd_prevActionReps = S.sd_repsThisPhase;
-                   // -> HOLD phase (must beat the previous hold to continue)
-                   S.sd_phase = "hold";
-                   S.sd_holdTargetHit = false;
-                   setFill(0);
-                   $("timer").classList.remove("counting");
-                   $("swRest").textContent = fmtSW(0);
-                   $("timer").textContent = fmtSW(0);
-                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdHoldPhaseLabel;
-                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdHoldGoalLabel(S.sd_prevHold);
-                   $("swLongest").textContent = S.sd_prevHold>0 ? `>${S.sd_prevHold.toFixed(1)}s` : "–";
-                   setCue("up", T().holdBigCue, T().sdMixedHoldTargetSub(S.sd_prevHold));
-                   mixedHoldCue();
-               } else if (S.sd_phase === "pause") {
-                   S.sd_phase = "action";
-                   S.sd_phaseEndTs = now + actionMs;
-                   S.sd_repsThisPhase = 0;
-                   S.sd_lastCountSec = 0;
-                   setFill(0);
-                   $("repNow").textContent = 0;
-                   document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().sdPhaseTimeLabel;
-                   document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedActionRepsGoal(S.sd_prevActionReps);
-                   $("swLongest").textContent = "0";
-                   setCue("up", T().ready, T().actionPhaseCue);
-                   cmd("down");
-               }
-           }
-       }, 100);
+        if (remain <= 0) {
+          if (S.sd_phase === "action") {
+            flushPendingRelease();   // count any in-progress tap synchronously
+            // must do MORE reps than the previous action phase
+            if (S.sd_repsThisPhase <= S.sd_prevActionReps) {
+              if(tryLoseLife()){
+                // retry: redo the same action phase from scratch, target unchanged
+                S.sd_phaseEndTs = now + actionMs;
+                S.sd_repsThisPhase = 0;
+                S.sd_lastCountSec = 0;
+                setFill(0);
+                $("timer").classList.remove("counting");
+                $("repNow").textContent = 0;
+                setSwLabels(null, T().sdMixedActionRepsGoal(S.sd_prevActionReps));
+                $("swLongest").textContent = "0";
+                setCue("up", T().ready, T().actionPhaseCue);
+                cmd("down");
+                return;
+              }
+              S.scenarioFailMsg = T().sdMixedActionFail(S.sd_repsThisPhase, S.sd_prevActionReps);
+              finish();
+              return;
+            }
+            S.sd_prevActionReps = S.sd_repsThisPhase;
+            // -> HOLD phase (must beat the previous hold to continue)
+            S.sd_phase = "hold";
+            S.sd_holdTargetHit = false;
+            setFill(0);
+            $("timer").classList.remove("counting");
+            $("swRest").textContent = fmtSW(0);
+            $("timer").textContent = fmtSW(0);
+            setSwLabels(T().sdHoldPhaseLabel, T().sdHoldGoalLabel(S.sd_prevHold));
+            $("swLongest").textContent = S.sd_prevHold>0 ? `>${S.sd_prevHold.toFixed(1)}s` : "–";
+            setCue("up", T().holdBigCue, T().sdMixedHoldTargetSub(S.sd_prevHold));
+            mixedHoldCue();
+          } else if (S.sd_phase === "pause") {
+            S.sd_phase = "action";
+            S.sd_phaseEndTs = now + actionMs;
+            S.sd_repsThisPhase = 0;
+            S.sd_lastCountSec = 0;
+            setFill(0);
+            $("repNow").textContent = 0;
+            setSwLabels(T().sdPhaseTimeLabel, T().sdMixedActionRepsGoal(S.sd_prevActionReps));
+            $("swLongest").textContent = "0";
+            setCue("up", T().ready, T().actionPhaseCue);
+            cmd("down");
+          }
+        }
+      }, 100);
     }
 
     startClock();
@@ -3311,8 +3527,7 @@
   // logic — was duplicated near-verbatim between pressStartStopwatch() and
   // pressStart(). loopFn is the RAF loop to resume (stopwatchHoldLoop or loop).
   function resumeHeldRelease(loopFn, pointerId){
-    clearTimeout(releaseTimer); releaseTimer = 0;
-    pendingRelease = false;
+    cancelPendingRelease();
     holding = true;
     activePointerId = (pointerId !== undefined) ? pointerId : SYNTHETIC_POINTER;
     applyScreenColor();
@@ -3331,6 +3546,16 @@
   }
 
   let swRestTimer = 0;
+  // Stopwatch / Sudden Death Hold: count up the rest since the last release.
+  function startRestTicker(){
+    clearInterval(swRestTimer);
+    swRestTimer = setInterval(()=>{
+      if(!S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold")){ clearInterval(swRestTimer); swRestTimer = 0; return; }
+      const rs = (Date.now() - S.swLastReleaseTs)/1000;
+      $("timer").textContent = fmtSW(rs);
+      $("swRest").textContent = fmtSW(rs);
+    }, 100);
+  }
   function pressStartStopwatch(pointerId){
     if(S && S.scenario === "powerbreath"){ pbPress(); return; }   // a press = boot / end the retention, never a hold
     if(S && S.scenario === "rhythm"){ rhythmTap(); return; }   // a press = a beat tap
@@ -3373,8 +3598,7 @@
     } else if(!pendingRelease){
       return;
     }
-    clearTimeout(releaseTimer); releaseTimer = 0;
-    pendingRelease = false;
+    cancelPendingRelease();
     finalizeStopwatchRelease();
   }
   function stopwatchHoldLoop(){
@@ -3437,13 +3661,7 @@
                 setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
                 $("btnLab").textContent = T().pressToStart;
                 $("timer").textContent = fmtSW(0);
-                clearInterval(swRestTimer);
-                swRestTimer = setInterval(()=>{
-                  if(!S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold")) { clearInterval(swRestTimer); return; }
-                  const rs = (Date.now() - S.swLastReleaseTs)/1000;
-                  $("timer").textContent = fmtSW(rs);
-                  $("swRest").textContent = fmtSW(rs);
-                }, 100);
+                startRestTicker();
                 return;
             }
             S.scenarioFailMsg = T().sdHoldFail(heldSec.toFixed(1), S.sd_prevHold.toFixed(1));
@@ -3475,7 +3693,7 @@
                 }
                 S.scenarioFailMsg = T().sdMixedHoldFail(heldSec.toFixed(1), S.sd_prevHold.toFixed(1));
                 S.holdSec = (S.holdSec||0) + heldSec;
-                if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;
+                if(round1(heldSec) > (S.longestHold||0)) S.longestHold = round1(heldSec);
                 finish();
                 return;
             }
@@ -3486,8 +3704,7 @@
             S.sd_phase = "pause";
             S.sd_phaseEndTs = Date.now() + (S.sd_pauseMs || 20000);
             setFill(0);
-            document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().pauseLabel;
-            document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = T().sdMixedRoundLabel(S.sd_mixedRounds);
+            setSwLabels(T().pauseLabel, T().sdMixedRoundLabel(S.sd_mixedRounds));
             $("swLongest").textContent = fmtSW(S.sd_prevHold);
         }
     } else if (S.scenario === "sd_speed") {
@@ -3502,17 +3719,16 @@
         $("repNow").textContent = S.done;
     }
 
-    S.holdSec = (S.holdSec||0) + heldSec;                 
+    S.holdSec = (S.holdSec||0) + heldSec;
     if(S.scenario === "stopwatch") {
         if(heldSec > S.swLongest) S.swLongest = heldSec;
         $("swLongest").textContent = fmtSW(S.swLongest);
     }
 
-    if(heldSec > (S.longestHold||0)) S.longestHold = heldSec;  
-    const heldSecRounded = Math.round(heldSec);
-    if(heldSecRounded > (S.pr||0) && !S.prBeaten && S.prAnnounce){
+    if(round1(heldSec) > (S.longestHold||0)) S.longestHold = round1(heldSec);
+    if(round1(heldSec) > (S.pr||0) && !S.prBeaten && S.prAnnounce){
       S.prBeaten = true;
-      say(T().newRecord(heldSecRounded));
+      say(T().newRecord(spokenSec(heldSec)));
     }
     if(isActionTap()) tick("up"); else cmd("up");
 
@@ -3533,13 +3749,7 @@
         setCue("rest", T().rest, S.eyesClosed ? T().tapToStart : T().pressToStart);
         $("btnLab").textContent = T().pressToStart;
         $("timer").textContent = fmtSW(0);
-        clearInterval(swRestTimer);
-        swRestTimer = setInterval(()=>{
-          if(!S || (S.scenario !== "stopwatch" && S.scenario !== "sd_hold")) { clearInterval(swRestTimer); return; }
-          const rs = (Date.now() - S.swLastReleaseTs)/1000;
-          $("timer").textContent = fmtSW(rs);
-          $("swRest").textContent = fmtSW(rs);
-        }, 100);
+        startRestTicker();
     }
   }
 
@@ -3547,7 +3757,7 @@
   function taComplete(target){
     releaseHold(); progressStop();
     $("holdBtn").classList.remove("holding");
-    clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
+    cancelPendingRelease();
     S.holdSec = target;
     const wall = Math.max(0.1, (Date.now() - S.startTime)/1000);
     const score = Math.round(target / wall * 100);
@@ -3587,10 +3797,12 @@
     rhythmUpdateStats();
     setCue("up", T().rhythmGetReady, T().rhythmTapBeat);
     $("btnLab").textContent = T().rhythmTap;
-    S.rr_timer = setInterval(rhythmTick, 20);
+    const timerId = S.rr_timer = setInterval(()=>{
+      if(!S || S.scenario !== "rhythm"){ clearInterval(timerId); return; }   // S may be null: never read the id off it
+      rhythmTick();
+    }, 20);
   }
   function rhythmTick(){
-    if(!S || S.scenario !== "rhythm"){ clearInterval(S.rr_timer); return; }
     const now = Date.now(), bt = S.rr_beatTime, W = S.rr_window;
     if(now >= bt && !S.rr_ticked){ S.rr_ticked = true; rhythmBeep(S.rr_countIn > 0); rhythmPulse(); }
     if(now > bt + W){
@@ -3665,9 +3877,8 @@
   function pbUpdateStats(){
     if(!S || S.scenario !== "powerbreath") return;
     const t = T();
-    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = t.pbRoundLabel;
+    setSwLabels(t.pbRoundLabel, t.pbPhaseLabel);
     $("swRest").textContent = t.pbRoundOf(S.pb_roundIdx + 1, S.pb_rounds.length);
-    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = t.pbPhaseLabel;
     // defaults to "breathing" for the pre-start and between-rounds states,
     // which is what is coming up next in both
     $("swLongest").textContent = S.pb_phase === "retention" ? t.pbPhaseRetention
@@ -3746,7 +3957,6 @@
   }
 
   function pbTick(){
-    if(!S || S.scenario !== "powerbreath"){ clearInterval(S.pb_timer); return; }
     const now = Date.now();
     if(S.pb_phase === "breathe"){
       if(now < S.pb_halfEndTs){
@@ -3840,7 +4050,21 @@
   function startClock(){
     clearInterval(clockTimer);
     updateClock();
-    clockTimer = setInterval(updateClock, 1000);
+    clockTimer = setInterval(()=>{ updateClock(); checkIdleDeadline(); }, 1000);
+  }
+  // Time mode and an Interval time phase used to end only between reps
+  // (nextRep()/beginRep()), so a session left waiting for a press ran on
+  // forever ("5:40 / 5:00"). Once the deadline passes while nothing is being
+  // held, end now. A hold in progress (or inside its release grace) still
+  // gets to finish its rep, as before.
+  function checkIdleDeadline(){
+    if(!S || !S.armed || S.waitingStart || holding || pendingRelease || !S.endAt) return;
+    if(Date.now() < S.endAt) return;
+    if(S.goal === "time"){ finish(); return; }
+    if(S.scenario === "interval" && S.iv_phaseMode === "time"){
+      clearInterval(reactTimer); reactTimer = 0;
+      nextRep(true);   // advances the phase (or finishes the sequence)
+    }
   }
 
   function timeUp(){ return S.goal==="time" && S.endAt && Date.now() >= S.endAt; }
@@ -3848,10 +4072,10 @@
   function ivUpdatePhaseIndicator(){
     if(!S || S.scenario !== "interval") return;
     $("swStats").classList.remove("hidden");
-    document.querySelector('#swStats .swStat:nth-child(1) .swLbl').textContent = T().ivPhaseLabel;
+    setSwLabels(T().ivPhaseLabel, null);
     $("swRest").textContent = T().ivPhaseOfLabel(S.iv_phaseIdx+1, S.iv_phasePresets.length);
     // a built-in level's phases are sections of that level, not saved presets
-    document.querySelector('#swStats .swStat:nth-child(2) .swLbl').textContent = S.iv_phaseObjs ? T().ivStepLabel : T().ivPresetLabel;
+    setSwLabels(null, S.iv_phaseObjs ? T().ivStepLabel : T().ivPresetLabel);
     $("swLongest").textContent = S.iv_phasePresets[S.iv_phaseIdx] || "";
   }
 
@@ -3938,7 +4162,7 @@
     // advance the phase (or finish) instead of starting one more rep, matching
     // standalone Time mode's timeUp() check above
     if(S.scenario === "interval" && S.iv_phaseMode === "time" && S.endAt && Date.now() >= S.endAt) return nextRep(true);
-    pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
+    cancelPendingRelease();
     S.cur = holdDurationFor(S);
     S.heldMs = 0;
     S.lastSpokenSec = null;
@@ -3958,7 +4182,7 @@
     }
     $("timer").textContent = "";
     S.subBase = sub;
-    S.armed = true;    
+    S.armed = true;
     setCue("up", big, sub);
     cmd("down");
     $("btnLab").textContent = T().pressHold;
@@ -4032,7 +4256,7 @@
           cmdCount(remain);
         }
       } else {
-        $("timer").textContent = remain;   
+        $("timer").textContent = remain;
       }
     } else {
       $("timer").textContent = "";
@@ -4070,9 +4294,9 @@
     lastTs = 0;
     $("holdBtn").classList.add("holding");
     $("btnLab").textContent = T().holding;
-    if(S.sig.vibrate) vibrate(25);  
-    if(S.cur.long) cmd("hold");   
-    progressStart();               
+    if(S.sig.vibrate) vibrate(25);
+    if(S.cur.long) cmd("hold");
+    progressStart();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(loop);
   }
@@ -4142,7 +4366,7 @@
 
   function penaltyUnit(x){
     const isTimed = S && (S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time"));
-    return isTimed ? `+${x}s` : `+${x} reps`;
+    return isTimed ? T().penaltyUnitSecs(x) : T().penaltyUnitReps(x);
   }
   function penaltyNote(base){
     if(!S || !S.penalty) return base;
@@ -4152,18 +4376,18 @@
   function completeRep(){
     holding = false;
     applyScreenColor();
-    pendingRelease = false; clearTimeout(releaseTimer); releaseTimer = 0;
+    cancelPendingRelease();
     S.armed = false;
     cancelAnimationFrame(raf);
     clearInterval(reactTimer); reactTimer = 0;
     progressStop();
     $("holdBtn").classList.remove("holding");
     setFill(1);
-    const heldSec = Math.round((S.heldMs || 0)/1000);
+    const heldSec = round1((S.heldMs || 0)/1000);
     if(heldSec > S.longestHold) S.longestHold = heldSec;
     if(heldSec > (S.pr || 0) && !S.prBeaten && S.prAnnounce){
       S.prBeaten = true;
-      say(T().newRecord(heldSec));
+      say(T().newRecord(spokenSec(heldSec)));
     }
     S.done++;
     if(S.scenario === "interval") S.iv_totalDone = (S.iv_totalDone||0) + 1;   // S.done is per-phase for interval (reset in ivAdvancePhase()); this tracks the true cross-phase total
@@ -4184,7 +4408,7 @@
     clearInterval(reactTimer); reactTimer = 0;
     clearInterval(clockTimer); clockTimer = 0;
     clearInterval(swRestTimer); swRestTimer = 0;
-    clearTimeout(releaseTimer); releaseTimer = 0; pendingRelease = false;
+    cancelPendingRelease();
     clearTimeout(nextRepTimer); nextRepTimer = 0;
     if (S && S.sd_timer) clearInterval(S.sd_timer);
     if (S && S.rr_timer) clearInterval(S.rr_timer);
@@ -4199,6 +4423,7 @@
     }
 
     progressStop();
+    closeModal("stopDialog");   // a session can also end naturally while the Stop dialog is open
     $("swStats").classList.add("hidden");
     $("livesRow").classList.add("hidden");
     $("screenColorLayer").classList.add("hidden");
@@ -4213,12 +4438,15 @@
     const total = S ? (S.scenario === "interval" ? (S.iv_totalDone||0) : S.done) : 0;
     const elapsedSec = (S && S.startTime) ? Math.round((Date.now()-S.startTime)/1000) : 0;
     $("doneNum").textContent = total;
-    if (S && S.scenarioFailMsg) {
-        $("doneMsg").textContent = S.scenarioFailMsg;
+    if(S && S.scenarioFailMsg){
+      $("doneMsg").textContent = S.scenarioFailMsg;
     } else {
-        $("doneMsg").textContent = (total===1 ? T().rep : (T().rep + "s")) + " · " + fmtTime(elapsedSec);
+      $("doneMsg").textContent = T().repsLabel(total) + " · " + fmtTime(elapsedSec);
     }
-    
+    const sum = $("doneSum");
+    const hasHolds = !!(S && S.startTime && ((S.longestHold||0) > 0 || (S.holdSec||0) > 0));
+    sum.classList.toggle("hidden", !hasHolds);
+    sum.innerHTML = hasHolds ? T().finishSummary(fmtSW(S.longestHold||0), fmtDur(S.holdSec||0)) : "";
     pbRenderDoneList(S && S.pb_log);
 
     cmdFinish();
@@ -4232,10 +4460,10 @@
         goal: S.goal,
         reps: total,
         elapsed: elapsedSec,
-        holdSec: S.holdSec || 0,
-        longestHold: S.longestHold || 0,
+        holdSec: round1(S.holdSec || 0),
+        longestHold: round1(S.longestHold || 0),
       });
-      if((S.longestHold||0) > getPR()) setPR(S.longestHold);
+      if((S.longestHold||0) > getPR()) setPR(round1(S.longestHold));
       let sdActionSec = 0;
       if(S.scenario === "sd_speed"){
         sdActionSec = (S.sd_actionMsAcc || 0) / 1000;
@@ -4357,8 +4585,9 @@
     if(rv) rv.textContent=rel; if(pv) pv.textContent=press;
     updateCamMarks(); saveCamCfg();
   }
-  function camOnPress(){ if(cam.mode==="session"){ try{ pressStart(); }catch(e){} } }
-  function camOnRelease(){ if(cam.mode==="session"){ try{ pressEnd(); }catch(e){} } }
+  // caught so a failure can't kill the camera RAF loop, but logged — not swallowed
+  function camOnPress(){ if(cam.mode==="session"){ try{ pressStart(); }catch(e){ console.error(e); } } }
+  function camOnRelease(){ if(cam.mode==="session"){ try{ pressEnd(); }catch(e){ console.error(e); } } }
   function startCamLoop(){
     if(cam.running) return; cam.running=true;
     const tick=()=>{
@@ -4720,6 +4949,53 @@
     updateNoiseMark();
   })();
 
+  // ---------- modal dialogs (Stop confirmation, first-session safety notice) ----------
+  let modalReturnFocus = null;
+  function modalOpen(id){ const el = $(id); return !!el && !el.classList.contains("hidden"); }
+  function openModal(id, focusId){
+    const el = $(id); if(!el) return;
+    modalReturnFocus = document.activeElement;
+    el.classList.remove("hidden"); el.setAttribute("aria-hidden", "false");
+    const f = $(focusId); if(f) f.focus();
+  }
+  function closeModal(id){
+    const el = $(id); if(!el || el.classList.contains("hidden")) return;
+    el.classList.add("hidden"); el.setAttribute("aria-hidden", "true");
+    if(modalReturnFocus && document.contains(modalReturnFocus) && modalReturnFocus.offsetParent !== null) modalReturnFocus.focus();
+    modalReturnFocus = null;
+  }
+
+  // Stop button / Esc. Stopwatch has no natural end, so it is the one mode
+  // whose session can be *saved* from here (it used to be impossible to ever
+  // record one). Everything else is discarded as before — an aborted session
+  // never counts — but with the swipe guard on, a stray tap on Stop now asks
+  // first instead of throwing the session away.
+  function requestStop(){
+    if(!S) return;
+    const started = !!S.startTime;
+    const canSave = started && S.goal === "scenario" && S.scenario === "stopwatch"
+                    && ((S.done || 0) > 0 || holding || pendingRelease);
+    if(!started || (!canSave && !S.guardExit)){ stopSession(); return; }
+    const t = T();
+    $("stopDialogBody").textContent = canSave ? t.stopBodyOpen : t.stopBodyAbort;
+    $("stopSave").classList.toggle("hidden", !canSave);
+    openModal("stopDialog", canSave ? "stopSave" : "stopContinue");
+  }
+  function stopAndSave(){
+    closeModal("stopDialog");
+    if(!S) return;
+    flushPendingRelease();   // count a hold that is still in progress
+    if(S) finish();
+  }
+  $("stopSave").addEventListener("click", stopAndSave);
+  $("stopDiscard").addEventListener("click", ()=>{ closeModal("stopDialog"); stopSession(); });
+  $("stopContinue").addEventListener("click", ()=>closeModal("stopDialog"));
+  $("safetyOk").addEventListener("click", ()=>{
+    KV.set(SAFETY_KEY, true);
+    closeModal("safetyDialog");
+    startSession();
+  });
+
   const btn = $("holdBtn");
   btn.addEventListener("pointerdown", e=>{
     e.preventDefault();
@@ -4745,7 +5021,20 @@
 
   let keyHeld = false;
   window.addEventListener("keydown", e=>{
+    if(e.key === "Escape"){
+      if(modalOpen("stopDialog")){ e.preventDefault(); closeModal("stopDialog"); return; }
+      if(modalOpen("safetyDialog")){ e.preventDefault(); closeModal("safetyDialog"); return; }
+    }
     if($("session").classList.contains("hidden")) return;
+    if(modalOpen("stopDialog")) return;   // keys belong to the dialog's buttons
+    if(e.key === "Escape"){ e.preventDefault(); requestStop(); return; }
+    // Space/Enter on any other focused control (e.g. Stop) must reach that
+    // control — swallowing them made Stop unreachable from the keyboard
+    const tgt = e.target;
+    // (only a *visible* one: the Start button that launched the session can
+    // keep focus while hidden, and must not swallow the hold key)
+    if(tgt && tgt.id !== "holdBtn" && tgt.closest && tgt.closest("button, input, select, textarea, a")
+       && tgt.offsetParent !== null) return;
     if((e.code==="Space"||e.code==="Enter") && !e.repeat && !keyHeld){
       e.preventDefault(); keyHeld=true; pressStart();
     }
@@ -4758,17 +5047,24 @@
   window.addEventListener("blur", ()=>{ if(keyHeld){ keyHeld=false; pressEnd(); } });
 
   $("startBtn").addEventListener("click", startSession);
-  $("stopBtn").addEventListener("click", ()=>{
-    stopSession();   // manual stop never records — applies to reps/time and scenario alike
-  });
+  $("stopBtn").addEventListener("click", requestStop);
   $("againBtn").addEventListener("click", ()=>{ show("setup"); });
+  // same form, straight into a new session (via the setup screen, so a
+  // validation error or the camera setup has somewhere to show up)
+  $("repeatBtn").addEventListener("click", ()=>{ show("setup"); startSession(); });
+  // a corrected field drops its validation outline
+  ["input","change"].forEach(ev => $("setup").addEventListener(ev, e=>{
+    const el = e.target;
+    if(el && el.classList && el.classList.contains("invalid")){ el.classList.remove("invalid"); el.removeAttribute("aria-invalid"); }
+  }));
 
   $("presetSave").addEventListener("click", ()=>{ presetSave(); updateSummaries(); });
-  $("presetLoad").addEventListener("click", ()=>{ presetLoad(); updateSummaries(); });
+  $("presetSel").addEventListener("change", ()=>{ presetLoad(); updateSummaries(); });
   $("presetDel").addEventListener("click", ()=>{ presetDel(); updateSummaries(); });
   $("statsClear").addEventListener("click", ()=>{
     if(confirm(T().confirmClearHistory)){
       KV.del(K.history); KV.del(K.pr); KV.del(K.game); renderStats();
+      updateSummaries();   // the Presets & stats summary line counts sessions
     }
   });
 
@@ -4782,10 +5078,12 @@
   (function bootRestore(){
     const savedLang = KV.get("lat.lang", null);
     const browserLang = (navigator.language || "en").slice(0,2).toLowerCase();
-    LANG = I18N[savedLang] ? savedLang : (I18N[browserLang] ? browserLang : "en");
+    // only offered languages — I18N also holds untranslated stubs, which a
+    // browser set to e.g. Spanish used to land on (blank picker, mixed UI)
+    const offered = code => SUPPORTED_LANGS.indexOf(code) !== -1;
+    LANG = offered(savedLang) ? savedLang : (offered(browserLang) ? browserLang : "en");
     populateLangSelect();
-    document.documentElement.setAttribute("lang", LANG);
-    document.documentElement.setAttribute("dir", (LANG==="ar"||LANG==="ur") ? "rtl" : "ltr");
+    applyLangAttrs();
     $("appLang").addEventListener("change", e=>{
       const newLang = e.target.value;
       const prev = I18N[LANG] || I18N.en;
@@ -4816,6 +5114,8 @@
     // no-op — which used to drop every saved phase assignment on reload
     refreshPresetSelect();
     if(saved) writeAll(saved);
+    // the cue-word inputs ship empty: a hard-coded English default used to
+    // survive this seeding, so a fresh German install spoke "Hold"/"Breathe"
     const lg = I18N[LANG] || I18N.en;
     const seed = (id, val) => { const el = $(id); if(el && !((el.value||"").trim())) el.value = val; };
     seed("cmdDown", lg.cueDown);
@@ -4885,6 +5185,11 @@
       }
     });
   })();
+
+  // offline support for the installed app (sw.js); not available from file://
+  if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+    window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+  }
 
   document.addEventListener("selectstart", e=>{ if(S) e.preventDefault(); });
   document.addEventListener("pointerdown", function prime(){

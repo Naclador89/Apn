@@ -14,11 +14,18 @@ docs are only useful if they don't drift from the code.
 Breathless ("Gasping for More") is a breath-hold training PWA, built as a
 **single HTML file with no build step**: `index.html` contains all markup,
 CSS, JS, and i18n strings. There is no bundler, no package.json, no test
-runner — just open the file or serve it statically.
+runner — just open the file or serve it statically. The only companions
+are static assets: the self-hosted fonts and the service worker.
 
 ```
 index.html            everything: markup, styles, logic, i18n strings
 manifest.webmanifest   PWA manifest (name, icons, theme colors)
+sw.js                  service worker: offline app shell, stale-while-
+                        revalidate (only registered over http(s)); add any
+                        new static file to its CORE list
+fonts/                 self-hosted Inter + Space Grotesk (variable woff2,
+                        latin subset, SIL OFL — fonts/LICENSE.txt); no
+                        third-party requests
 icon.svg               app icon source (also duplicated as an inline
                         data-URI favicon at index.html:~11 — the two are
                         NOT auto-synced; update both if you change the icon)
@@ -27,15 +34,15 @@ CLAUDE.md              this file
 ARCHITECTURE.md         deep technical reference
 ```
 
-`index.html`'s `<script>` block runs `956`–`4042`, wrapped in a single
+`index.html`'s `<script>` block runs `1092`–`5205`, wrapped in a single
 `"use strict"` IIFE. `$(id)` is a `getElementById` shorthand defined near the
 top of that block.
 
 ## Core architecture at a glance
 
 **Global session state**: a single object `S` (declared `let S = null;` at
-`index.html:2322`) holds everything about the in-flight session. It's built
-by `buildPlan()` (`index.html:2451`) at session start and set back to `null`
+`index.html:2844`) holds everything about the in-flight session. It's built
+by `buildPlan()` (`index.html:3058`) at session start and set back to `null`
 at the end of `finish()`/`stopSession()`. Many fields are *not* set in
 `buildPlan()` — they're added ad hoc by whichever function first needs them
 (rep counters, scenario phase fields, timer handles). See
@@ -64,7 +71,7 @@ the `window`-level `pointerup` fallback next to `holdBtn`'s listeners,
 which had zero pointer filtering at all.)
 
 **Two parallel session paths**, forking at the shared entry points
-`armReady()`/`pressStart()`/`pressEnd()` (`index.html:2553`/`3409`/`3441`)
+`armReady()`/`pressStart()`/`pressEnd()` (`index.html:3189`/`4274`/`4306`)
 based on `S.goal === "scenario" && S.scenario !== "interval"`:
 
 - **Reps / Time / Interval Sequence** (`S.goal` = `"reps"` or `"time"`, or
@@ -90,13 +97,17 @@ based on `S.goal === "scenario" && S.scenario !== "interval"`:
   timer-driven — a press there only boots the session and ends the retention
   early (see "Power Breathing" below).
 
-Both paths funnel into `finish()` (`index.html:3565`) on success/game-over —
-this is what records history/gamification. Manually hitting Stop always
-calls `stopSession()` (`index.html:3621`) instead, for both session types:
-an aborted session is never recorded, only a natural end is.
+Both paths funnel into `finish()` (`index.html:4438`) on success/game-over —
+this is what records history/gamification. Stop (button or Esc) goes
+through `requestStop()`, which ends in `stopSession()` (`index.html:4502`)
+for both session types: an aborted session is never recorded, only a
+natural end is. Two refinements: with the swipe guard on, a started session
+asks first (`#stopDialog`: Discard / Keep going), and **Stopwatch** — the one
+mode with no natural end, so it used to be impossible to ever record —
+additionally offers "Finish & save" (`stopAndSave()` → `finish()`).
 
 **Scenario engine** (dispatch table, all set up in `armReadyScenario()`,
-`index.html:2654`):
+`index.html:3291`):
 
 | Scenario | Phase concept | Timer |
 |---|---|---|
@@ -117,7 +128,7 @@ prefixes don't map 1:1 to what they claim — e.g. `sd_hold` never sets
 field; check `ARCHITECTURE.md § Scenario engine` or grep.
 
 **Interval Sequence** (`S.scenario === "interval"`, 2–8 phases,
-`index.html:3239`-`3264`): the phases come from one of two places, picked
+`index.html:4074`-`4110`): the phases come from one of two places, picked
 with the `#ivLevelSel` dropdown — a **built-in level** (`IV_LEVELS`, five of
 them, `l2` is the default; see "Built-in levels" just below) or `custom`,
 where each phase is configured by picking one of your saved **presets** from
@@ -131,17 +142,17 @@ curves, strict mode, penalty, and late-start tolerance as the standalone
 mode the preset was saved from, phase by phase. **A phase can be either
 rep-count-driven or duration-driven**, decided by the assigned preset's own
 saved `goal` (`"reps"` vs `"time"`) — `applyRepsConfig(cfg, src)`
-(`index.html:2425`) sets `cfg.iv_phaseMode` accordingly (`S.iv_phaseMode` at
+(`index.html:3019`) sets `cfg.iv_phaseMode` accordingly (`S.iv_phaseMode` at
 runtime) and either rolls `cfg.totalReps` or carries over `cfg.totalMin`
 with `cfg.totalReps = null`. Preset-select dropdowns tag each option with
 its mode (`(Reps)`/`(Time)`, via `populatePresetOptions()`,
-`index.html:2075`) so it's clear which is which before assigning it to a
+`index.html:2506`) so it's clear which is which before assigning it to a
 phase — and the eight phase dropdowns additionally **filter out presets saved
 in Scenario mode** (`repsTimeOnly` flag; `validate()` also rejects a stale
 scenario-preset selection), since a phase can only reproduce a Reps- or
 Time-mode session. Mechanically this works by reusing the entire Reps
 engine unmodified (see above) plus one hook: `nextRep()`'s end-of-session
-check (`index.html:3269`) fires on **either** `S.done >= S.totalReps` (a
+check (`index.html:4115`) fires on **either** `S.done >= S.totalReps` (a
 reps-mode phase) **or** the phase's own `S.endAt` timestamp elapsing —
 `beginRep()` re-checks the same deadline so it can't slip past during a
 rest countdown, mirroring standalone Time mode's `timeUp()` check there
@@ -156,12 +167,12 @@ code that owns them normally — see `timeUp()`/`sessionProgress()`/
 alongside their existing `S.goal==="time"` check, precisely because
 `S.goal` itself must never become `"time"` here — same PR-record-
 contamination reasoning as why it never becomes `"reps"`, see below).
-`ivAdvancePhase()` (`index.html:3248`) re-applies the next phase's preset
+`ivAdvancePhase()` (`index.html:4094`) re-applies the next phase's preset
 onto the live `S` via `applyRepsConfig(S, presetObj)`, resets `S.done` to 0
 (per-phase, so `#repNow`/`#repTotal` behave exactly as a fresh Reps session
 would — hidden entirely for a time-based phase, same as standalone Time
 mode), and swaps in that phase's captured probability curve via
-`applyIvPhaseCurve()` (`index.html:1542`). The true cross-phase rep total is
+`applyIvPhaseCurve()` (`index.html:1789`). The true cross-phase rep total is
 tracked separately in `S.iv_totalDone` (incremented in `completeRep()`),
 since `S.done` itself is per-phase; `finish()` reports `S.iv_totalDone`
 instead of `S.done` for interval sessions. Presets capture their
@@ -171,7 +182,7 @@ session start) in `teardownSessionTimers()` — purely in memory, **never**
 via `saveCurves()`, so the user's own hand-drawn curve shapes in
 `localStorage` are never touched by an Interval Sequence run, whether it
 ends naturally or via manual Stop. `ivUpdatePhaseIndicator()`
-(`index.html:3239`) reuses the `#swStats` slot (shared with the other
+(`index.html:4074`) reuses the `#swStats` slot (shared with the other
 scenarios) to show "Phase X/Y" and the active preset's name. An old preset
 saved before curve-capture existed (no `.curves` key) falls back to a
 blank/uniform-random curve rather than crashing.
@@ -192,8 +203,10 @@ levels needed almost no engine code. Three builders on top of
   express (one hold + one rest are drawn per rep), so they're approximated
   as a random draw over exactly the cycle's values via a synthesized
   probability curve: `ivCurveFor(vals, min, max)` puts one narrow spike per
-  value at `round((v-min)/(max-min)*(CURVE_N-1))`, and a value listed twice
-  gets double weight, so each value's cycle frequency survives. Only the
+  value at `floor((v-min+0.5)/(max-min+1)*CURVE_N)` — the bucket holding
+  the centre of that value's slice in `curveValueAt()`'s integer decoding
+  (exact while a range spans ≤ 30 integers) — and a value listed twice gets
+  double weight, so each value's cycle frequency survives. Only the
   order/pairing is randomized.
 - `ivBreathe(label, secs)` — **breathe-only phase**: no press at all. The
   only genuinely new engine code. `applyRepsConfig()` carries
@@ -257,14 +270,14 @@ the stats box. `scenarioSupportsLives()` excludes it automatically (there is
 no fail condition).
 
 **Cue/feedback layer**: three *different*, overlapping small dispatchers —
-`setCue(kind,...)` (`index.html:3365`, `kind` ∈ `"up"/"down"/"rest"`, also
-always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2212`, `kind` ∈
+`setCue(kind,...)` (`index.html:4230`, `kind` ∈ `"up"/"down"/"rest"`, also
+always calls `applyScreenColor()`), `cmd(kind)` (`index.html:2667`, `kind` ∈
 `"down"/"up"/"hold"`, drives speech+beep+vibrate), and `tick(kind)`
-(`index.html:2192`, lighter beep+vibrate only, for rapid action-phase taps).
+(`index.html:2647`, lighter beep+vibrate only, for rapid action-phase taps).
 Don't confuse `setCue`'s and `cmd`'s `kind` — they share two string values
 but are different enumerations for different purposes.
 
-**Screen-color mode** (`applyScreenColor()`, `index.html:2609`): two overlay
+**Screen-color mode** (`applyScreenColor()`, `index.html:3246`): two overlay
 layers, `#screenColorLayer` (slow ambient fill) and
 `#screenColorBorderLayer` (instant, fully-opaque 10px border using the
 theme's `--good`/`--rise`/`--bad` vars) — both driven by the same 3-state
@@ -274,28 +287,35 @@ the yellow ramp is paced to `S.lateTol` seconds instead of a fixed cosmetic
 duration; see `ARCHITECTURE.md § Cue/feedback system` for the derivation
 logic.
 
-**Settings / persistence**: `SETTING_IDS` (`index.html:1740`, 56 element
+**Settings / persistence**: `SETTING_IDS` (`index.html:2163`, 55 element
 IDs — 10 of them belong to the Interval Sequence scenario: `ivLevelSel`
 (built-in level or `custom`) plus `ivPhaseCount` + `ivPhasePreset1..8`, each
 a `<select>` of saved preset names rather than a raw numeric field; plus
 `pbRoutineSel` for Power Breathing)
 + `KV`/`readAll()`/`writeAll()`
-(`index.html:962`/`1751`) round-trip the whole settings form through
+(`index.html:2174`/`2182`) round-trip the whole settings form through
 `localStorage` key `lat.settings`. `buildPlan()` independently re-reads the
 same DOM elements (with its own clamping) rather than reusing `readAll()`'s
 output — a dual-source-of-truth pattern to keep in mind if you add a new
 setting (wire it into *both* `SETTING_IDS` and `buildPlan()`, and usually
 `updateSummaries()` too). This one is still open — see
 `ARCHITECTURE.md § Known Issues`. Presets (`presetSave()`/`presetLoad()`,
-`index.html:2091`/`2102`) capture the *entire* `readAll()` output plus the
+`index.html:2528`/`2543`) capture the *entire* `readAll()` output plus the
 current probability-curve shape — this is what lets an Interval Sequence
 phase reproduce a full Reps- or Time-mode session exactly, including
-hold/rest timing curves, from a single dropdown pick.
+hold/rest timing curves, from a single dropdown pick. The language picker
+(`#appLang`) is deliberately *not* in `SETTING_IDS` — the language lives in
+`lat.lang` only (a preset used to carry it and desync the picker). Picking a
+preset in `#presetSel` loads it immediately (no Load button). `validate()`
+returns `null` or `{ msg, field }`; `showFormError()` outlines, reveals and
+focuses that field — return a field id with any new validation rule.
 
-**i18n**: `I18N` object (`index.html:970`) defines 11 languages; only
+**i18n**: `I18N` object (`index.html:1107`) defines 11 languages; only
 `de`/`en` are complete (fully in sync key-for-key) and exposed via
-`SUPPORTED_LANGS = ["de","en"]` (`index.html:1478`) — the other 9 are
-intentional stubs, not dead code, not reachable. `T()` merges `en.strings`
+`SUPPORTED_LANGS = ["de","en"]` (`index.html:1720`) — the other 9 are
+intentional stubs, not dead code, not reachable (startup checks
+`SUPPORTED_LANGS` too, not just `I18N` — a Spanish browser used to land on
+the stub). `T()` merges `en.strings`
 (fallback) with the active language. All six scenarios (including the
 Sudden Death family and Time Attack, which used to bypass this) now route
 their UI text through `T()`; validation errors, `alert`/`confirm` dialogs,
@@ -340,6 +360,25 @@ assignment (and the main `#presetSel` selection) was silently dropped on
 reload — assigning a `<select>.value` with no matching `<option>` is a
 no-op. The two calls are now in the other order.
 
+Resolved in the second full review pass (record; detail in
+`ARCHITECTURE.md § 9`): Stopwatch never recordable (Stop dialog "Finish &
+save"); Space/Enter on the focused Stop button swallowed by the hold-key
+handler, no Esc; unsupported browser languages landing on a stub; holds
+rounded to whole seconds (now 0.1 s via `round1()` everywhere, so sub-second
+holds count); Time mode / Interval time phases overrunning forever while
+waiting for a press (`checkIdleDeadline()` on the clock tick); "Uniform"
+curve giving min/max half weight (`curveValueAt()`, `ivCurveFor()` adjusted
+to match); German plural "Wdhs", hardcoded "+N reps", English tap hint and
+English default cue words on a fresh German install; `aria-live` on the
+whole session (only `#cue` now); preset-name escaping; stale summary after
+"Clear history"; null-unsafe scenario timer guards; the swipe guard's
+unpopped history entry; leftover confetti. Added in the same pass:
+first-session safety notice, finish summary + "Again, same settings",
+sticky Start bar, field-level validation, preset confirmations + inline
+messages, ~44 px touch targets, `prefers-reduced-motion`, self-hosted fonts,
+service worker; helpers `setSwLabels()`, `cancelPendingRelease()`,
+`startRestTicker()` replaced duplicated code.
+
 Still open, deliberately left as documented rather than fixed:
 - `readAll()`/`buildPlan()` dual source of truth for settings — can
   silently diverge on out-of-range input.
@@ -354,7 +393,7 @@ Still open, deliberately left as documented rather than fixed:
 
 ## Camera control, Noise punishment & Lives system (one-liners — see `ARCHITECTURE.md` for detail)
 
-- Camera control (`index.html:3632` on) drives the exact same
+- Camera control (`index.html:4512` on) drives the exact same
   `pressStart()`/`pressEnd()` as touch/keyboard via `camOnPress()`/
   `camOnRelease()` — it's a genuine drop-in input source, works in every
   session type. Mid-session stream loss (permission revoked, device
@@ -400,10 +439,10 @@ Still open, deliberately left as documented rather than fixed:
   Scoped exactly like the other difficulty fields: hidden for scenarios,
   inherited per-phase from presets by Interval Sequence
   (`applyRepsConfig()` carries `noisePenalty`/`noisePenaltyX`/`noiseThr`).
-- Lives system (`tryLoseLife()`, `index.html:2600`) is wired into exactly
+- Lives system (`tryLoseLife()`, `index.html:3237`) is wired into exactly
   `sd_hold`, `sd_speed`, `sd_mixed`, `rhythm` — `stopwatch`/`timeattack`/
   `interval`/`powerbreath` have no fail condition, so lives are structurally
-  inapplicable there (`scenarioSupportsLives()`, `index.html:2265`).
+  inapplicable there (`scenarioSupportsLives()`, `index.html:2732`).
 
 ## Workflow notes for this repo
 
