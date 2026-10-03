@@ -448,6 +448,22 @@
   #micErr{color:var(--bad);min-height:0}
   #doneList{text-align:left}
 
+  /* per-phase penalty controls (Interval Sequence) */
+  .ivPen{display:flex;flex-wrap:wrap;align-items:center;gap:2px 7px;margin:6px 0 4px;
+    font-size:12px;color:var(--muted)}
+  .ivPen:empty{display:none}
+  .routineInfo .ivPen{margin:4px 0 10px}
+  .ivPenAmt{display:inline-flex;align-items:center;gap:4px;color:var(--text)}
+  .ivPen input[type="number"]{width:44px;padding:6px 7px;font-size:14px;border-radius:8px}
+  .ivPenChk{display:inline-flex;align-items:center;gap:5px;min-height:36px;cursor:pointer;color:var(--text)}
+  .ivPenChk input{width:18px;height:18px;margin:0;accent-color:var(--rise);cursor:pointer}
+  .ivPenChk.off{opacity:.45;cursor:not-allowed}
+  .ivPenChk.off input{cursor:not-allowed}
+  .ivPen.active input[type="number"]{border-color:var(--rise)}
+  .ivDesc{color:var(--muted);margin-bottom:8px}
+  .routineInfo .ivTotal{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .ivPenReset{min-height:36px;padding:6px 12px;font-size:12px}
+
   /* ---------- form validation: the offending field is outlined + focused ---------- */
   input.invalid,select.invalid{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
   .presetMsg{min-height:0}
@@ -602,6 +618,7 @@
             <div class="hint" data-i18n="hintIvPhaseCount">How many phases the sequence runs through (2–8), each with its own duration, hold, and rest length.</div>
             <div id="ivPhaseRows"></div>
             </div>
+            <div class="hint" id="ivPenHint" data-i18n="hintIvPen">Penalty per phase: 0 = none.</div>
           </div>
           <div class="field hidden subField" id="pbField">
             <label class="lbl" for="pbRoutineSel" data-i18n="labelPbRoutine">Routine</label>
@@ -1339,7 +1356,20 @@
         presetSaved:n=>`Preset „${n}“ gespeichert.`, presetLoaded:n=>`Preset „${n}“ geladen.`, presetDeleted:n=>`Preset „${n}“ gelöscht.`,
         presetOverwrite:n=>`Preset „${n}“ gibt es schon. Überschreiben?`, presetConfirmDelete:n=>`Preset „${n}“ löschen?`,
         presetNeedName:"Bitte einen Namen eingeben.", presetPickFirst:"Zuerst ein Preset auswählen.",
-        errWholeNumber:"Bitte hier eine ganze Zahl eingeben."
+        errWholeNumber:"Bitte hier eine ganze Zahl eingeben.",
+        ivPenLabel:"Strafe", ivPenLate:"Spätstart", ivPenShort:"Zu kurz", ivPenNoise:"Lärm",
+        ivPenUnitSecs:"s", ivPenUnitReps:"Wdh.",
+        ivPenNoiseVoiceOff:"Nur bei ausgeschalteten Sprachansagen",
+        ariaIvPenX:n=>`Strafe Phase ${n}`,
+        hintIvPen:"Strafe pro Phase (0 = keine): in Zeit-Phasen in Sekunden, in Wiederholungs-Phasen in Wiederholungen. Die Häkchen legen fest, wofür sie fällig wird — zu spätes Starten, zu kurzes Halten oder Lärm (nur bei ausgeschalteten Sprachansagen; Lärm-Limit aus „Schwierigkeit“). Die fertigen Level bringen passende Strafen mit („Standard-Strafen“ stellt sie wieder her); in eigenen Sequenzen ersetzt sie die Strafe-Einstellungen der Presets.",
+        errIvPenAmount:n=>`Phase ${n}: Die Strafe muss eine ganze Zahl ab 0 sein.`,
+        sumIvPen:n=>n===1 ? "Strafe in 1 Phase" : `Strafen in ${n} Phasen`,
+        ivPenReset:"Standard-Strafen",
+        ivLevel1Desc:"Zum Kennenlernen: ruhige Holds, keine Strafen.",
+        ivLevel2Desc:"Erste Strafen (+3 s): Tempo-Phasen ahnden Spätstarts, Halte-Phasen zu kurzes Halten, der Flow beides.",
+        ivLevel3Desc:"Strafen +5 s nach demselben Muster, das Burnout kostet bei jedem Fehler +8 s.",
+        ivLevel4Desc:"Strafen schon ab dem Warm-up (+4 s), in den Intervallen +8 s, im Burnout Set +10 s.",
+        ivLevel5Desc:"Jede Phase außer dem Cool-down ist strafbewehrt: +5 s bis +12 s im Finale."
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1577,6 +1607,19 @@
         presetOverwrite:n=>`A preset named “${n}” already exists. Overwrite it?`, presetConfirmDelete:n=>`Delete preset “${n}”?`,
         presetNeedName:"Please enter a name.", presetPickFirst:"Pick a preset first.",
         errWholeNumber:"Please enter a whole number here.",
+        ivPenLabel:"Penalty", ivPenLate:"Late start", ivPenShort:"Too short", ivPenNoise:"Noise",
+        ivPenUnitSecs:"s", ivPenUnitReps:"reps",
+        ivPenNoiseVoiceOff:"Only while voice cues are off",
+        ariaIvPenX:n=>`Penalty phase ${n}`,
+        hintIvPen:"Penalty per phase (0 = none): seconds in a time phase, reps in a reps phase. The checkmarks set what triggers it — starting too late, holding too briefly, or noise (only while voice cues are off; noise limit from “Difficulty”). The ready-made levels come with fitting penalties (“Default penalties” restores them); in custom sequences it replaces the presets' own penalty settings.",
+        errIvPenAmount:n=>`Phase ${n}: the penalty must be a whole number of 0 or more.`,
+        sumIvPen:n=>n===1 ? "penalty in 1 phase" : `penalties in ${n} phases`,
+        ivPenReset:"Default penalties",
+        ivLevel1Desc:"Getting to know it: calm holds, no penalties.",
+        ivLevel2Desc:"First penalties (+3 s): tempo phases punish late starts, hold phases short holds, the flow both.",
+        ivLevel3Desc:"Penalties of +5 s in the same pattern; every mistake in the Burnout costs +8 s.",
+        ivLevel4Desc:"Penalties from the warm-up on (+4 s), +8 s in the intervals, +10 s in the Burnout Set.",
+        ivLevel5Desc:"Every phase but the cool-down carries a penalty: +5 s up to +12 s in the finale.",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1838,14 +1881,15 @@
   // holdChance 100 + minHold===maxHold makes every rep a "long" hold, which is
   // what puts the seconds countdown on screen (see holdDurationFor()/loop());
   // sampleFromCurve() short-circuits to `min` when max isn't greater than min.
-  const ivPh = (label, secs, hold, rest) => ({
+  const ivPh = (label, secs, hold, rest, pen) => ({
     ...IV_PHASE_BASE, label, totalMin: secs/60, ivSecs: secs,
     baseHold: hold, holdChance: 100,
     minHold: hold, maxHold: hold, minRest: rest, maxRest: rest,
+    ivPenDefault: pen || null,
   });
   // Flow phase: an ordered HOLD/BREATHE cycle approximated as a random draw
   // over exactly the cycle's values (see ivCurveFor above).
-  const ivMix = (label, secs, holds, rests) => {
+  const ivMix = (label, secs, holds, rests, pen) => {
     const hLo = Math.min(...holds), hHi = Math.max(...holds);
     const rLo = Math.min(...rests), rHi = Math.max(...rests);
     return {
@@ -1854,6 +1898,7 @@
       minHold: hLo, maxHold: hHi, minRest: rLo, maxRest: rHi,
       ivHolds: holds, ivRests: rests,
       curves: { hold: ivCurveFor(holds, hLo, hHi), rest: ivCurveFor(rests, rLo, rHi), modeHold:"random", modeRest:"random" },
+      ivPenDefault: pen || null,
     };
   };
   // Breathe-only phase: no press at all, just a countdown (see nextRep()).
@@ -1880,16 +1925,32 @@
       html += `<div class="field mt10${i>3 ? " hidden" : ""}" id="ivPhaseRow${i}">`
             + `<span class="sublbl" id="ivPhaseHead${i}">Phase ${i}</span>`
             + `<select id="ivPhasePreset${i}" aria-label="Phase ${i} preset"><option value="" data-i18n="optLoad">– load –</option></select>`
+            + `<div class="ivPen" id="ivPenSlot${i}" data-ivpen-idx="${i-1}"></div>`
             + `</div>`;
     }
     host.innerHTML = html;
   })();
 
+  // Default per-phase penalties of the built-in levels (the user can change
+  // them per level in the setup form; see ivPenGet()). All built-in phases
+  // are time phases, so the amount is seconds added to the phase. The
+  // trigger follows the phase's character, the amount the level:
+  //   tempo phases (Takt / Thrusts / Fast Pace)     -> late start
+  //   hold phases (Deep / Long / Endurance / Max)    -> too short
+  //   Flow / Chaos and the Burnout finishers         -> both
+  //   warm-ups and cool-downs stay free, except on Level 4/5
+  // Level 1 has none (learning the rhythm); Level 2 +3 s, Level 3 +5 s,
+  // Level 4 +8 s, Level 5 +10 s, the finisher one step above its level.
+  // Noise is never on by default: it needs voice cues off.
+  const penLate  = x => ({ x, late:true,  short:false, noise:false });
+  const penShort = x => ({ x, late:false, short:true,  noise:false });
+  const penBoth  = x => ({ x, late:true,  short:true,  noise:false });
+
   // Phase names are the author's own labels and deliberately not translated —
   // they are proper names, already a German/English mix. Only the level titles
-  // are localized (ivLevel1..5).
+  // and descriptions are localized (ivLevel1..5, ivLevel1Desc..5).
   const IV_LEVELS = {
-    l1: { nameKey:"ivLevel1", phases:[
+    l1: { nameKey:"ivLevel1", descKey:"ivLevel1Desc", phases:[
       ivPh("Warm-up", 60, 2, 6),
       ivPh("Intervall 1 (Sanfter Takt)", 75, 2, 4),
       ivPh("Intervall 2 (Erste Haltephasen)", 90, 3, 6),
@@ -1897,39 +1958,39 @@
       ivMix("Dynamic Flow", 90, [2,3], [4,5]),
       ivBreathe("Cool-down", 30),
     ]},
-    l2: { nameKey:"ivLevel2", phases:[
+    l2: { nameKey:"ivLevel2", descKey:"ivLevel2Desc", phases:[
       ivPh("Warm-up", 60, 3, 5),
-      ivPh("Intervall 1 (Schneller Takt)", 60, 2, 2),
-      ivPh("Intervall 2 (Deep Holds 1)", 90, 6, 5),
-      ivPh("Intervall 3 (Deep Holds 2)", 90, 8, 6),
-      ivMix("Dynamic Flow", 120, [4,6], [3,4]),
+      ivPh("Intervall 1 (Schneller Takt)", 60, 2, 2, penLate(3)),
+      ivPh("Intervall 2 (Deep Holds 1)", 90, 6, 5, penShort(3)),
+      ivPh("Intervall 3 (Deep Holds 2)", 90, 8, 6, penShort(3)),
+      ivMix("Dynamic Flow", 120, [4,6], [3,4], penBoth(3)),
       ivPh("Cool-down", 60, 3, 8),
     ]},
-    l3: { nameKey:"ivLevel3", phases:[
+    l3: { nameKey:"ivLevel3", descKey:"ivLevel3Desc", phases:[
       ivPh("Warm-up (Aktivierung)", 60, 4, 3),
-      ivPh("Intervall 1 (Rapid Thrusts)", 60, 2, 1),
-      ivPh("Intervall 2 (Long Holds)", 120, 10, 4),
-      ivPh("Intervall 3 (Peak Endurance)", 120, 14, 5),
-      ivMix("Chaos Flow", 120, [3,8,2,12], [2,3,1,4]),
-      ivPh("Burnout", 45, 8, 2),
+      ivPh("Intervall 1 (Rapid Thrusts)", 60, 2, 1, penLate(5)),
+      ivPh("Intervall 2 (Long Holds)", 120, 10, 4, penShort(5)),
+      ivPh("Intervall 3 (Peak Endurance)", 120, 14, 5, penShort(5)),
+      ivMix("Chaos Flow", 120, [3,8,2,12], [2,3,1,4], penBoth(5)),
+      ivPh("Burnout", 45, 8, 2, penBoth(8)),
       ivBreathe("Cool-down", 30),
     ]},
-    l4: { nameKey:"ivLevel4", phases:[
-      ivPh("Warm-up (Fast Pace)", 60, 4, 2),
-      ivPh("Intervall 1 (Suffocation Thrusts)", 90, 3, 1),
-      ivPh("Intervall 2 (Deep Wall Endurance)", 120, 15, 4),
-      ivPh("Intervall 3 (Peak Capacity)", 150, 20, 5),
-      ivMix("Extreme Chaos Flow", 150, [4,12,2,18], [1,3,1,4]),
-      ivPh("Burnout Set", 60, 10, 2),
+    l4: { nameKey:"ivLevel4", descKey:"ivLevel4Desc", phases:[
+      ivPh("Warm-up (Fast Pace)", 60, 4, 2, penLate(4)),
+      ivPh("Intervall 1 (Suffocation Thrusts)", 90, 3, 1, penLate(8)),
+      ivPh("Intervall 2 (Deep Wall Endurance)", 120, 15, 4, penShort(8)),
+      ivPh("Intervall 3 (Peak Capacity)", 150, 20, 5, penShort(8)),
+      ivMix("Extreme Chaos Flow", 150, [4,12,2,18], [1,3,1,4], penBoth(8)),
+      ivPh("Burnout Set", 60, 10, 2, penBoth(10)),
       ivBreathe("Cool-down", 45),
     ]},
-    l5: { nameKey:"ivLevel5", phases:[
-      ivPh("Warm-up (Atemkontrolle)", 60, 6, 2),
-      ivPh("Intervall 1 (Rapid Suffocation)", 90, 4, 1),
-      ivPh("Intervall 2 (Heavy Apnoe 1)", 150, 22, 4),
-      ivPh("Intervall 3 (Max Limit Hold)", 180, 30, 5),
-      ivMix("Ultra Chaos", 150, [5,20,3,25], [1,3,1,4]),
-      ivPh("Final Oxygen Depletion", 60, 12, 1),
+    l5: { nameKey:"ivLevel5", descKey:"ivLevel5Desc", phases:[
+      ivPh("Warm-up (Atemkontrolle)", 60, 6, 2, penShort(5)),
+      ivPh("Intervall 1 (Rapid Suffocation)", 90, 4, 1, penLate(10)),
+      ivPh("Intervall 2 (Heavy Apnoe 1)", 150, 22, 4, penShort(10)),
+      ivPh("Intervall 3 (Max Limit Hold)", 180, 30, 5, penShort(10)),
+      ivMix("Ultra Chaos", 150, [5,20,3,25], [1,3,1,4], penBoth(10)),
+      ivPh("Final Oxygen Depletion", 60, 12, 1, penBoth(12)),
       ivBreathe("Cool-down", 60),
     ]},
   };
@@ -2170,7 +2231,7 @@
     "progressTone","prAnnounce",
   ];
   function readAll(){
-    const o = { goal };
+    const o = { goal, ivPen: JSON.parse(JSON.stringify(ivPen)) };
     for(const id of SETTING_IDS){
       const el = $(id); if(!el) continue;
       o[id] = (el.type==="checkbox") ? el.checked : el.value;
@@ -2191,6 +2252,7 @@
       const el = $(id); if(!el) continue;
       if(el.type==="checkbox") el.checked = !!o[id]; else el.value = o[id];
     }
+    if(o.ivPen && typeof o.ivPen === "object" && !Array.isArray(o.ivPen)) ivPen = JSON.parse(JSON.stringify(o.ivPen));
     applyScenarioVisibility();
   }
   function saveSettingsNow(){ KV.set(K.settings, readAll()); }
@@ -2200,7 +2262,20 @@
     saveSettingsTimer = setTimeout(()=>{ saveSettingsNow(); updateSummaries(); }, 400);
     try{ updateSummaries(); }catch(e){}
   }
+  // a change made less than 400 ms before closing/reloading the page would
+  // otherwise be lost with the pending debounce
+  window.addEventListener("pagehide", ()=>{
+    if(saveSettingsTimer){ clearTimeout(saveSettingsTimer); saveSettingsTimer = 0; saveSettingsNow(); }
+  });
 
+  // " · penalties in N phases" for the goal summary chip (Interval only)
+  function ivPenSummary(t){
+    const lvl = ivSelectedLevel();
+    const n = lvl ? lvl.phases.length : ivPhaseCountValue();
+    let c = 0;
+    for(let i=0;i<n;i++) if(ivPenActive(ivPenGet(i))) c++;
+    return c ? ` · ${t.sumIvPen(c)}` : "";
+  }
   function updateSummaries(){
     const s = readAll();
     const t = T();
@@ -2211,6 +2286,7 @@
       time: `${t.goalTime} ${s.totalMin} ${t.sumMin}`,
       scenario: `${t.goalScenario} · ${scName[s.scenarioSel] || ""}`
         + (s.scenarioSel==="interval" && IV_LEVELS[s.ivLevelSel] ? ` · ${t[IV_LEVELS[s.ivLevelSel].nameKey]}` : "")
+        + (s.scenarioSel==="interval" ? ivPenSummary(t) : "")
         + (s.scenarioSel==="powerbreath" && PB_ROUTINES[s.pbRoutineSel] ? ` · ${t[PB_ROUTINES[s.pbRoutineSel].nameKey]}` : ""),
       }[goal] || "";
     setTxt("sumGoal", goalTxt);
@@ -2769,18 +2845,90 @@
     ivApplyPhaseVisibility();
     ivRenderLevelInfo();
   }
+  // ---------- per-phase penalties (Interval Sequence) ----------
+  // ivPen[key][phaseIdx] = { x, late, short, noise }, key = the built-in
+  // level ("l1".."l5") or "custom", so every level keeps its own settings.
+  // x is the amount (seconds in a time phase, reps in a reps phase); 0 = off.
+  // Persisted inside the settings blob (readAll()/writeAll()), so presets
+  // carry it too. applyIvPhasePenalty() turns it into the engine fields.
+  let ivPen = {};
+  function ivPenKey(){
+    const sel = $("ivLevelSel");
+    return (sel && IV_LEVELS[sel.value]) ? sel.value : "custom";
+  }
+  // A phase the user never touched falls back to its level's default
+  // (ivPenDefault, see IV_LEVELS); custom phases default to 0 = none.
+  function ivPenGet(i, key){
+    key = key || ivPenKey();
+    const saved = (ivPen[key] || [])[i];
+    const lvl = IV_LEVELS[key];
+    const p = saved || (lvl && lvl.phases[i] && lvl.phases[i].ivPenDefault) || {};
+    return { x: Math.max(0, parseInt(p.x, 10) || 0), late: !!p.late, short: !!p.short, noise: !!p.noise };
+  }
+  // true once the user changed this level's penalties (offers "Default")
+  function ivPenCustomized(key){ return !!(ivPen[key] && ivPen[key].length); }
+  function ivPenSet(i, field, val){
+    const key = ivPenKey();
+    const arr = (ivPen[key] || []).slice();
+    for(let k = 0; k <= i; k++) arr[k] = ivPenGet(k, key);   // no holes
+    arr[i][field] = val;
+    ivPen[key] = arr;
+  }
+  function ivPenActive(p){ return p.x > 0 && (p.late || p.short || p.noise); }
+  // Phase i of the current sequence: its mode decides the unit, and a
+  // breathe-only phase has no reps to start late or release early.
+  function ivPenPhaseInfo(i){
+    const lvl = ivSelectedLevel();
+    if(lvl){ const ph = lvl.phases[i] || {}; return { time: ph.goal === "time", breathe: !!ph.breathe }; }
+    const name = ($("ivPhasePreset"+(i+1)) || {}).value;
+    const pr = name ? KV.get(K.presets, {})[name] : null;
+    return { time: !!pr && pr.goal === "time", breathe: false };
+  }
+  // One phase's controls: amount + unit, then the three trigger checkmarks.
+  function ivPenLineHTML(i){
+    const t = T(), p = ivPenGet(i), info = ivPenPhaseInfo(i);
+    const voiceOn = !!$("voice") && $("voice").checked;
+    const chk = (field, label, off, title) =>
+      `<label class="ivPenChk${off ? " off" : ""}"${title ? ` title="${esc(title)}"` : ""}>`
+      + `<input type="checkbox" data-ivpen="${field}"${p[field] && !info.breathe ? " checked" : ""}${off ? " disabled" : ""}> ${esc(label)}</label>`;
+    // compact "+[n] s": the word itself is the tooltip / accessible name, so
+    // amount + all three checkmarks fit one line on a phone
+    return `<label class="ivPenAmt" title="${esc(t.ivPenLabel)}">+ `
+      + `<input id="ivPenX${i+1}" type="number" inputmode="numeric" min="0" step="1" value="${p.x}" data-ivpen="x" aria-label="${esc(t.ariaIvPenX(i+1))}">`
+      + ` <span>${esc(info.time ? t.ivPenUnitSecs : t.ivPenUnitReps)}</span></label>`
+      + chk("late", t.ivPenLate, info.breathe)
+      + chk("short", t.ivPenShort, info.breathe)
+      + chk("noise", t.ivPenNoise, voiceOn, voiceOn ? t.ivPenNoiseVoiceOff : "");
+  }
+  // Renders the controls in exactly one place — the level listing or the
+  // custom phase rows — and empties the other, so the ivPenX<n> ids stay unique.
+  function ivRenderPenalties(){
+    const lvl = ivSelectedLevel();
+    for(let i = 1; i <= IV_MAX_PHASES; i++){
+      const slot = $("ivPenSlot"+i); if(!slot) continue;
+      slot.innerHTML = lvl ? "" : ivPenLineHTML(i-1);
+      slot.classList.toggle("active", !lvl && ivPenActive(ivPenGet(i-1)));
+    }
+  }
   function ivRenderLevelInfo(){
     const info = $("ivLevelInfo"); if(!info) return;
-    const lvl = ivSelectedLevel(); if(!lvl) return;
+    const lvl = ivSelectedLevel();
+    if(!lvl){ info.innerHTML = ""; ivRenderPenalties(); return; }
     const t = T();
     const span = (lo, hi) => lo===hi ? `${lo}s` : `${lo}–${hi}s`;
     const rows = lvl.phases.map((p, i) => {
       const detail = p.breathe ? t.ivBreatheOnly
         : `${span(p.minHold, p.maxHold)} / ${span(p.minRest, p.maxRest)}`;
-      return `<div class="ivRow"><span>${i+1} · ${esc(p.label)}</span><span>${p.ivSecs}s · ${detail}</span></div>`;
+      return `<div class="ivRow"><span>${i+1} · ${esc(p.label)}</span><span>${p.ivSecs}s · ${detail}</span></div>`
+        + `<div class="ivPen${ivPenActive(ivPenGet(i)) ? " active" : ""}" data-ivpen-idx="${i}">${ivPenLineHTML(i)}</div>`;
     });
     const total = lvl.phases.reduce((a,p)=>a+p.ivSecs, 0);
-    info.innerHTML = rows.join("") + `<div class="ivTotal">${t.ivLevelTotal}: ${fmtTime(total)}</div>`;
+    const reset = ivPenCustomized(ivPenKey())
+      ? `<button type="button" class="ghost ivPenReset" id="ivPenReset">${esc(t.ivPenReset)}</button>` : "";
+    info.innerHTML = `<div class="ivDesc">${esc(t[lvl.descKey] || "")}</div>`
+      + rows.join("")
+      + `<div class="ivTotal"><span>${t.ivLevelTotal}: ${fmtTime(total)}</span>${reset}</div>`;
+    ivRenderPenalties();   // empties the custom slots
   }
   // Which Power Breathing routine is selected (falls back to the default).
   function pbSelectedRoutine(){
@@ -2812,6 +2960,33 @@
   $("livesOn").addEventListener("change", applyScenarioVisibility);
   $("ivPhaseCount").addEventListener("input", ivApplyPhaseVisibility);
   $("ivLevelSel").addEventListener("change", ()=>{ ivApplyLevelVisibility(); updateSummaries(); });
+  // per-phase penalty controls (delegated: they are re-rendered as runtime HTML)
+  ["input","change"].forEach(ev => $("ivField").addEventListener(ev, e=>{
+    const el = e.target, field = el && el.dataset && el.dataset.ivpen;
+    if(!field) return;
+    const row = el.closest("[data-ivpen-idx]"); if(!row) return;
+    const i = parseInt(row.dataset.ivpenIdx, 10);
+    ivPenSet(i, field, field === "x" ? Math.max(0, parseInt(el.value, 10) || 0) : el.checked);
+    row.classList.toggle("active", ivPenActive(ivPenGet(i)));
+    // a level's first change brings up its "restore defaults" button. Only on
+    // "change" (never mid-typing), and focus goes back to the same control.
+    if(e.type === "change" && ivSelectedLevel() && !$("ivPenReset")){
+      ivRenderLevelInfo();
+      const again = document.querySelector(`#ivLevelInfo [data-ivpen-idx="${i}"] [data-ivpen="${field}"]`);
+      if(again && document.activeElement === document.body) again.focus();
+    }
+    debouncedSaveSettings();
+  }));
+  $("ivField").addEventListener("click", e=>{
+    if(!(e.target && e.target.id === "ivPenReset")) return;
+    delete ivPen[ivPenKey()];
+    ivRenderLevelInfo();
+    debouncedSaveSettings();
+  });
+  $("ivPhaseRows").addEventListener("change", e=>{
+    if(e.target && /^ivPhasePreset\d$/.test(e.target.id)) ivRenderPenalties();   // the preset's mode sets the unit
+  });
+  $("voice").addEventListener("change", ()=>ivRenderLevelInfo());   // noise needs voice cues off
   $("pbRoutineSel").addEventListener("change", ()=>{ pbRenderRoutineInfo(); updateSummaries(); });
 
   // advanced settings: collapsed by default, state remembered
@@ -2979,6 +3154,15 @@
         if(!name || !presets[name] || presets[name].goal === "scenario") return fail(t.errIvPhasePreset(i), "ivPhasePreset"+i);
       }
     }
+    if(goal==="scenario" && $("scenarioSel").value === "interval"){
+      const lvl = ivSelectedLevel();
+      const n = lvl ? lvl.phases.length : ivPhaseCountValue();
+      for(let i=1;i<=n;i++){
+        const el = $("ivPenX"+i); if(!el) continue;
+        const raw = (el.value || "").trim();
+        if(raw !== "" && !(Number.isInteger(Number(raw)) && Number(raw) >= 0)) return fail(t.errIvPenAmount(i), "ivPenX"+i);
+      }
+    }
     return null;
   }
 
@@ -3025,7 +3209,12 @@
     cfg.maxRest      = n("maxRest");
     cfg.releaseGrace = Math.max(0, n("releaseGrace") || 0);
     cfg.strict       = !!src.strict;
-    cfg.penalty      = !!src.penalty;
+    // which triggers the penalty amount applies to: a Reps/Time session's
+    // single "penalty" toggle covers both late start and early release
+    // (noise has its own toggle below); Interval phases set each one
+    // separately via applyIvPhasePenalty()
+    cfg.penLate      = !!src.penalty;
+    cfg.penEarly     = !!src.penalty;
     cfg.penaltyX     = n("penaltyX") || 0;
     cfg.lateTol      = n("lateTol") || 0;
     cfg.hide         = !!src.hideDur;
@@ -3051,6 +3240,26 @@
       cfg.totalReps    = rand(n("minReps"), n("maxReps"));
     }
     return cfg;
+  }
+
+  // Interval Sequence: the per-phase penalty from the setup form replaces
+  // whatever penalty config the phase's source (built-in phase or preset)
+  // carried. One amount — seconds in a time phase, reps in a reps phase
+  // (applyPenalty() already branches on that) — and up to three triggers.
+  // An amount of 0 means no penalty at all, whatever is ticked. A
+  // breathe-only phase has no reps, so only the noise trigger applies there.
+  function applyIvPhasePenalty(cfg, idx){
+    const p = (cfg.iv_pen && cfg.iv_pen[idx]) || {};
+    const x = Math.max(0, parseInt(p.x, 10) || 0);
+    const breathe = !!cfg.iv_breathe;
+    cfg.penaltyX = x;
+    cfg.noisePenaltyX = x;
+    cfg.penLate  = x > 0 && !!p.late  && !breathe;
+    cfg.penEarly = x > 0 && !!p.short && !breathe;
+    // noise still needs the voice cues off (audio-route conflict, see noiseAvailable())
+    cfg.noisePenalty = x > 0 && !!p.noise && !(cfg.sig && cfg.sig.speech);
+    cfg.noiseThr = cfg.iv_noiseThr || 60;   // the limit from the Difficulty panel
+    if(cfg.penLate && !(cfg.lateTol >= 1)) cfg.lateTol = 3;
   }
 
   function buildPlan(){
@@ -3115,8 +3324,13 @@
         }
         cfg.iv_phaseIdx = 0;
         cfg.iv_totalDone = 0;
+        // per-phase penalties as set in the form, frozen for this run
+        const nPh = cfg.iv_phasePresets.length;
+        cfg.iv_pen = Array.from({length:nPh}, (_,k) => ivPenGet(k));
+        cfg.iv_noiseThr = Math.min(100, Math.max(1, parseInt($("noiseThr").value, 10) || 60));
         const p0 = ivPhaseSrc(cfg, 0);
         applyRepsConfig(cfg, p0);       // phase 1's own preset overrides the baseline
+        applyIvPhasePenalty(cfg, 0);
         cfg.iv_savedCurves = { hold: curves.hold.slice(), rest: curves.rest.slice(), modeHold: curveMode.hold, modeRest: curveMode.rest };
         applyIvPhaseCurve(p0);
       } else {
@@ -3270,7 +3484,7 @@
       // when the penalty toggle + lateTol are active; reactTimer is 0
       // whenever no such window is running) -> pace the rise to lateTol
       // seconds instead of the generic cosmetic duration.
-      if(S.goal !== "scenario" && reactTimer && S.penalty && S.lateTol > 0){
+      if((S.goal !== "scenario" || S.scenario === "interval") && reactTimer && S.penLate && S.lateTol > 0){
         yellowDur = S.lateTol;
       }
     }
@@ -4095,6 +4309,7 @@
     if(S.iv_phaseIdx >= S.iv_phasePresets.length) return false;
     const p = ivPhaseSrc(S, S.iv_phaseIdx);
     applyRepsConfig(S, p);
+    applyIvPhasePenalty(S, S.iv_phaseIdx);
     applyIvPhaseCurve(p);
     S.done = 0;
     S.iv_phaseStartAt = Date.now();
@@ -4103,6 +4318,7 @@
     $("repTotal").textContent = S.totalReps || "";
     $("repNow").textContent = 0;
     ivUpdatePhaseIndicator();
+    micSync();   // this phase may switch noise punishment on or off
     return true;
   }
 
@@ -4191,7 +4407,7 @@
 
   function startReactionWindow(){
     clearInterval(reactTimer); reactTimer = 0;
-    if(!S || !S.penalty || !(S.lateTol > 0)) return;
+    if(!S || !S.penLate || !(S.lateTol > 0)) return;
     S.reactLeft = S.lateTol;
     renderReact();
     reactTimer = setInterval(()=>{
@@ -4199,7 +4415,7 @@
       S.reactLeft--;
       if(S.reactLeft <= 0){
         applyPenalty();
-        S.subBase = penaltyNote(T().tooLate);
+        S.subBase = penaltyNote(T().tooLate, true);
         S.reactLeft = S.lateTol;
         cmdPenaltyThenDown();
         flashTolerancePenalty();      // brief flash at the penalty moment
@@ -4329,7 +4545,7 @@
     const target = S.cur.secs*1000;
     if(S.heldMs < target){
       const realAttempt = S.heldMs > 150;   // 150ms: below this, treat it as an accidental tap, not a real (penalized) early release
-      const penalized = S.penalty && realAttempt;
+      const penalized = S.penEarly && realAttempt;
       if(penalized) applyPenalty();
       if(S.strict){
         S.heldMs = 0;
@@ -4337,14 +4553,14 @@
         setFill(0);
         $("timer").textContent = "";
         $("btnLab").textContent = T().tooEarlyLab;
-        S.subBase = penaltyNote(T().tooEarly);
+        S.subBase = penaltyNote(T().tooEarly, penalized);
         setCue("up", S.words.down, S.subBase);
         if(penalized) cmdPenaltyThenDown(); else cmd("down");
         startReactionWindow();
       } else {
         $("btnLab").textContent = T().pressHold;
         if(penalized){
-          setCue("up", T().continueWord, penaltyNote(T().tooEarly));
+          setCue("up", T().continueWord, penaltyNote(T().tooEarly, true));
           cmdPenalty();
         }
       }
@@ -4368,8 +4584,9 @@
     const isTimed = S && (S.goal==="time" || (S.scenario === "interval" && S.iv_phaseMode === "time"));
     return isTimed ? T().penaltyUnitSecs(x) : T().penaltyUnitReps(x);
   }
-  function penaltyNote(base){
-    if(!S || !S.penalty) return base;
+  // Appends "+N reps"/"+Ns" when a penalty was actually applied (`on`).
+  function penaltyNote(base, on){
+    if(!S || !on || !(S.penaltyX > 0)) return base;
     return base + " · " + penaltyUnit(S.penaltyX);
   }
 
@@ -4826,6 +5043,7 @@
       mic.source = mic.ctx.createMediaStreamSource(stream);
       mic.analyser = mic.ctx.createAnalyser();
       mic.analyser.fftSize = 2048;        // ~43ms window @48kHz; with the 50ms poll below, short shouts can't slip between samples
+      if(mic.ctx.state === "suspended"){ try{ mic.ctx.resume(); }catch(e){} }   // opened at a phase change, outside a gesture
       mic.source.connect(mic.analyser);   // analyser only — never ctx.destination (no feedback loop)
       mic.data = new Uint8Array(mic.analyser.fftSize);
     }catch(e){ micStop(); $("micErr").textContent = T().micNotSupported; return false; }
