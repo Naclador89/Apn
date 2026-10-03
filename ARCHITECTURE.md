@@ -1,6 +1,6 @@
 # Architecture reference — Breathless
 
-Deep technical reference for `index.html` (single-file PWA, ~4900 lines).
+Deep technical reference for `index.html` (single-file PWA, ~5200 lines).
 Read `CLAUDE.md` first for the quick orientation; this file is the detailed
 backing reference for everything summarized there.
 
@@ -15,16 +15,16 @@ area**, rather than leaving it stale for the next reader.
 
 ### The `S` object
 
-Declared `let S = null;` at `index.html:2738`. Created by `buildPlan()`
-(`index.html:2952`) at session start, discarded (`S = null`) at the end
-of both `finish()` (`index.html:4128`) and `stopSession()` (`index.html:4188`).
+Declared `let S = null;` at `index.html:2844`. Created by `buildPlan()`
+(`index.html:3058`) at session start, discarded (`S = null`) at the end
+of both `finish()` (`index.html:4438`) and `stopSession()` (`index.html:4502`).
 
 **Fields set in `buildPlan()`:**
 
 | Field | Purpose |
 |---|---|
 | `goal` | `"reps"` / `"time"` / `"scenario"` |
-| `base`, `chance`, `minHold`, `maxHold`, `minRest`, `maxRest`, `releaseGrace`, `strict`, `penalty`, `penaltyX`, `lateTol`, `hide`, `noisePenalty`, `noisePenaltyX`, `noiseThr` | the shared hold/rest/strict/penalty difficulty field set (including the microphone noise punishment's toggle/amount/limit), populated by the shared helper `applyRepsConfig(cfg, src)` (`index.html:2913`) — used both for the plain baseline (`applyRepsConfig(cfg, readAll())`) and, for Interval Sequence, re-applied per phase from a saved preset object (see `iv_*` below and § 3) |
+| `base`, `chance`, `minHold`, `maxHold`, `minRest`, `maxRest`, `releaseGrace`, `strict`, `penalty`, `penaltyX`, `lateTol`, `hide`, `noisePenalty`, `noisePenaltyX`, `noiseThr` | the shared hold/rest/strict/penalty difficulty field set (including the microphone noise punishment's toggle/amount/limit), populated by the shared helper `applyRepsConfig(cfg, src)` (`index.html:3019`) — used both for the plain baseline (`applyRepsConfig(cfg, readAll())`) and, for Interval Sequence, re-applied per phase from a saved preset object (see `iv_*` below and § 3) |
 | `iv_phaseMode`, `totalReps` / `totalMin` | also set by `applyRepsConfig()`: reads `src.goal` and sets `iv_phaseMode` to `"time"` (with `totalMin` and `totalReps=null`) or `"reps"` (with `totalReps` rolled via `rand(minReps,maxReps)`) — this is what lets an Interval Sequence phase be either rep-count- or duration-driven; harmless/unused for non-interval sessions |
 | `armed` | whether input is currently accepted |
 | `progressTone`, `prAnnounce` | feedback toggles |
@@ -35,6 +35,7 @@ of both `finish()` (`index.html:4128`) and `stopSession()` (`index.html:4188`).
 | `rate` | speech rate (0.5–2) |
 | `eyesClosed`, `guardExit`, `screenColor` | display/handling toggles — session-wide even for Interval Sequence; not varied per phase (a deliberate scope limit, see § 3) |
 | `scenario`, `sd_actionMs`, `sd_pauseMs`, `sd_startReps`, `sd_startHold`, `ta_target`, `rr_bpm`, `rr_step`, `livesOn`, `livesCount` | only populated when `goal === "scenario"` |
+| `pb_rounds`, `pb_roundIdx`, `pb_log`, `noRecord` | only populated when `scenario === "powerbreath"` — see § 3. `noRecord` is the one general-purpose field here: it gates the whole recording block in `finish()` |
 | `iv_phasePresets`, `iv_phaseObjs`, `iv_phaseIdx`, `iv_totalDone`, `iv_savedCurves`, `iv_breathe` | only populated when `scenario === "interval"` — see § 3 |
 
 Note: `totalReps`/`totalMin` above are set by `applyRepsConfig()` per the
@@ -52,7 +53,7 @@ function first needs them — this is most of the state):
   `completeRep()`, `finalizeStopwatchRelease()`, `taComplete()`,
   `rhythmTap()` (which aliases it to `S.rr_hits` — the only scenario that
   does this the other way round). **For Interval Sequence, `S.done` is
-  per-phase** — reset to `0` in `ivAdvancePhase()` (`index.html:3786`) at
+  per-phase** — reset to `0` in `ivAdvancePhase()` (`index.html:4094`) at
   every phase transition, so `#repNow`/`#repTotal` behave exactly as they
   would for a standalone Reps session. The true cross-phase total is
   tracked separately in `S.iv_totalDone`, incremented alongside `S.done` in
@@ -67,8 +68,8 @@ function first needs them — this is most of the state):
   different call sites.
 - `S.armed`, `S.waitingStart` — input-gate flags.
 - `S.startTime`, `S.endAt` — session clock anchors, set in
-  `bootFirstPress()` (`index.html:3251`) and `rhythmStart()`
-  (`index.html:3660`) — **the wall clock starts on first press, not at
+  `bootFirstPress()` (`index.html:3368`) and `rhythmStart()`
+  (`index.html:3787`) — **the wall clock starts on first press, not at
   `buildPlan()`/`startSession()`**. `S.endAt` is also reused, unmodified in
   meaning, for Interval Sequence's time-based phases (see § 3) — it just
   gets re-set to the *current phase's* end time by `bootFirstPress()`
@@ -76,7 +77,7 @@ function first needs them — this is most of the state):
   whole session's; safe because every reader of `S.endAt` for standalone
   Time mode is gated on `S.goal==="time"`, never true for interval.
 - `S.livesMax`, `S.livesLeft` — lives system, set in `armReadyScenario()`,
-  mutated in `tryLoseLife()` (`index.html:3125`).
+  mutated in `tryLoseLife()` (`index.html:3237`).
 - Stopwatch-family (`sw`-prefixed, shared beyond just "stopwatch" — see
   § Known Issues): `S.swLongest`, `S.swLastReleaseTs`, `S.swHoldStartTs`,
   `S.swReleaseTs`.
@@ -96,7 +97,7 @@ function first needs them — this is most of the state):
 - `S.holdSec` — cumulative held seconds across the whole session, touched
   in `completeRep()`/`finalizeStopwatchRelease()`/`taComplete()`.
 - `S.reactLeft` — late-start countdown, set in `startReactionWindow()`
-  (`index.html:3886`).
+  (`index.html:4194`).
 - `S.iv_*` (Interval Sequence, `iv_` prefix) — `iv_phasePresets` (array of
   phase names, one per phase, set in `buildPlan()` — saved preset names for
   a hand-assembled sequence, the built-in level's own phase labels
@@ -116,11 +117,11 @@ function first needs them — this is most of the state):
 
 ### Other module-level state
 
-Declared near `let S = null;` (`index.html:2738` onward) unless noted:
+Declared near `let S = null;` (`index.html:2844` onward) unless noted:
 
 | Var | Purpose |
 |---|---|
-| `holding` | true while the hold is actively engaged — set directly at 9 call sites; the two verified duplicates are centralized behind `resumeHeldRelease(loopFn)` (`index.html:3406`) and `releaseHold()` (`index.html:3418`), see § Known Issues |
+| `holding` | true while the hold is actively engaged — set directly at 9 call sites; the two verified duplicates are centralized behind `resumeHeldRelease(loopFn)` (`index.html:3531`) and `releaseHold()` (`index.html:3543`), see § Known Issues |
 | `activePointerId` | `pointerId` of the input currently driving the hold; `null` while idle, `SYNTHETIC_POINTER` (a module-level `Symbol`) for camera-/keyboard-driven holds (they pass no `pointerId`). Set alongside `holding=true` in `pressStart()`, `pressStartStopwatch()`, `resumeHeldRelease()`; cleared alongside `holding=false` in `releaseHold()`. `pressEnd()` ignores a pointerup/pointercancel/lostpointercapture whose `pointerId` doesn't match, so a second finger touching down and lifting elsewhere can't end an in-progress hold — and since no real `pointerId` ever equals `SYNTHETIC_POINTER`, camera/keyboard holds can only be ended by their own no-argument `pressEnd()` calls (`camOnRelease()`, keyup, window blur) |
 | `lastCueKind` | last `kind` passed to `setCue()`; drives `applyScreenColor()`'s green/yellow decision |
 | `curScreenColorState` | last applied screen-color state, used to skip redundant class churn / restart CSS animations |
@@ -136,7 +137,7 @@ Declared near `let S = null;` (`index.html:2738` onward) unless noted:
 | `clockTimer` | `setInterval` for the top clock display |
 | `lastTs` | last RAF timestamp for `loop()`'s delta-time integration (reps/time only — `stopwatchHoldLoop` reads `Date.now()` directly instead, an inconsistent timing strategy between the two paths) |
 | `keyHeld` | space/enter key debounce |
-| `cam` (`index.html:4199`) | camera-control module state — see § Camera control subsystem |
+| `cam` (`index.html:4513`) | camera-control module state — see § Camera control subsystem |
 | `mic` (module block right after the camera one) | microphone noise-punishment state (`stream`, `analyser`, `level`, `lastPenaltyAt`, …) — see § Camera control subsystem → Microphone noise punishment |
 
 ---
@@ -144,7 +145,7 @@ Declared near `let S = null;` (`index.html:2738` onward) unless noted:
 ## 2. Session lifecycle
 
 ```
-startSession() [index.html:3041]
+startSession() [index.html:3153]
   → buildPlan()                          (builds S; for interval, also resolves
                                             phase 1's preset and its curve)
   → show("session")
@@ -171,7 +172,7 @@ startSession() [index.html:3041]
                      recorded; Stopwatch may instead "Finish & save" → finish())
 ```
 
-`armReady()`/`pressStart()`/`pressEnd()` (`index.html:3077`/`3966`/`3998`)
+`armReady()`/`pressStart()`/`pressEnd()` (`index.html:3189`/`4274`/`4306`)
 are the **only** shared dispatch points between the two families. They're
 the single entry point for all input sources: the hold button, the
 eyes-closed tap surface, the space/enter key, and the camera
@@ -184,63 +185,67 @@ is never rewritten to `"reps"` to achieve this).
 
 ### Reps/Time/Interval-Sequence path
 
-- `armReady()` (`index.html:3077`): arms the first rep, picks `S.cur` via
+- `armReady()` (`index.html:3189`): arms the first rep, picks `S.cur` via
   `holdDurationFor()`. For `S.scenario==="interval"`, also shows `#swStats`
-  and calls `ivUpdatePhaseIndicator()` (`index.html:3766`).
+  and calls `ivUpdatePhaseIndicator()` (`index.html:4074`).
 - `pressStart()`: on `waitingStart`, calls `bootFirstPress()` (shared with
   scenario) to start the clock, then sets `holding=true` and kicks `loop()`.
-- `loop(ts)` (`index.html:3933`): RAF-driven, delta-time hold-progress
+- `loop(ts)` (`index.html:4241`): RAF-driven, delta-time hold-progress
   integration; calls `completeRep()` at target.
-- `pressEnd()` → `finalizeRelease()` (`index.html:4019`): strict-mode
+- `pressEnd()` → `finalizeRelease()` (`index.html:4327`): strict-mode
   restart, penalty, early-release messaging. **Only this path uses
   `S.strict`, `S.penalty`, `startReactionWindow`, `applyPenalty`** — which is
   exactly why Interval Sequence rides this path: each phase gets the real
   strict/penalty/late-start-tolerance system, not a reimplementation.
-- `completeRep()` (`index.html:4070`): finalizes a rep, updates
+- `completeRep()` (`index.html:4378`): finalizes a rep, updates
   `S.done`/`S.holdSec`/`S.longestHold`/PR, and (interval only) increments
   `S.iv_totalDone`; then `nextRepTimer = setTimeout(650ms)` → `nextRep(false)`
   (tracked handle, cleared in `teardownSessionTimers()`).
-- `nextRep(first)` (`index.html:3803`): checks end conditions; for interval,
-  a met end condition first tries `ivAdvancePhase()` (`index.html:3786`) —
+- `nextRep(first)` (`index.html:4111`): checks end conditions; for interval,
+  a met end condition first tries `ivAdvancePhase()` (`index.html:4094`) —
   if it returns `true` (more phases remain), execution falls through into
   the same rest-countdown/`beginRep()` code below using the newly-applied
   phase's config; only when `ivAdvancePhase()` returns `false` (last phase
   finished) does it fall through to `finish()`.
-- `beginRep()` (`index.html:3852`): mirrors `armReady()` for reps 2..N, also
+- `beginRep()` (`index.html:4160`): mirrors `armReady()` for reps 2..N, also
   calls `startReactionWindow()`.
 
-### Scenario path (the other six sub-modes)
+### Scenario path (the other seven sub-modes)
 
-- `armReadyScenario()` (`index.html:3179`): single dispatcher that inline-
-  initializes each of the **six** non-interval scenarios' fields in one
+- `armReadyScenario()` (`index.html:3291`): single dispatcher that inline-
+  initializes each of the **seven** non-interval scenarios' fields in one
   large if/else chain, then calls `rhythmStart()` for `"rhythm"` as a
   special case (rhythm alone auto-starts, no press needed to boot).
-- `bootFirstPress()` (`index.html:3251`): shared boot logic (clock/wake-
+- `bootFirstPress()` (`index.html:3368`): shared boot logic (clock/wake-
   lock/guard) **plus** it owns the entire `S.sd_timer` `setInterval`
   definitions for `sd_speed` and `sd_mixed` — two full per-scenario state
   machines defined inside this one function as anonymous closures.
   `sd_hold`/`stopwatch`/`timeattack` have no equivalent timer (purely
   press/release driven); `rhythm` has its own separate `S.rr_timer` set up
-  in `rhythmStart()`.
-- `pressStartStopwatch()` (`index.html:3436`): handles "start holding";
-  delegates immediately to `rhythmTap()` if scenario is `rhythm` (taps, not
-  holds). The release-grace resume branch calls the shared
-  `resumeHeldRelease()` helper (`index.html:3406`, see § Known Issues).
-- `pressEndStopwatch()` (`index.html:3512`) → `finalizeStopwatchRelease()`
-  (`index.html:3524`): ~120-line function with a big if/else-if chain over
+  in `rhythmStart()`; `powerbreath` starts its own `S.pb_timer` here too
+  (one added branch, right before the `sd_speed` one).
+- `pressStartStopwatch()` (`index.html:3561`): handles "start holding";
+  delegates immediately to `pbPress()` for `powerbreath` and `rhythmTap()`
+  for `rhythm` — in both, a press is an event, not a hold. The release-grace
+  resume branch calls the shared `resumeHeldRelease()` helper
+  (`index.html:3531`, see § Known Issues).
+- `pressEndStopwatch()` (`index.html:3638`) returns immediately for
+  `powerbreath` (nothing is ever held there) and otherwise goes on to
+  `finalizeStopwatchRelease()`
+  (`index.html:3651`): ~120-line function with a big if/else-if chain over
   `S.scenario` (`sd_hold`, `sd_mixed`, `sd_speed`, else), duplicating much
   of what `completeRep()`/`finalizeRelease()` do for reps/time, reimplemented
   scenario-by-scenario.
-- `stopwatchHoldLoop()` (`index.html:3480`): the scenario equivalent of
+- `stopwatchHoldLoop()` (`index.html:3606`): the scenario equivalent of
   `loop()`, but `Date.now()`-based rather than delta-integrated; also
   special-cases `timeattack` (calls `taComplete`) and `sd_mixed`'s hold
   phase inline. Its guard condition hand-lists the scenario names it applies
   to — `rhythm` is excluded (owns its own timer, `S.rr_timer`); `interval`
   never reaches this function at all (it doesn't take the scenario path),
   so no exclusion is needed for it here.
-- `taComplete()` (`index.html:3632`) and the `rhythm*` family
-  (`rhythmStart` `index.html:3660`, `rhythmTick` `3680`, `rhythmTap` `3695`,
-  `rhythmMiss` `3715`) are further, mostly self-contained mini state
+- `taComplete()` (`index.html:3759`) and the `rhythm*` family
+  (`rhythmStart` `index.html:3787`, `rhythmTick` `3807`, `rhythmTap` `3822`,
+  `rhythmMiss` `3842`) are further, mostly self-contained mini state
   machines that still funnel through `finish()`.
 
 ### Shared vs. diverging
@@ -280,12 +285,13 @@ then `finish()`), every other mode only "Discard" (`stopSession()`) or
 | `sd_mixed` | `S.sd_phase` ∈ {action, hold, pause} | action → hold (beat `sd_prevActionReps`) → hold (beat `sd_prevHold`, uses `mixedHoldCue`/`mixedHoldTargetCue`) → pause → action | own `S.sd_timer` (100ms tick, separate closure from sd_speed's) |
 | `timeattack` | none | continuous accumulation of `S.holdSec` until it reaches `S.ta_target` → `taComplete()` | none (RAF-driven via `stopwatchHoldLoop`) |
 | `rhythm` | implicit via `S.rr_countIn`/`S.rr_level` | count-in (4 beats) → tapping, level/BPM steps up every `rr_beatsPerLevel` hits, any miss → `tryLoseLife()`/`finish()` | own `S.rr_timer` (20ms tick, `rhythmTick`) |
+| `powerbreath` | `S.pb_phase` ∈ {breathe, retention, recovery, between, done} | per round: `pb_breaths` power breaths → retention on empty lungs (ends on target **or** a tap) → fixed recovery hold → next round → `finish()` | own `S.pb_timer` (50ms tick, `pbTick`) |
 
 `interval` is deliberately **not** in this table — it doesn't take the
 scenario path at all (see § 2). It's documented separately below.
 
 No lives support: `scenarioSupportsLives()` deliberately excludes `interval`
-(alongside `stopwatch`/`timeattack`) since there's no fail condition — a
+(alongside `stopwatch`/`timeattack`/`powerbreath`) since there's no fail condition — a
 fixed practice sequence, not a challenge to survive. No per-scenario
 personal-best record in `commitGameSession()` either, for the same reason
 (no natural "best" metric for a sequence of arbitrary preset-driven phases);
@@ -315,7 +321,7 @@ assigned to it.
 **Why `S.goal` is never rewritten to `"reps"` or `"time"`:**
 `commitGameSession()` branches on `snap.goal === "reps"` *and*
 `snap.goal === "time"` to award their respective personal-best records
-(`index.html:2240`/`2242`). If Interval Sequence sessions literally set
+(`index.html:2324`/`2326`). If Interval Sequence sessions literally set
 `S.goal` to either value to reuse the engine, every run would silently
 contaminate whichever record matched the current phase — reversing the
 deliberate exclusion noted above. Instead, `S.goal` stays `"scenario"` and
@@ -346,7 +352,7 @@ probability-curve shape (see below) — so assigning a preset to a phase slot
 reproduces a full Reps- or Time-mode session exactly, without a second copy
 of the settings UI (which would otherwise mean up to 6 independent curve
 editors, times two for Reps vs. Time fields). `populatePresetOptions()`
-(`index.html:2422`) tags each dropdown option with `(Reps)`/`(Time)` (reusing
+(`index.html:2506`) tags each dropdown option with `(Reps)`/`(Time)` (reusing
 the existing `t.goalReps`/`t.goalTime` labels) by reading the preset's own
 stored `.goal`, so it's clear which is which before assigning it. The six
 phase dropdowns pass its `repsTimeOnly` flag, which filters out presets
@@ -365,21 +371,21 @@ filter existed. The main `#presetSel` dropdown is unfiltered.
   name in `st.iv_phasePresets[idx]` is looked up in `KV.get(K.presets)`.
   `st` is the live `S` at runtime, or the half-built `cfg` inside
   `buildPlan()` — both carry the same two fields by then.
-- `buildPlan()` (`index.html:2952`) resolves phase 1's config
+- `buildPlan()` (`index.html:3058`) resolves phase 1's config
   (`ivPhaseSrc(cfg, 0)`), applies it via
-  `applyRepsConfig(cfg, p0)` (`index.html:2913` — the same helper used for
+  `applyRepsConfig(cfg, p0)` (`index.html:3019` — the same helper used for
   the plain baseline), snapshots the real global curve state into
   `cfg.iv_savedCurves`, then swaps in phase 1's curve via
-  `applyIvPhaseCurve(p0)` (`index.html:1738`).
-- `ivAdvancePhase()` (`index.html:3786`), called from `nextRep()`'s
-  end-of-session check (`index.html:3807`): increments `S.iv_phaseIdx`; if
+  `applyIvPhaseCurve(p0)` (`index.html:1789`).
+- `ivAdvancePhase()` (`index.html:4094`), called from `nextRep()`'s
+  end-of-session check (`index.html:4115`): increments `S.iv_phaseIdx`; if
   phases remain, resolves the next config via `ivPhaseSrc(S,
   S.iv_phaseIdx)`, re-applies it onto the *live*
   `S` via `applyRepsConfig(S, p)`, swaps its curve via
   `applyIvPhaseCurve(p)`, resets `S.done` to `0` (per-phase — see § 1) and
   `S.iv_phaseStartAt` to the current time, sets `S.endAt` for a time-based
   phase (see below), updates `#repTotal`/`#repNow`, and calls
-  `ivUpdatePhaseIndicator()` (`index.html:3766`, reuses the shared
+  `ivUpdatePhaseIndicator()` (`index.html:4074`, reuses the shared
   `#swStats` slot to show "Phase X/Y" and the active preset's name — same
   reused-readout pattern as every other scenario, see the naming notes
   below). Returns `false` once the last phase is exhausted, at which point
@@ -394,7 +400,7 @@ filter existed. The main `#presetSel` dropdown is unfiltered.
   for interval sessions — see § 1's `S.done` bullet for why the two are
   split.
 
-**Time-based phases.** `applyRepsConfig(cfg, src)` (`index.html:2913`) reads
+**Time-based phases.** `applyRepsConfig(cfg, src)` (`index.html:3019`) reads
 `src.goal`: if `"time"`, it sets `cfg.iv_phaseMode = "time"`,
 `cfg.totalMin = fn("totalMin")`, and `cfg.totalReps = null`; otherwise
 (`"reps"` or anything else — an unchanged fallback) it sets
@@ -406,14 +412,14 @@ session's* start, not the current phase's) — reusing `S.endAt` is safe
 because every place that reads it for standalone Time mode is gated on
 `S.goal === "time"`, which is never true for interval, so the two uses never
 collide:
-- `bootFirstPress()` (`index.html:3251`) sets `S.iv_phaseStartAt = S.startTime`
+- `bootFirstPress()` (`index.html:3368`) sets `S.iv_phaseStartAt = S.startTime`
   for phase 1, and — if `S.iv_phaseMode === "time"` — `S.endAt = S.startTime
   + S.totalMin*60*1000`, mirroring the standalone-Time-mode line right above
   it.
 - `ivAdvancePhase()` sets `S.iv_phaseStartAt = Date.now()` and (if the new
   phase is time-based) `S.endAt = S.iv_phaseStartAt + S.totalMin*60*1000`
   for every phase after the first.
-- `nextRep()`'s end check (`index.html:3807`) now fires on
+- `nextRep()`'s end check (`index.html:4115`) now fires on
   `(S.totalReps && S.done >= S.totalReps) || ivPhaseTimeUp`, where
   `ivPhaseTimeUp = S.scenario==="interval" && S.iv_phaseMode==="time" &&
   S.endAt && Date.now() >= S.endAt` — `timeUp()` itself is untouched and
@@ -422,14 +428,14 @@ collide:
   phase or finish) so it can't slip past when the deadline elapses during
   the rest countdown — mirroring the `timeUp()` check `beginRep()` already
   did for standalone Time mode.
-- `sessionProgress()` (`index.html:2057`, used by "timing"-mode probability
+- `sessionProgress()` (`index.html:2140`, used by "timing"-mode probability
   curves) gained a matching branch ahead of its existing
   `S.goal==="time"` one, computing the ratio from `S.iv_phaseStartAt`/
   `S.endAt` instead of `S.startTime`/`S.endAt` — without it, a "timing"-curve
   on a time-based interval phase would silently always sample as if progress
   were `0`, since neither of the two pre-existing branches (`S.goal==="time"`,
   `S.totalReps>0`) is ever true for it.
-- `applyPenalty()`/`penaltyNote()` (`index.html:4050`/`4065`) each gained an
+- `applyPenalty()`/`penaltyNote()` (`index.html:4358`/`4373`) each gained an
   `S.scenario==="interval" && S.iv_phaseMode==="time"` alternative alongside
   their `S.goal==="time"` check — without it, a late-start penalty on a
   time-based phase would silently do nothing (neither the time-extension
@@ -548,10 +554,10 @@ probability-curve system (`curves`/`curveMode`, § below "Cue/feedback
 system" or grep) is a single global mutable object with one `localStorage`
 key (`K.curves`); there's no built-in way to have several independent named
 curves. Two distinct rules keep this safe:
-1. `presetSave()`/`presetLoad()` (`index.html:2444`/`2459`) capture/restore
+1. `presetSave()`/`presetLoad()` (`index.html:2528`/`2543`) capture/restore
    the curve shape as part of the preset blob (`snap.curves =
    {hold,rest,modeHold,modeRest}`) — this is what lets a phase reproduce its
-   curve at all. `applyIvPhaseCurve(presetObj)` (`index.html:1738`) applies
+   curve at all. `applyIvPhaseCurve(presetObj)` (`index.html:1789`) applies
    a captured curve, or falls back to a blank/uniform-random curve if the
    preset predates curve-capture (no `.curves` key) — this must never
    crash, since old presets are expected to exist.
@@ -569,7 +575,80 @@ curves. Two distinct rules keep this safe:
    Sequence (and separately, a manually-stopped one), and confirmed the
    `lat.curves` `localStorage` blob was byte-identical before and after.
 
-### Naming-consistency notes (read before adding an 8th scenario)
+### Power Breathing (`S.scenario === "powerbreath"`)
+
+Wim-Hof-/Pranayama-inspired guided routine, and the **only mode in the app
+that is not press-gated at all**. Each round runs three phases:
+
+1. **Power breathing** — `breaths` full breaths at a fixed cadence
+   (`inhaleMs`/`exhaleMs`).
+2. **Retention** — hold on *empty* lungs, target `retentionSec`.
+3. **Recovery** — fixed hold on *full* lungs, `recoverySec`.
+
+**Data.** `PB_ROUTINES` (next to `IV_LEVELS`), three built-in routines
+(`short`/`standard`/`long`); `standard` is the markup default and is the
+routine as specified: 30 breaths @ 2.0 s / retention 60 s, 35 @ 1.8 s / 90 s,
+40 @ 1.8 s / 120 s, recovery 15 s throughout. A round is a flat
+`{breaths, inhaleMs, exhaleMs, retentionSec, recoverySec}` built by
+`pbRound()`. `pbRoutineSecs()` gives the upper-bound wall-clock length for
+the setup listing (upper bound because ending a retention early only
+shortens the session). Selected with `#pbRoutineSel` (in `SETTING_IDS`);
+`pbRenderRoutineInfo()` renders the read-only round listing, re-rendered
+from `applyRuntimeI18n()` on a language switch — same pattern as
+`ivRenderLevelInfo()`, and both use the shared `.routineInfo` CSS class.
+
+**State machine.** One `setInterval` (`S.pb_timer`, 50 ms, `pbTick()`)
+drives everything — one tick point instead of nested `setTimeout` chains,
+and therefore exactly one line in `teardownSessionTimers()` (plus
+`S.pb_endTimer`, the short delay that lets the closing "exhale fully" cue
+land before `finish()` swaps the screen). Fields: `pb_rounds`, `pb_roundIdx`,
+`pb_phase`, `pb_breathIdx`, `pb_isInhale`, `pb_halfEndTs`, `pb_phaseEndTs`,
+`pb_retStartTs`, `pb_lastCountSec`, `pb_pendingNext`, `pb_log`.
+`pb_phase` also takes `"between"` (3 s pause between rounds) and `"done"`.
+Like `sd_timer`/`rr_timer`, the interval is a closure that clears its own
+captured id when `S` is gone (never `clearInterval(S.pb_timer)` with a
+possibly-`null` `S`), and `pbUpdateStats()` labels the `#swStats` slots via
+`setSwLabels()`.
+
+**Input.** The entire integration into the press engine is two lines:
+`pressStartStopwatch()` routes to `pbPress()`, `pressEndStopwatch()` returns
+early. `pbPress()` boots the session on the first press (through the shared
+`bootFirstPress()`, which supplies clock/wake-lock/audio-resume/exit-guard)
+and otherwise does exactly one thing — end the retention early. Space/Enter
+work for free via the existing `keydown` handler. `holding` is never set, so
+`pressEnd()`'s `if(!holding) return` already short-circuits the release path
+even without the explicit guard.
+
+**Retention timing.** Ends on whichever comes first: the target elapsing
+(auto-advance) or a tap. Both push `{round, held, target, early}` onto
+`S.pb_log` with the time *actually* held; `pbRenderDoneList()` turns that
+into the per-round summary in `#doneList` on the finish screen (hidden for
+every other mode, since `finish()` calls it with `S.pb_log` undefined).
+
+**Cue design.** During the breathing phase the cue *kind* stays `"up"` for
+the whole phase — inhale/exhale is carried by the big text, the rising and
+falling `setFill()`, and the two-pitch `pbBreathCue()`. Alternating the cue
+kind would have driven `applyScreenColor()` back and forth at a 0.9 s
+cadence; keeping it fixed means `applyScreenColor()` needed no
+`powerbreath` branch at all. Speech fires only every 10th breath, because
+`say()` calls `synth.cancel()` first and would otherwise just cut off the
+previous count.
+
+**Not scored, deliberately.** `buildPlan()` sets `cfg.noRecord = true`, and
+`finish()`'s recording block is gated on `!S.noRecord` — no `addHistory()`,
+no `setPR()`, no `commitGameSession()`. Reasoning: a retention on empty
+lungs is a different discipline from this app's full-lung hold PB, and the
+routine has no rep count worth converting to XP. `gameResult` stays `null`,
+so `renderFinishGame()` hides the XP card by itself. Knock-on effects worth
+knowing: such a session does not feed the daily streak and does not appear
+in the stats box. On the finish screen `#doneList` (per-round retention)
+shows instead of the generic `#doneSum` hold summary, which stays hidden
+because `S.longestHold`/`S.holdSec` are never set here. Stop goes through
+`requestStop()` like everywhere else: there is nothing to save, so it only
+offers Discard / Keep going (when the swipe guard is on) — never "Finish &
+save", which is Stopwatch-only.
+
+### Naming-consistency notes (read before adding a 9th scenario)
 
 - **`sd_` prefix** is used for `sd_hold`/`sd_speed`/`sd_mixed` fields, but
   `sd_hold` never sets `S.sd_phase` — the prefix implies a phase machine
@@ -602,13 +681,13 @@ curves. Two distinct rules keep this safe:
 
 ## 4. Cue/feedback system
 
-### `setCue(kind, big, sub)` (`index.html:3922`)
+### `setCue(kind, big, sub)` (`index.html:4230`)
 
 Only three `kind` values are ever passed: **`"up"`**, **`"down"`**,
 **`"rest"`**. Sets `lastCueKind`, the `#cue` CSS class, and always calls
 `applyScreenColor()`.
 
-### `cmd(kind)` (`index.html:2583`)
+### `cmd(kind)` (`index.html:2667`)
 
 A *different*, overlapping vocabulary: `"down"`, `"up"`, `"hold"` (plus
 `cmdCount`, `cmdFinish`, `cmdPenalty`, `cmdPenaltyThenDown`, and
@@ -618,11 +697,11 @@ moments). Dispatches speech/beep/vibrate, each gated by
 `setCue`'s `kind` are different enumerations that happen to share two
 string values** ("up"/"down") — easy to conflate when reading call sites.
 
-`tick(kind)` (`index.html:2563`) is a third, lighter cue helper for
+`tick(kind)` (`index.html:2647`) is a third, lighter cue helper for
 `isActionTap()` cases (rapid sd_speed/sd_mixed reps) — same "down"/"up"
 vocabulary again, beep+vibrate only, no speech.
 
-### Screen-color layer (`applyScreenColor(force)`, `index.html:3134`)
+### Screen-color layer (`applyScreenColor(force)`, `index.html:3246`)
 
 Two DOM layers, `#screenColorLayer` (background wash) and
 `#screenColorBorderLayer` (10px inset-`box-shadow` border, fully opaque,
@@ -656,7 +735,7 @@ side effect from `setCue()` itself plus a handful of direct calls.
 
 ### `SETTING_IDS` / `KV` / `readAll()` / `writeAll()`
 
-Storage helper `KV` (`index.html:1084`) wraps `localStorage` with keys under
+Storage helper `KV` (`index.html:1098`) wraps `localStorage` with keys under
 `K` (`lat.settings`, `lat.presets`, `lat.history`, `lat.pr`, `lat.curves`,
 `lat.game`). A few keys are used as raw string literals instead of going
 through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
@@ -664,11 +743,11 @@ through `K`: `"lat.lang"`, `"lat.advOpen"`, `"lat.cam"`,
 first-session safety notice was acknowledged) — inconsistent but harmless
 (all share the `lat.` prefix).
 
-`SETTING_IDS` (`index.html:2080`, 54 element IDs — 10 are the Interval
+`SETTING_IDS` (`index.html:2163`, 55 element IDs — 10 are the Interval
 Sequence scenario's fields: `ivLevelSel` (built-in level or `custom`),
 `ivPhaseCount` + `ivPhasePreset1..8`, each a `<select>` of saved preset
-names) + `readAll()`/
-`writeAll()` (`index.html:2091`/`2099`) round-trip the settings form through
+names; plus `pbRoutineSel` for Power Breathing) + `readAll()`/
+`writeAll()` (`index.html:2174`/`2182`) round-trip the settings form through
 `lat.settings` on every change (debounced 400ms). `writeAll()` also contains
 a legacy migration shim: old blobs with `o.rest` but no `o.minRest` get
 split into `minRest`/`maxRest`. A settings blob from before this rework
@@ -742,10 +821,10 @@ previous goal carries over invisibly on a mode switch.
 
 ### i18n
 
-`I18N` (`index.html:1093`) defines 11 languages: `de, en, zh, hi, es, fr, ar,
+`I18N` (`index.html:1107`) defines 11 languages: `de, en, zh, hi, es, fr, ar,
 bn, pt, ru, ur`. `T()` merges `en.strings` (fallback) with the active
 language's `strings`. `SUPPORTED_LANGS = ["de","en"]`
-(`index.html:1670`) is the actual gate — only these two are offered in the
+(`index.html:1720`) is the actual gate — only these two are offered in the
 language dropdown.
 
 `de` and `en` each define the same `strings` keys (identical sets, zero
@@ -777,7 +856,7 @@ they're prepared for future translation work).
 Two keys (`scenarioTitle`, `statsStreak`) are defined in `de`/`en` but
 appear unreferenced anywhere — worth confirming before deleting.
 
-`applyRuntimeI18n()` (`index.html:1688`) walks `[data-i18n]`/
+`applyRuntimeI18n()` (`index.html:1738`) walks `[data-i18n]`/
 `[data-i18n-ph]`/`[data-i18n-aria]` elements (the last sets `aria-label`),
 then re-runs `updateScenarioHint()`, `ivLabelPhases()` (sets the Interval
 Sequence's numbered "Phase N" headings and each phase preset select's
@@ -814,13 +893,13 @@ it still exists), `updateSummaries()`, and curve redraws.
 
 ## 6. Camera control subsystem
 
-All logic in one block, `index.html:4198` onward. CSS `index.html:363-418`.
-Markup: PiP preview `#camPip` (`~825`), setup overlay `#camOverlay`
-(`~883`), onboarding card `#camIntro` (`~925`).
+All logic in one block, `index.html:4512` onward. CSS `index.html:364-419`.
+Markup: PiP preview `#camPip` (`~950`), setup overlay `#camOverlay`
+(`~1013`), onboarding card `#camIntro` (`~1077`).
 
 ### State object
 
-`const cam = {...}` (`index.html:4199`): `stream`, `video`, `running`,
+`const cam = {...}` (`index.html:4513`): `stream`, `video`, `running`,
 `raf`, `mode` (`"idle"|"setup"|"session"`), `roi` (centered 30%×30% box by
 default), `ref` (calibration baseline frame), a 48×48 downsample buffer
 (`aw`/`ah`/`actx`), `pressThr:25`, `releaseThr:10`, `pixelDelta:25`,
@@ -830,13 +909,13 @@ Persisted via `saveCamCfg()`/`loadCamCfg()` under `localStorage` key
 
 ### Capture & detection pipeline
 
-1. **Acquire**: `camAcquire()` (`index.html:4337`) calls `getUserMedia` with
+1. **Acquire**: `camAcquire()` (`index.html:4651`) calls `getUserMedia` with
    facingMode + 640×480 ideal constraints; retries with bare
    `{video:true}` on failure before giving up.
-2. **Sample**: `camSampleGray()` (`index.html:4239`) draws the ROI sub-rect
+2. **Sample**: `camSampleGray()` (`index.html:4553`) draws the ROI sub-rect
    (computed against the *mirrored* preview) into the 48×48 canvas,
    converts to grayscale via standard luma weights.
-3. **Change score**: `camChangeFrom(g)` (`index.html:4249`) counts pixels
+3. **Change score**: `camChangeFrom(g)` (`index.html:4563`) counts pixels
    differing from the reference frame by more than `pixelDelta` (25),
    returns a percentage of 2304 pixels.
 4. **Hysteresis**: in the main loop's `tick()`, not-pressed + `pct >=
@@ -849,9 +928,9 @@ Persisted via `saveCamCfg()`/`loadCamCfg()` under `localStorage` key
 
 ### Calibration
 
-- **Manual** `camCalibrate()` (`index.html:4254`): snapshots the current
+- **Manual** `camCalibrate()` (`index.html:4568`): snapshots the current
   frame as `cam.ref`; user sets thresholds manually.
-- **Auto** `camAutoCalibrate()` (`index.html:4260`): snapshots reference,
+- **Auto** `camAutoCalibrate()` (`index.html:4574`): snapshots reference,
   measures idle noise floor for 1.6s, derives thresholds via a hand-tuned
   formula (`releaseThr = clamp(3,40,round(measMax)+4)`; `pressThr =
   clamp(rel+3, 90, round(rel*2)+6)`) — these constants are tuned-by-feel,
@@ -875,10 +954,10 @@ scenarios, and Interval Sequence), not just a subset.
 ### Setup/consent flow
 
 Toggling `#cameraControl` fires `maybeShowCamIntro()`
-(`index.html:4391`, gated by `lat.camOnboarded`). `startSession()` redirects
-to `camOpenSetup()` (`index.html:4364`) instead of starting a session if the
+(`index.html:4705`, gated by `lat.camOnboarded`). `startSession()` redirects
+to `camOpenSetup()` (`index.html:4678`) instead of starting a session if the
 camera isn't yet in `"session"` mode; `camConfirmStart()`
-(`index.html:4412`) validates thresholds and calibration before switching
+(`index.html:4726`) validates thresholds and calibration before switching
 modes and calling `startSession()` again. Camera flip forces recalibration
 (`cam.ref = null`) since front/rear framing/lighting differ substantially.
 
@@ -888,7 +967,7 @@ modes and calling `startSession()` again. Camera flip forces recalibration
   UX, and all failure modes (denied vs. no hardware vs. unsatisfiable
   constraints) collapse to the same message. Still a known gap, not fixed.
 - **Stream-loss detection**: every acquired stream's tracks get a
-  `track.onended` watcher (`camWatchStreamTracks()`, `index.html:4349`). If
+  `track.onended` watcher (`camWatchStreamTracks()`, `index.html:4663`). If
   the feed dies during setup, `stopCamLoop()` halts the sampling loop
   (previously it kept sampling the dead stream behind the error message).
   If it dies mid-session (permission revoked, device unplugged), any
@@ -1031,7 +1110,7 @@ extended and the punishment announced.
 
 ## 7. Lives system
 
-Core state/UI: CSS `index.html:423-434`; checkbox `#livesOn`; row container
+Core state/UI: CSS `index.html:424-435`; checkbox `#livesOn`; row container
 `#livesRow`.
 
 ```js
@@ -1039,10 +1118,10 @@ function scenarioSupportsLives(scn){
   return scn==="sd_hold" || scn==="sd_speed" || scn==="sd_mixed" || scn==="rhythm";
 }
 ```
-(`index.html:2648`) — gates whether the toggle is even shown.
+(`index.html:2732`) — gates whether the toggle is even shown.
 
-**Every `tryLoseLife()` call site** (`index.html:3125`, note: distinct from
-`cueLifeLost()` at `3115`, which is just the vibrate/beep/flash cue fired
+**Every `tryLoseLife()` call site** (`index.html:3237`, note: distinct from
+`cueLifeLost()` at `3227`, which is just the vibrate/beep/flash cue fired
 from inside it):
 
 | Scenario | Fail condition |
@@ -1184,6 +1263,10 @@ condition instead resets the current phase and lets the player retry.
     uniform curve decoding, i18n gaps, accessibility, presets/validation
     UX, safety notice, finish summary + repeat, self-hosted fonts +
     service worker, reduced motion, code cleanups) (367 `de`/`en` keys, 54 setting IDs)
+34. Power Breathing scenario (PR #2) merged on top of 33: guided
+    breathe → retention → recovery rounds from `PB_ROUTINES`, timer-driven,
+    not scored; adapted to 33's null-safe timer guard, `setSwLabels()` and
+    utility classes during the merge (55 setting IDs)
 
 This narrative explains several of the inconsistencies below: features
 built early (Sudden Death family) predate the i18n retrofit and the
@@ -1392,7 +1475,7 @@ Still open:
   (`sd_actionMs`) with the rest of `S`'s camelCase. A full rename would touch
   a large fraction of the scenario engine for a purely internal/cosmetic
   gain — left as a deliberate future call, not a quick fix.
-- **Confetti palette** (`index.html:2352`) and the curve-editor stroke
+- **Confetti palette** (`index.html:2436`) and the curve-editor stroke
   color still hardcode hex values close to but not identical to the theme's
   `--good`/`--bad`/`--rise` CSS variables. Left intentionally as-is — this is
   a subjective/cosmetic call with no clear "correct" fix, not a correctness
