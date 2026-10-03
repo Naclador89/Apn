@@ -460,6 +460,9 @@
   .ivPenChk.off{opacity:.45;cursor:not-allowed}
   .ivPenChk.off input{cursor:not-allowed}
   .ivPen.active input[type="number"]{border-color:var(--rise)}
+  .ivDesc{color:var(--muted);margin-bottom:8px}
+  .routineInfo .ivTotal{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .ivPenReset{min-height:36px;padding:6px 12px;font-size:12px}
 
   /* ---------- form validation: the offending field is outlined + focused ---------- */
   input.invalid,select.invalid{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
@@ -1358,9 +1361,15 @@
         ivPenUnitSecs:"s", ivPenUnitReps:"Wdh.",
         ivPenNoiseVoiceOff:"Nur bei ausgeschalteten Sprachansagen",
         ariaIvPenX:n=>`Strafe Phase ${n}`,
-        hintIvPen:"Strafe pro Phase (0 = keine): in Zeit-Phasen in Sekunden, in Wiederholungs-Phasen in Wiederholungen. Die Häkchen legen fest, wofür sie fällig wird — zu spätes Starten, zu kurzes Halten oder Lärm (nur bei ausgeschalteten Sprachansagen; Lärm-Limit aus „Schwierigkeit“). Ersetzt die Strafe-Einstellungen der Presets.",
+        hintIvPen:"Strafe pro Phase (0 = keine): in Zeit-Phasen in Sekunden, in Wiederholungs-Phasen in Wiederholungen. Die Häkchen legen fest, wofür sie fällig wird — zu spätes Starten, zu kurzes Halten oder Lärm (nur bei ausgeschalteten Sprachansagen; Lärm-Limit aus „Schwierigkeit“). Die fertigen Level bringen passende Strafen mit („Standard-Strafen“ stellt sie wieder her); in eigenen Sequenzen ersetzt sie die Strafe-Einstellungen der Presets.",
         errIvPenAmount:n=>`Phase ${n}: Die Strafe muss eine ganze Zahl ab 0 sein.`,
-        sumIvPen:n=>n===1 ? "Strafe in 1 Phase" : `Strafen in ${n} Phasen`
+        sumIvPen:n=>n===1 ? "Strafe in 1 Phase" : `Strafen in ${n} Phasen`,
+        ivPenReset:"Standard-Strafen",
+        ivLevel1Desc:"Zum Kennenlernen: ruhige Holds, keine Strafen.",
+        ivLevel2Desc:"Erste Strafen (+3 s): Tempo-Phasen ahnden Spätstarts, Halte-Phasen zu kurzes Halten, der Flow beides.",
+        ivLevel3Desc:"Strafen +5 s nach demselben Muster, das Burnout kostet bei jedem Fehler +8 s.",
+        ivLevel4Desc:"Strafen schon ab dem Warm-up (+4 s), in den Intervallen +8 s, im Burnout Set +10 s.",
+        ivLevel5Desc:"Jede Phase außer dem Cool-down ist strafbewehrt: +5 s bis +12 s im Finale."
       }
     },
     en: { name:"English", speech:"en-US",
@@ -1602,9 +1611,15 @@
         ivPenUnitSecs:"s", ivPenUnitReps:"reps",
         ivPenNoiseVoiceOff:"Only while voice cues are off",
         ariaIvPenX:n=>`Penalty phase ${n}`,
-        hintIvPen:"Penalty per phase (0 = none): seconds in a time phase, reps in a reps phase. The checkmarks set what triggers it — starting too late, holding too briefly, or noise (only while voice cues are off; noise limit from “Difficulty”). Replaces the presets' own penalty settings.",
+        hintIvPen:"Penalty per phase (0 = none): seconds in a time phase, reps in a reps phase. The checkmarks set what triggers it — starting too late, holding too briefly, or noise (only while voice cues are off; noise limit from “Difficulty”). The ready-made levels come with fitting penalties (“Default penalties” restores them); in custom sequences it replaces the presets' own penalty settings.",
         errIvPenAmount:n=>`Phase ${n}: the penalty must be a whole number of 0 or more.`,
         sumIvPen:n=>n===1 ? "penalty in 1 phase" : `penalties in ${n} phases`,
+        ivPenReset:"Default penalties",
+        ivLevel1Desc:"Getting to know it: calm holds, no penalties.",
+        ivLevel2Desc:"First penalties (+3 s): tempo phases punish late starts, hold phases short holds, the flow both.",
+        ivLevel3Desc:"Penalties of +5 s in the same pattern; every mistake in the Burnout costs +8 s.",
+        ivLevel4Desc:"Penalties from the warm-up on (+4 s), +8 s in the intervals, +10 s in the Burnout Set.",
+        ivLevel5Desc:"Every phase but the cool-down carries a penalty: +5 s up to +12 s in the finale.",
       }
     },
     zh: { name:"中文", speech:"zh-CN",
@@ -1866,14 +1881,15 @@
   // holdChance 100 + minHold===maxHold makes every rep a "long" hold, which is
   // what puts the seconds countdown on screen (see holdDurationFor()/loop());
   // sampleFromCurve() short-circuits to `min` when max isn't greater than min.
-  const ivPh = (label, secs, hold, rest) => ({
+  const ivPh = (label, secs, hold, rest, pen) => ({
     ...IV_PHASE_BASE, label, totalMin: secs/60, ivSecs: secs,
     baseHold: hold, holdChance: 100,
     minHold: hold, maxHold: hold, minRest: rest, maxRest: rest,
+    ivPenDefault: pen || null,
   });
   // Flow phase: an ordered HOLD/BREATHE cycle approximated as a random draw
   // over exactly the cycle's values (see ivCurveFor above).
-  const ivMix = (label, secs, holds, rests) => {
+  const ivMix = (label, secs, holds, rests, pen) => {
     const hLo = Math.min(...holds), hHi = Math.max(...holds);
     const rLo = Math.min(...rests), rHi = Math.max(...rests);
     return {
@@ -1882,6 +1898,7 @@
       minHold: hLo, maxHold: hHi, minRest: rLo, maxRest: rHi,
       ivHolds: holds, ivRests: rests,
       curves: { hold: ivCurveFor(holds, hLo, hHi), rest: ivCurveFor(rests, rLo, rHi), modeHold:"random", modeRest:"random" },
+      ivPenDefault: pen || null,
     };
   };
   // Breathe-only phase: no press at all, just a countdown (see nextRep()).
@@ -1914,11 +1931,26 @@
     host.innerHTML = html;
   })();
 
+  // Default per-phase penalties of the built-in levels (the user can change
+  // them per level in the setup form; see ivPenGet()). All built-in phases
+  // are time phases, so the amount is seconds added to the phase. The
+  // trigger follows the phase's character, the amount the level:
+  //   tempo phases (Takt / Thrusts / Fast Pace)     -> late start
+  //   hold phases (Deep / Long / Endurance / Max)    -> too short
+  //   Flow / Chaos and the Burnout finishers         -> both
+  //   warm-ups and cool-downs stay free, except on Level 4/5
+  // Level 1 has none (learning the rhythm); Level 2 +3 s, Level 3 +5 s,
+  // Level 4 +8 s, Level 5 +10 s, the finisher one step above its level.
+  // Noise is never on by default: it needs voice cues off.
+  const penLate  = x => ({ x, late:true,  short:false, noise:false });
+  const penShort = x => ({ x, late:false, short:true,  noise:false });
+  const penBoth  = x => ({ x, late:true,  short:true,  noise:false });
+
   // Phase names are the author's own labels and deliberately not translated —
   // they are proper names, already a German/English mix. Only the level titles
-  // are localized (ivLevel1..5).
+  // and descriptions are localized (ivLevel1..5, ivLevel1Desc..5).
   const IV_LEVELS = {
-    l1: { nameKey:"ivLevel1", phases:[
+    l1: { nameKey:"ivLevel1", descKey:"ivLevel1Desc", phases:[
       ivPh("Warm-up", 60, 2, 6),
       ivPh("Intervall 1 (Sanfter Takt)", 75, 2, 4),
       ivPh("Intervall 2 (Erste Haltephasen)", 90, 3, 6),
@@ -1926,39 +1958,39 @@
       ivMix("Dynamic Flow", 90, [2,3], [4,5]),
       ivBreathe("Cool-down", 30),
     ]},
-    l2: { nameKey:"ivLevel2", phases:[
+    l2: { nameKey:"ivLevel2", descKey:"ivLevel2Desc", phases:[
       ivPh("Warm-up", 60, 3, 5),
-      ivPh("Intervall 1 (Schneller Takt)", 60, 2, 2),
-      ivPh("Intervall 2 (Deep Holds 1)", 90, 6, 5),
-      ivPh("Intervall 3 (Deep Holds 2)", 90, 8, 6),
-      ivMix("Dynamic Flow", 120, [4,6], [3,4]),
+      ivPh("Intervall 1 (Schneller Takt)", 60, 2, 2, penLate(3)),
+      ivPh("Intervall 2 (Deep Holds 1)", 90, 6, 5, penShort(3)),
+      ivPh("Intervall 3 (Deep Holds 2)", 90, 8, 6, penShort(3)),
+      ivMix("Dynamic Flow", 120, [4,6], [3,4], penBoth(3)),
       ivPh("Cool-down", 60, 3, 8),
     ]},
-    l3: { nameKey:"ivLevel3", phases:[
+    l3: { nameKey:"ivLevel3", descKey:"ivLevel3Desc", phases:[
       ivPh("Warm-up (Aktivierung)", 60, 4, 3),
-      ivPh("Intervall 1 (Rapid Thrusts)", 60, 2, 1),
-      ivPh("Intervall 2 (Long Holds)", 120, 10, 4),
-      ivPh("Intervall 3 (Peak Endurance)", 120, 14, 5),
-      ivMix("Chaos Flow", 120, [3,8,2,12], [2,3,1,4]),
-      ivPh("Burnout", 45, 8, 2),
+      ivPh("Intervall 1 (Rapid Thrusts)", 60, 2, 1, penLate(5)),
+      ivPh("Intervall 2 (Long Holds)", 120, 10, 4, penShort(5)),
+      ivPh("Intervall 3 (Peak Endurance)", 120, 14, 5, penShort(5)),
+      ivMix("Chaos Flow", 120, [3,8,2,12], [2,3,1,4], penBoth(5)),
+      ivPh("Burnout", 45, 8, 2, penBoth(8)),
       ivBreathe("Cool-down", 30),
     ]},
-    l4: { nameKey:"ivLevel4", phases:[
-      ivPh("Warm-up (Fast Pace)", 60, 4, 2),
-      ivPh("Intervall 1 (Suffocation Thrusts)", 90, 3, 1),
-      ivPh("Intervall 2 (Deep Wall Endurance)", 120, 15, 4),
-      ivPh("Intervall 3 (Peak Capacity)", 150, 20, 5),
-      ivMix("Extreme Chaos Flow", 150, [4,12,2,18], [1,3,1,4]),
-      ivPh("Burnout Set", 60, 10, 2),
+    l4: { nameKey:"ivLevel4", descKey:"ivLevel4Desc", phases:[
+      ivPh("Warm-up (Fast Pace)", 60, 4, 2, penLate(4)),
+      ivPh("Intervall 1 (Suffocation Thrusts)", 90, 3, 1, penLate(8)),
+      ivPh("Intervall 2 (Deep Wall Endurance)", 120, 15, 4, penShort(8)),
+      ivPh("Intervall 3 (Peak Capacity)", 150, 20, 5, penShort(8)),
+      ivMix("Extreme Chaos Flow", 150, [4,12,2,18], [1,3,1,4], penBoth(8)),
+      ivPh("Burnout Set", 60, 10, 2, penBoth(10)),
       ivBreathe("Cool-down", 45),
     ]},
-    l5: { nameKey:"ivLevel5", phases:[
-      ivPh("Warm-up (Atemkontrolle)", 60, 6, 2),
-      ivPh("Intervall 1 (Rapid Suffocation)", 90, 4, 1),
-      ivPh("Intervall 2 (Heavy Apnoe 1)", 150, 22, 4),
-      ivPh("Intervall 3 (Max Limit Hold)", 180, 30, 5),
-      ivMix("Ultra Chaos", 150, [5,20,3,25], [1,3,1,4]),
-      ivPh("Final Oxygen Depletion", 60, 12, 1),
+    l5: { nameKey:"ivLevel5", descKey:"ivLevel5Desc", phases:[
+      ivPh("Warm-up (Atemkontrolle)", 60, 6, 2, penShort(5)),
+      ivPh("Intervall 1 (Rapid Suffocation)", 90, 4, 1, penLate(10)),
+      ivPh("Intervall 2 (Heavy Apnoe 1)", 150, 22, 4, penShort(10)),
+      ivPh("Intervall 3 (Max Limit Hold)", 180, 30, 5, penShort(10)),
+      ivMix("Ultra Chaos", 150, [5,20,3,25], [1,3,1,4], penBoth(10)),
+      ivPh("Final Oxygen Depletion", 60, 12, 1, penBoth(12)),
       ivBreathe("Cool-down", 60),
     ]},
   };
@@ -2824,10 +2856,17 @@
     const sel = $("ivLevelSel");
     return (sel && IV_LEVELS[sel.value]) ? sel.value : "custom";
   }
+  // A phase the user never touched falls back to its level's default
+  // (ivPenDefault, see IV_LEVELS); custom phases default to 0 = none.
   function ivPenGet(i, key){
-    const p = ((ivPen[key || ivPenKey()] || [])[i]) || {};
+    key = key || ivPenKey();
+    const saved = (ivPen[key] || [])[i];
+    const lvl = IV_LEVELS[key];
+    const p = saved || (lvl && lvl.phases[i] && lvl.phases[i].ivPenDefault) || {};
     return { x: Math.max(0, parseInt(p.x, 10) || 0), late: !!p.late, short: !!p.short, noise: !!p.noise };
   }
+  // true once the user changed this level's penalties (offers "Default")
+  function ivPenCustomized(key){ return !!(ivPen[key] && ivPen[key].length); }
   function ivPenSet(i, field, val){
     const key = ivPenKey();
     const arr = (ivPen[key] || []).slice();
@@ -2884,7 +2923,11 @@
         + `<div class="ivPen${ivPenActive(ivPenGet(i)) ? " active" : ""}" data-ivpen-idx="${i}">${ivPenLineHTML(i)}</div>`;
     });
     const total = lvl.phases.reduce((a,p)=>a+p.ivSecs, 0);
-    info.innerHTML = rows.join("") + `<div class="ivTotal">${t.ivLevelTotal}: ${fmtTime(total)}</div>`;
+    const reset = ivPenCustomized(ivPenKey())
+      ? `<button type="button" class="ghost ivPenReset" id="ivPenReset">${esc(t.ivPenReset)}</button>` : "";
+    info.innerHTML = `<div class="ivDesc">${esc(t[lvl.descKey] || "")}</div>`
+      + rows.join("")
+      + `<div class="ivTotal"><span>${t.ivLevelTotal}: ${fmtTime(total)}</span>${reset}</div>`;
     ivRenderPenalties();   // empties the custom slots
   }
   // Which Power Breathing routine is selected (falls back to the default).
@@ -2925,8 +2968,21 @@
     const i = parseInt(row.dataset.ivpenIdx, 10);
     ivPenSet(i, field, field === "x" ? Math.max(0, parseInt(el.value, 10) || 0) : el.checked);
     row.classList.toggle("active", ivPenActive(ivPenGet(i)));
+    // a level's first change brings up its "restore defaults" button. Only on
+    // "change" (never mid-typing), and focus goes back to the same control.
+    if(e.type === "change" && ivSelectedLevel() && !$("ivPenReset")){
+      ivRenderLevelInfo();
+      const again = document.querySelector(`#ivLevelInfo [data-ivpen-idx="${i}"] [data-ivpen="${field}"]`);
+      if(again && document.activeElement === document.body) again.focus();
+    }
     debouncedSaveSettings();
   }));
+  $("ivField").addEventListener("click", e=>{
+    if(!(e.target && e.target.id === "ivPenReset")) return;
+    delete ivPen[ivPenKey()];
+    ivRenderLevelInfo();
+    debouncedSaveSettings();
+  });
   $("ivPhaseRows").addEventListener("change", e=>{
     if(e.target && /^ivPhasePreset\d$/.test(e.target.id)) ivRenderPenalties();   // the preset's mode sets the unit
   });
